@@ -519,44 +519,77 @@ function Dashboard({ result, setScreen, setSelectedPillar }) {
   );
 }
 
-function PillarBreakdown({ result, selectedPillar, setScreen }) {
-  const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
+function takeawayWhy(key, type) {
+  const strongest = {
+    energy: "High-efficiency HVAC, solar, and heat pump water heating put this home well above most code-built homes for energy performance.",
+    water: "WaterSense performance, leak protection, and drought-tolerant landscaping reduce waste and help lower monthly utility exposure.",
+    health: "Ventilation, low/no-VOC materials, and IAQ monitoring create a stronger indoor environmental profile than a typical home.",
+    resilience: "FORTIFIED-level details, flood-resistant design, and backup power help reduce disaster and insurance-related risk.",
+    carbon: "Documented materials and lower-carbon systems give the home a stronger decarbonization profile than a typical listing.",
+    financial: "Insurance evidence, warranties, and maintenance planning lower the home’s long-term ownership-risk profile.",
+    community: "Walkability, nearby services, green space, and bike access add lifestyle value beyond the property line."
+  };
+  const weakest = {
+    energy: "Missing demand response, weaker electrification, or incomplete HERS documentation can hold back this score.",
+    water: "Lack of low-flow fixtures, greywater/rainwater reuse, or leak-shutoff protection is costing dollars and wasting H₂O.",
+    health: "Without verified ventilation, low-VOC materials, and air-quality monitoring, the home leaves health value undocumented.",
+    resilience: "Limited roof, flood, fire, or backup-power verification can make the home look riskier to buyers and insurers.",
+    carbon: "Without EPD-backed materials or low-carbon construction choices, the home loses value in carbon-aware markets.",
+    financial: "If insurance savings, warranties, or maintenance forecasts are missing, buyers see more long-term ownership risk.",
+    community: "Limited transit, walkability, services, or shared amenities reduce the community-value score."
+  };
+  return type === "best" ? strongest[key] : weakest[key];
+}
+
+function TakeawayScore({ title, pillar, value, type }) {
   const Icon = pillar.icon;
-  const value = result.scores[pillar.key];
   const pct = Math.round((value / pillar.max) * 100);
   return (
-    <div className="screen pillarBreakdown withNav">
-      <header className="screenTop"><h2>{pillar.label}</h2></header>
-      <section className="pillarHero">
-        <div className="smallGauge" style={{ background: `conic-gradient(#54b96b ${pct * 3.6}deg, #dfe7ed 0)` }}>
-          <div><Icon size={20} /><strong>{value}</strong><span>/{pillar.max}</span></div>
-        </div>
+    <section className={`takeawayCard ${type}`}>
+      <div className="takeawayRing" style={{ background: `conic-gradient(var(--ring) ${pct * 3.6}deg, #e3ebf2 0)` }}>
         <div>
-          <h3>{pillar.label.toUpperCase()}</h3>
-          <strong>{pct >= 75 ? "Excellent" : pct >= 55 ? "Good" : "Needs Improvement"}</strong>
-          <p>Your home is performing at {pct}% of available points in this pillar.</p>
+          <Icon size={23} />
+          <strong>{value}</strong>
+          <span>/{pillar.max}</span>
         </div>
-      </section>
+      </div>
+      <div className="takeawayCopy">
+        <p>{title}</p>
+        <h3>{pillar.label}</h3>
+        <strong>{pct >= 80 ? "Excellent" : pct >= 65 ? "Strong" : pct >= 50 ? "Moderate" : "Needs Work"}</strong>
+        <span>{takeawayWhy(pillar.key, type)}</span>
+      </div>
+    </section>
+  );
+}
+
+function PillarBreakdown({ result, selectedPillar, setScreen }) {
+  const ranked = PILLARS
+    .map((pillar) => ({ pillar, value: result.scores[pillar.key], pct: result.scores[pillar.key] / pillar.max }))
+    .sort((a, b) => b.pct - a.pct);
+  const best = ranked[0];
+  const weakest = ranked[ranked.length - 1];
+  const focus = PILLARS.find((item) => item.key === selectedPillar) || weakest.pillar;
+  const focusValue = result.scores[focus.key];
+
+  return (
+    <div className="screen pillarBreakdown keyTakeaway withNav">
+      <header className="screenTop keyTop"><h2>Key Takeaway</h2></header>
+
+      <TakeawayScore title="Best Score" pillar={best.pillar} value={best.value} type="best" />
+      <TakeawayScore title="Weakest Score" pillar={weakest.pillar} value={weakest.value} type="weakest" />
 
       <section className="detailCard">
         <h3>Score Breakdown</h3>
-        <div className="detailRow"><span>Base Verified Performance</span><strong>{Math.max(40, value - 40)} / {pillar.max}</strong></div>
-        <div className="detailRow"><span>Feature Adders</span><strong>+ {Math.min(40, Math.max(0, value - 120))}</strong></div>
-        <div className="detailRow total"><span>Total</span><strong>{value} / {pillar.max}</strong></div>
+        <div className="detailRow"><span>Featured Pillar</span><strong>{focus.label}</strong></div>
+        <div className="detailRow"><span>Base Verified Performance</span><strong>{Math.max(40, focusValue - 40)} / {focus.max}</strong></div>
+        <div className="detailRow"><span>Feature Adders</span><strong>+ {Math.min(40, Math.max(0, focusValue - 120))}</strong></div>
+        <div className="detailRow total"><span>Total</span><strong>{focusValue} / {focus.max}</strong></div>
       </section>
 
       <section className="detailCard">
-        <h3>What’s Helping You Score High</h3>
-        <ul className="checkList">
-          <li><Check size={15} /> Verified efficiency or certification data</li>
-          <li><Check size={15} /> High-performance systems documented</li>
-          <li><Check size={15} /> Lower operating-cost profile</li>
-        </ul>
-      </section>
-
-      <section className="detailCard">
-        <h3>Opportunities To Improve</h3>
-        <p>Additional documentation, third-party verification, or selected product upgrades may raise this pillar by 5 to 20 points.</p>
+        <h3>What This Means</h3>
+        <p>Your strongest pillar gives the home a marketable performance story. Your weakest pillar shows the fastest path to a higher VPSF score.</p>
       </section>
 
       <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
@@ -763,17 +796,23 @@ export default function App() {
           top: 16px;
           left: 16px;
           z-index: 10;
-          width: 34px;
-          height: 34px;
-          margin: 16px 0 -50px 16px;
+          width: 44px;
+          height: 44px;
+          margin: 16px 0 -60px 16px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid var(--line);
+          border: 2px solid rgba(242, 197, 32, 0.95);
           border-radius: 999px;
-          background: rgba(255,255,255,0.94);
-          color: var(--ink);
-          box-shadow: 0 6px 18px rgba(9, 33, 59, 0.08);
+          background: linear-gradient(135deg, #0b5f86, #0b253f);
+          color: #ffffff;
+          box-shadow: 0 10px 24px rgba(7, 26, 44, 0.28);
+        }
+
+        .backButton svg {
+          width: 24px;
+          height: 24px;
+          stroke-width: 4;
         }
 
         .brandRow {

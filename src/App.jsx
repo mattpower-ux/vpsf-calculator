@@ -725,12 +725,12 @@ function PillarDetailScreen({ result, selectedPillar, setScreen }) {
         </article>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(6)}>
-        View Recommendations <ArrowRight size={18} />
+      <button className="primaryButton" onClick={() => setScreen(4)}>
+        Back to VPSF Results
       </button>
 
       <button className="secondaryButton" onClick={() => setScreen(5)}>
-        Skip to Key Insights <Sparkles size={18} />
+        Dive Deeper Into Insights →
       </button>
 
       <BottomNav active="Pillars" setScreen={setScreen} />
@@ -789,7 +789,7 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
         <p>Use this screen as a quick executive summary before opening the full COGNITION recommendations.</p>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
+      <button className="primaryButton" onClick={() => setScreen(6)}>Back to VPSF Results</button>
       <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );

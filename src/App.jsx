@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
+import { demoProperties } from "./demo/demoProperties";
 import {
   ArrowRight,
   Award,
@@ -32,13 +33,14 @@ import {
 
 const VPSF_BANNER = vpsfBanner;
 
-const DEMO_MLS = {
-  mlsNumber: "ORL-32101-8847",
-  address: "1313 Cognition Drive, Orlando, FL 32101",
-  url: "https://demo.vpsf.greenbuildermedia.com/listings/ORL-32101-8847",
-  scanName: "demo-mls-listing-1313-cognition-drive.pdf",
-  note: "DEMO MODE: This screen simulates MLS import. Later, these fields can be wired to the backend parser without changing the user flow."
-};
+function demoMlsFromProperty(property) {
+  return {
+    mlsNumber: property.mlsNumber,
+    address: property.address,
+    url: property.listingUrl,
+    scanName: `demo-mls-listing-${property.id}.pdf`
+  };
+}
 
 const PILLARS = [
   { key: "energy", label: "Energy", short: "Energy", max: 200, icon: Zap, accent: "green" },
@@ -347,6 +349,15 @@ function scoreHome(home) {
   return { scores, total: Object.values(scores).reduce((a, b) => a + b, 0) };
 }
 
+
+function resultFromDemoProperty(property) {
+  return {
+    scores: property.scores,
+    total: Object.values(property.scores).reduce((sum, value) => sum + value, 0),
+    property
+  };
+}
+
 function classification(score) {
   if (score >= 850) return { label: "Exceptional", meaning: "Future-proof asset", grade: "A+" };
   if (score >= 700) return { label: "High Performance", meaning: "Low-risk, low-cost home", grade: "A" };
@@ -502,31 +513,42 @@ function DemoHelpButton({ title, body }) {
   );
 }
 
-function DemoMlsImportScreen({ setScreen }) {
+function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultMode, setScreen }) {
+  const demoMls = demoMlsFromProperty(selectedProperty);
   return (
     <div className="screen formScreen demoMlsScreen">
       <ProgressDots step={1} />
       <div className="demoBadge">DEMO ASSET</div>
       <h2>Import MLS Listing</h2>
       <p className="subhead">
-        This demo screen shows how VPSF will accept listing information before the real MLS parser is connected.
+        Choose a demo property or use the prefilled MLS import fields below.
       </p>
 
-      <section className="demoAssetNote">
-        <Sparkles size={18} />
-        <div>
-          <strong>COGNITION Smart Parse Preview</strong>
-          <p>{DEMO_MLS.note}</p>
+      <section className="demoPropertySelector">
+        <h3>Choose Demo Property</h3>
+        <div className="demoPropertyCards">
+          {demoProperties.map((property) => (
+            <button
+              key={property.id}
+              className={property.id === selectedProperty.id ? "active" : ""}
+              onClick={() => setSelectedProperty(property)}
+            >
+              <strong>{property.name}</strong>
+              <span>{property.propertyType}</span>
+              <em>{property.vpsfScore} VPSF</em>
+            </button>
+          ))}
         </div>
       </section>
 
+
       <section className="formSection demoFormSection">
-        <h3>MLS Import Options</h3>
+        <h3 className="importOptionsTitle">Import Options</h3>
 
         <label className="field fieldWide demoField">
           <span>Enter MLS Number</span>
           <div className="fieldWithHelp">
-            <input value={DEMO_MLS.mlsNumber} readOnly />
+            <input value={demoMls.mlsNumber} readOnly />
             <DemoHelpButton
               title="MLS Number Demo"
               body="In the finished version, this field can query an MLS connector or a licensed listing-data API. For now, it is prefilled with a fake listing number."
@@ -537,7 +559,7 @@ function DemoMlsImportScreen({ setScreen }) {
         <label className="field fieldWide demoField">
           <span>Enter Address of Property</span>
           <div className="fieldWithHelp">
-            <input value={DEMO_MLS.address} readOnly />
+            <input value={demoMls.address} readOnly />
             <DemoHelpButton
               title="Address Lookup Demo"
               body="Later, this can trigger geocoding, climate-zone lookup, flood-risk checks, utility-rate lookup, and local market comparison."
@@ -548,7 +570,7 @@ function DemoMlsImportScreen({ setScreen }) {
         <label className="field fieldWide demoField">
           <span>Enter URL of Listing</span>
           <div className="fieldWithHelp">
-            <input value={DEMO_MLS.url} readOnly />
+            <input value={demoMls.url} readOnly />
             <DemoHelpButton
               title="Listing URL Demo"
               body="In production, this can send the listing URL to a backend parser that extracts description text, photos, features, age, and system details."
@@ -561,7 +583,7 @@ function DemoMlsImportScreen({ setScreen }) {
           <div className="fakeUpload">
             <Upload size={20} />
             <div>
-              <strong>{DEMO_MLS.scanName}</strong>
+              <strong>{demoMls.scanName}</strong>
               <em>Demo file selected · PDF / JPG / PNG supported later</em>
             </div>
             <DemoHelpButton
@@ -573,7 +595,7 @@ function DemoMlsImportScreen({ setScreen }) {
       </section>
 
       <section className="demoParsePreview">
-        <h3>What COGNITION would prefill</h3>
+        <h3>What COGNITION Will Analyze</h3>
         <ul>
           <li><Check size={15} /> Address, year built, square footage, bedrooms, bathrooms</li>
           <li><Check size={15} /> HVAC, water heater, roof, windows, insulation</li>
@@ -582,7 +604,10 @@ function DemoMlsImportScreen({ setScreen }) {
         </ul>
       </section>
 
-      <button className="primaryButton stickyButton scanReportButton" onClick={() => setScreen(12)}>
+      <button className="primaryButton stickyButton scanReportButton" onClick={() => {
+        setResultMode("demo");
+        setScreen(12);
+      }}>
         Scan and Report <ArrowRight size={18} />
       </button>
       <button className="secondaryButton" onClick={() => setScreen(0)}>
@@ -701,7 +726,7 @@ function HomeSpecs({ home, update, setScreen }) {
   );
 }
 
-function ReviewScreen({ home, setScreen }) {
+function ReviewScreen({ home, setResultMode, setScreen }) {
   const propertyRows = [
     [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
     [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
@@ -744,7 +769,10 @@ function ReviewScreen({ home, setScreen }) {
         <button className="textLink">View all specs (18)</button>
       </section>
 
-      <button className="primaryButton stickyButton" onClick={() => setScreen(4)}>
+      <button className="primaryButton stickyButton" onClick={() => {
+        setResultMode("manual");
+        setScreen(4);
+      }}>
         Generate VPSF Score <ArrowRight size={18} />
       </button>
       <p className="privacy small">Your data is secure and private.</p>
@@ -1070,8 +1098,12 @@ function LabelScreen({ result, setScreen }) {
 export default function App() {
   const [screen, setScreen] = useState(0);
   const [selectedPillar, setSelectedPillar] = useState("energy");
+  const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
+  const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
-  const result = useMemo(() => scoreHome(home), [home]);
+  const manualResult = useMemo(() => scoreHome(home), [home]);
+  const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
+  const result = resultMode === "demo" ? demoResult : manualResult;
   const update = (key, value) => setHome((current) => ({ ...current, [key]: value }));
 
   return (
@@ -1080,7 +1112,7 @@ export default function App() {
         {screen === 0 && <StartScreen setScreen={setScreen} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
-        {screen === 3 && <ReviewScreen home={home} setScreen={setScreen} />}
+        {screen === 3 && <ReviewScreen home={home} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} />}
@@ -1088,7 +1120,7 @@ export default function App() {
         {screen === 8 && <MarketingStudio setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
-        {screen === 11 && <DemoMlsImportScreen setScreen={setScreen} />}
+        {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
       </AppChrome>
 
@@ -1756,6 +1788,64 @@ export default function App() {
         .qrIcon { display: block; margin: 0 auto 18px; color: var(--navy); }
 
 
+
+        .importOptionsTitle {
+          color: var(--navy);
+          font-size: 20px;
+          font-weight: 950;
+          letter-spacing: .01em;
+          text-transform: none;
+        }
+        .demoPropertySelector {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 16px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
+        }
+        .demoPropertySelector h3 {
+          color: var(--navy);
+          font-size: 13px;
+          margin-bottom: 10px;
+        }
+        .demoPropertyCards {
+          display: grid;
+          gap: 9px;
+        }
+        .demoPropertyCards button {
+          text-align: left;
+          border: 1px solid #dbe6ef;
+          background: #fbfdff;
+          border-radius: 12px;
+          padding: 11px 12px;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 3px 10px;
+          align-items: center;
+        }
+        .demoPropertyCards button.active {
+          border-color: var(--blue);
+          background: #eef7ff;
+          box-shadow: 0 0 0 3px rgba(18, 111, 210, .10);
+        }
+        .demoPropertyCards strong {
+          color: var(--ink);
+          font-size: 13px;
+        }
+        .demoPropertyCards span {
+          color: #52657a;
+          font-size: 11px;
+        }
+        .demoPropertyCards em {
+          grid-row: 1 / span 2;
+          grid-column: 2;
+          color: var(--green);
+          font-style: normal;
+          font-weight: 950;
+          font-size: 12px;
+        }
+
         .demoBadge {
           width: max-content;
           margin: 0 auto 10px;
@@ -1993,6 +2083,64 @@ export default function App() {
           .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
           .bannerWrap { border-radius: 0; }
   
+
+        .importOptionsTitle {
+          color: var(--navy);
+          font-size: 20px;
+          font-weight: 950;
+          letter-spacing: .01em;
+          text-transform: none;
+        }
+        .demoPropertySelector {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 16px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
+        }
+        .demoPropertySelector h3 {
+          color: var(--navy);
+          font-size: 13px;
+          margin-bottom: 10px;
+        }
+        .demoPropertyCards {
+          display: grid;
+          gap: 9px;
+        }
+        .demoPropertyCards button {
+          text-align: left;
+          border: 1px solid #dbe6ef;
+          background: #fbfdff;
+          border-radius: 12px;
+          padding: 11px 12px;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 3px 10px;
+          align-items: center;
+        }
+        .demoPropertyCards button.active {
+          border-color: var(--blue);
+          background: #eef7ff;
+          box-shadow: 0 0 0 3px rgba(18, 111, 210, .10);
+        }
+        .demoPropertyCards strong {
+          color: var(--ink);
+          font-size: 13px;
+        }
+        .demoPropertyCards span {
+          color: #52657a;
+          font-size: 11px;
+        }
+        .demoPropertyCards em {
+          grid-row: 1 / span 2;
+          grid-column: 2;
+          color: var(--green);
+          font-style: normal;
+          font-weight: 950;
+          font-size: 12px;
+        }
+
         .demoBadge {
           width: max-content;
           margin: 0 auto 10px;

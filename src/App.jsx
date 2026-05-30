@@ -1,63 +1,130 @@
 import React, { useMemo, useState } from "react";
 import {
   ArrowRight,
-  Home,
-  Upload,
-  FileSearch,
-  ClipboardList,
-  BarChart3,
-  Shield,
-  Droplets,
-  HeartPulse,
-  Leaf,
-  DollarSign,
-  Map,
-  Zap,
-  Package,
-  Megaphone,
   Award,
-  CheckCircle,
-  AlertTriangle,
-  ChevronLeft
+  BatteryCharging,
+  Bike,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  ClipboardList,
+  Droplets,
+  FileSearch,
+  Filter,
+  Flame,
+  HeartPulse,
+  Home,
+  Leaf,
+  MapPin,
+  Package,
+  PlugZap,
+  QrCode,
+  Shield,
+  Share2,
+  Sparkles,
+  Sun,
+  Upload,
+  Wallet,
+  Wind,
+  Zap
 } from "lucide-react";
 
-const pillars = [
-  { key: "energy", label: "Energy", max: 200, icon: Zap },
-  { key: "resilience", label: "Resilience", max: 200, icon: Shield },
-  { key: "health", label: "Health", max: 200, icon: HeartPulse },
-  { key: "carbon", label: "Carbon", max: 150, icon: Leaf },
-  { key: "water", label: "Water", max: 100, icon: Droplets },
-  { key: "financial", label: "Financial Risk", max: 100, icon: DollarSign },
-  { key: "community", label: "Community", max: 50, icon: Map }
+const PILLARS = [
+  { key: "energy", label: "Energy", short: "Energy", max: 200, icon: Zap, accent: "green" },
+  { key: "water", label: "Water", short: "Water", max: 100, icon: Droplets, accent: "blue" },
+  { key: "health", label: "Health", short: "Health", max: 200, icon: HeartPulse, accent: "green" },
+  { key: "resilience", label: "Resilience", short: "Resilience", max: 200, icon: Shield, accent: "green" },
+  { key: "carbon", label: "Carbon & Materials", short: "Carbon", max: 150, icon: Leaf, accent: "gold" },
+  { key: "financial", label: "Financial Risk", short: "Financial", max: 100, icon: Wallet, accent: "blue" },
+  { key: "community", label: "Community & Mobility", short: "Community", max: 50, icon: Bike, accent: "green" }
 ];
 
 const defaultHome = {
-  address: "",
-  city: "",
-  state: "",
-  zip: "",
-  squareFeet: "",
-  yearBuilt: "",
-  homeType: "Single-family",
-  hvac: "Heat pump",
-  waterHeater: "Heat pump water heater",
-  solar: "PV + battery",
-  evReady: "EV charger installed",
+  address: "123 Harbor View Dr.",
+  city: "Jacksonville",
+  state: "FL",
+  zip: "32202",
+  squareFeet: "2450",
+  yearBuilt: "2021",
+  homeType: "Single Family Detached",
+  stories: "2",
+  bedrooms: "4",
+  bathrooms: "3.5",
+  garage: "2 Car Garage",
+  lotSize: "0.18 acres",
+  climateZone: "2A – Hot Humid",
+  occupancy: "Owner Occupied",
+  hvac: "Heat Pump (Electric)",
+  waterHeater: "Heat Pump Water Heater",
+  roof: "Architectural Shingle",
+  windows: "Double Pane, Low-E",
+  insulation: "R-19 Walls / R-38 Attic",
+  solar: "5.2 kW Solar PV + Battery",
   hers: "21–30",
+  evReady: "EV Charger Installed",
   fortified: "FORTIFIED Silver",
-  flood: "Elevated / flood-resistant",
-  roof: "Impact-rated roof",
+  flood: "Elevated / Flood-Resistant",
+  moisture: "Enhanced Moisture Management",
+  backup: "Battery Backup",
+  healthCert: "EPA Indoor airPLUS",
   ventilation: "ERV / HRV",
-  materials: "Low / no-VOC",
-  iaq: "IAQ monitoring",
-  carbon: "Documented EPDs",
+  materials: "Low / No-VOC",
+  iaq: "IAQ Monitoring",
+  daylighting: "Daylighting + Acoustic Comfort",
+  carbonStrategy: "Documented EPDs + CLF Benchmark",
+  carbonConcrete: "Low-Carbon Concrete",
+  structure: "Wood-Heavy Structure",
   waterStandard: "WaterSense Home v2",
-  leak: "Leak detection + auto shutoff",
-  landscape: "Drought-tolerant",
-  insurance: "Verified discount",
-  warranty: "Long-term warranties",
+  leak: "Leak Detection + Auto Shutoff",
+  reuse: "Rainwater Harvesting",
+  landscape: "Drought-Tolerant Landscaping",
+  pietim: "25–30%",
+  insurance: "Verified Insurance Discount",
+  warranty: "Long-Term Warranties",
+  maintenance: "Maintenance Cost Model Provided",
   walkscore: "70+",
-  transit: "Nearby transit/services"
+  transit: "Nearby Transit / Services",
+  greenspace: "Community Green Space",
+  amenities: "Shared Amenities",
+  bike: "Bike Infrastructure"
+};
+
+const selectOptions = {
+  homeType: ["Single Family Detached", "Townhome", "Condo", "Multifamily", "Manufactured Home"],
+  stories: ["1", "1.5", "2", "3+"],
+  climateZone: ["1A – Very Hot Humid", "2A – Hot Humid", "3A – Warm Humid", "3C – Marine", "4A – Mixed Humid", "5A – Cool Humid"],
+  occupancy: ["Owner Occupied", "Rental", "Builder Spec", "For Sale"],
+  hvac: ["Heat Pump (Electric)", "Geothermal", "Gas Furnace", "Electric Resistance", "Unknown"],
+  waterHeater: ["Heat Pump Water Heater", "Tank Electric", "Tank Gas", "Tankless Gas", "Solar Thermal", "Unknown"],
+  solar: ["None", "Solar PV", "5.2 kW Solar PV", "5.2 kW Solar PV + Battery", "Solar PV + Battery"],
+  evReady: ["None", "EV Ready", "EV Charger Installed"],
+  hers: ["≤ 0", "1–10", "11–20", "21–30", "31–40", "41–50", "51–60", "61–70", "71–80", "81–90", "Code-Minimum"],
+  fortified: ["FORTIFIED Gold", "FORTIFIED Silver", "FORTIFIED Bronze", "Wildfire Prepared Home", "None"],
+  flood: ["Elevated / Flood-Resistant", "Flood-Resistant Materials", "Standard Construction", "Unknown"],
+  roof: ["Impact-Rated Roof", "Architectural Shingle", "Metal Roof", "Tile Roof", "Unknown"],
+  moisture: ["Enhanced Moisture Management", "Standard Moisture Details", "Unknown"],
+  backup: ["Battery Backup", "Generator Ready", "None"],
+  healthCert: ["WELL or Fitwel Residential", "EPA Indoor airPLUS", "RESET Air or Equivalent", "None"],
+  ventilation: ["ERV / HRV", "Balanced Ventilation", "Exhaust Only", "None / Unknown"],
+  materials: ["Low / No-VOC", "Standard Materials", "Unknown"],
+  iaq: ["IAQ Monitoring", "CO2 Monitoring Only", "None"],
+  daylighting: ["Daylighting + Acoustic Comfort", "Daylighting Only", "Standard"],
+  carbonStrategy: ["Zero Carbon Certified", "Documented EPDs + CLF Benchmark", "Partial Material Disclosure", "No Accounting"],
+  carbonConcrete: ["Low-Carbon Concrete", "Standard Concrete", "Unknown"],
+  structure: ["Wood-Heavy Structure", "Mixed Structure", "Steel / Concrete Heavy", "Unknown"],
+  waterStandard: ["WaterSense Home v2", "HERS H2O", "WERS Rated", "Code-Minimum"],
+  leak: ["Leak Detection + Auto Shutoff", "Leak Detection Only", "None"],
+  reuse: ["Rainwater Harvesting", "Greywater", "None"],
+  landscape: ["Drought-Tolerant Landscaping", "Standard Landscaping", "High-Water Landscaping"],
+  pietim: ["< 25%", "25–30%", "30–35%", "35–40%", "> 40%"],
+  insurance: ["Verified Insurance Discount", "Likely Discount", "None / Unknown"],
+  warranty: ["Long-Term Warranties", "Standard Warranties", "Unknown"],
+  maintenance: ["Maintenance Cost Model Provided", "Basic Maintenance Guidance", "None"],
+  walkscore: ["70+", "50–69", "Below 50", "Unknown"],
+  transit: ["Nearby Transit / Services", "Limited Access", "None / Unknown"],
+  greenspace: ["Community Green Space", "Nearby Park", "None / Unknown"],
+  amenities: ["Shared Amenities", "Limited Amenities", "None"],
+  bike: ["Bike Infrastructure", "Bikeable Streets", "None / Unknown"]
 };
 
 function scoreHome(home) {
@@ -72,86 +139,114 @@ function scoreHome(home) {
     "61–70": 85,
     "71–80": 70,
     "81–90": 55,
-    "Code-minimum": 40
+    "Code-Minimum": 40
   }[home.hers] || 40;
 
   let energy = energyBase;
-  if (home.solar === "PV") energy += 10;
-  if (home.solar === "PV + battery") energy += 20;
-  if (home.hvac === "Heat pump" || home.hvac === "Geothermal") energy += 10;
+  if (home.solar.includes("Solar PV")) energy += 10;
+  if (home.solar.includes("Battery")) energy += 10;
+  if (home.hvac.includes("Heat Pump") || home.hvac.includes("Geothermal")) energy += 10;
   if (home.evReady !== "None") energy += 5;
   energy = Math.min(200, energy);
 
-  let resilience =
-    {
-      "FORTIFIED Gold": 160,
-      "FORTIFIED Silver": 140,
-      "FORTIFIED Bronze": 120,
-      "Wildfire Prepared Home": 100,
-      "None": 40
-    }[home.fortified] || 40;
-  if (home.flood.includes("Elevated")) resilience += 10;
-  if (home.roof.includes("Impact")) resilience += 10;
+  let resilience = {
+    "FORTIFIED Gold": 160,
+    "FORTIFIED Silver": 140,
+    "FORTIFIED Bronze": 120,
+    "Wildfire Prepared Home": 100,
+    "None": 40
+  }[home.fortified] || 40;
+  if (home.flood.includes("Elevated") || home.flood.includes("Flood")) resilience += 10;
+  if (home.roof.includes("Impact") || home.roof.includes("Metal")) resilience += 10;
+  if (home.moisture.includes("Enhanced")) resilience += 10;
+  if (home.backup !== "None") resilience += 10;
   resilience = Math.min(200, resilience);
 
-  let health =
-    home.ventilation === "ERV / HRV" ? 100 : 60;
-  if (home.materials.includes("VOC")) health += 30;
-  if (home.iaq.includes("monitoring")) health += 30;
+  let health = {
+    "WELL or Fitwel Residential": 120,
+    "EPA Indoor airPLUS": 90,
+    "RESET Air or Equivalent": 80,
+    "None": 40
+  }[home.healthCert] || 40;
+  if (home.ventilation.includes("ERV") || home.ventilation.includes("Balanced")) health += 20;
+  if (home.materials.includes("VOC")) health += 20;
+  if (home.iaq.includes("Monitoring")) health += 20;
+  if (home.daylighting.includes("Daylighting")) health += 20;
   health = Math.min(200, health);
 
-  let carbon =
-    {
-      "Zero Carbon Certified": 120,
-      "Documented EPDs": 90,
-      "Partial disclosure": 60,
-      "No accounting": 30
-    }[home.carbon] || 30;
-  if (home.hvac === "Heat pump" || home.hvac === "Geothermal") carbon += 10;
-  if (home.solar !== "None") carbon += 10;
+  let carbon = {
+    "Zero Carbon Certified": 120,
+    "Documented EPDs + CLF Benchmark": 90,
+    "Partial Material Disclosure": 60,
+    "No Accounting": 30
+  }[home.carbonStrategy] || 30;
+  if (home.carbonConcrete.includes("Low-Carbon")) carbon += 10;
+  if (home.structure.includes("Wood")) carbon += 10;
+  if (home.hvac.includes("Heat Pump") || home.hvac.includes("Geothermal")) carbon += 10;
   carbon = Math.min(150, carbon);
 
-  let water =
-    {
-      "WaterSense Home v2": 60,
-      "HERS H2O": 50,
-      "WERS rated": 40,
-      "Code-minimum": 20
-    }[home.waterStandard] || 20;
-  if (home.leak.includes("auto")) water += 15;
+  let water = {
+    "WaterSense Home v2": 60,
+    "HERS H2O": 50,
+    "WERS Rated": 40,
+    "Code-Minimum": 20
+  }[home.waterStandard] || 20;
+  if (home.leak.includes("Auto")) water += 15;
+  if (home.reuse !== "None") water += 15;
   if (home.landscape.includes("Drought")) water += 10;
   water = Math.min(100, water);
 
-  let financial = 45;
-  if (home.insurance.includes("Verified")) financial += 25;
-  if (home.warranty.includes("Long")) financial += 20;
+  let financial = {
+    "< 25%": 60,
+    "25–30%": 50,
+    "30–35%": 40,
+    "35–40%": 25,
+    "> 40%": 10
+  }[home.pietim] || 40;
+  if (home.insurance.includes("Verified")) financial += 15;
+  if (home.warranty.includes("Long")) financial += 15;
+  if (home.maintenance.includes("Model")) financial += 10;
+  if (home.leak.includes("Auto")) financial += 10;
   financial = Math.min(100, financial);
 
-  let community = 10;
+  let community = 0;
   if (home.walkscore === "70+") community += 15;
   if (home.transit.includes("Nearby")) community += 10;
+  if (home.greenspace.includes("Green") || home.greenspace.includes("Park")) community += 10;
+  if (home.amenities.includes("Shared")) community += 10;
+  if (home.bike.includes("Bike")) community += 5;
   community = Math.min(50, community);
 
-  const scores = { energy, resilience, health, carbon, water, financial, community };
-  const total = Object.values(scores).reduce((a, b) => a + b, 0);
-  return { scores, total };
+  const scores = { energy, water, health, resilience, carbon, financial, community };
+  return { scores, total: Object.values(scores).reduce((a, b) => a + b, 0) };
 }
 
 function classification(score) {
-  if (score >= 850) return "Exceptional";
-  if (score >= 700) return "High Performance";
-  if (score >= 550) return "Good / Efficient";
-  if (score >= 400) return "Code Plus";
-  return "High Risk";
+  if (score >= 850) return { label: "Exceptional", meaning: "Future-proof asset", grade: "A+" };
+  if (score >= 700) return { label: "High Performance", meaning: "Low-risk, low-cost home", grade: "A" };
+  if (score >= 550) return { label: "Good / Efficient", meaning: "Above-market quality", grade: "B" };
+  if (score >= 400) return { label: "Code Plus", meaning: "Typical new home", grade: "C" };
+  return { label: "High Risk", meaning: "High operating + insurance cost", grade: "D" };
 }
 
-function Field({ label, value, onChange, options }) {
+function gradeFor(value, max) {
+  const pct = value / max;
+  if (pct >= 0.85) return "A";
+  if (pct >= 0.72) return "B+";
+  if (pct >= 0.6) return "B";
+  if (pct >= 0.45) return "C";
+  return "D";
+}
+
+function Field({ label, value, onChange, options, wide = false }) {
   return (
-    <label className="field">
+    <label className={wide ? "field fieldWide" : "field"}>
       <span>{label}</span>
       {options ? (
         <select value={value} onChange={(e) => onChange(e.target.value)}>
-          {options.map((o) => <option key={o}>{o}</option>)}
+          {options.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
         </select>
       ) : (
         <input value={value} onChange={(e) => onChange(e.target.value)} />
@@ -160,18 +255,425 @@ function Field({ label, value, onChange, options }) {
   );
 }
 
-function PillarCard({ pillar, value, onClick }) {
+function ProgressDots({ step }) {
+  return (
+    <div className="progressDots" aria-label={`Step ${step} of 4`}>
+      {[1, 2, 3, 4].map((dot) => (
+        <span key={dot} className={dot <= step ? "active" : ""} />
+      ))}
+    </div>
+  );
+}
+
+function AppChrome({ children, screen, setScreen }) {
+  return (
+    <div className="phoneShell">
+      {screen > 0 && (
+        <button className="backButton" onClick={() => setScreen(Math.max(0, screen - 1))}>
+          <ChevronLeft size={17} />
+        </button>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function BottomNav({ active, setScreen }) {
+  const items = [
+    ["Overview", Home, 4],
+    ["Pillars", Zap, 5],
+    ["Recommendations", HeartPulse, 6],
+    ["More", Sparkles, 8]
+  ];
+  return (
+    <nav className="bottomNav">
+      {items.map(([label, Icon, target]) => (
+        <button key={label} className={active === label ? "active" : ""} onClick={() => setScreen(target)}>
+          <Icon size={17} />
+          <span>{label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function MiniScore({ pillar, value }) {
   const Icon = pillar.icon;
   const pct = Math.round((value / pillar.max) * 100);
   return (
-    <button className="pillarCard" onClick={onClick}>
-      <div className="pillarTop">
-        <Icon size={20} />
-        <strong>{pillar.label}</strong>
-      </div>
-      <div className="bar"><div style={{ width: `${pct}%` }} /></div>
-      <p>{value}/{pillar.max} · {pct}%</p>
+    <button className={`miniScore ${pillar.accent}`}>
+      <Icon size={18} />
+      <span>{pillar.short}</span>
+      <strong>{value}</strong>
+      <em>/{pillar.max}</em>
+      <div className="miniRing" style={{ background: `conic-gradient(var(--ring) ${pct * 3.6}deg, #e6edf3 0)` }} />
     </button>
+  );
+}
+
+function StartScreen({ setScreen }) {
+  return (
+    <div className="screen startScreen">
+      <header className="brandRow">
+        <div className="logoMark">V</div>
+        <div>
+          <strong>VPSF</strong>
+          <span>VALUE PER SQUARE FOOT</span>
+        </div>
+      </header>
+
+      <h1>Let’s get started</h1>
+      <p className="centerCopy">Choose how you’d like to provide information about the home.</p>
+
+      <div className="startActions">
+        <button onClick={() => setScreen(1)}>
+          <span className="actionIcon"><Home size={28} /></span>
+          <div><strong>Import MLS Listing</strong><em>We’ll pull property details from the MLS.</em></div>
+        </button>
+        <button onClick={() => setScreen(1)}>
+          <span className="actionIcon"><Upload size={28} /></span>
+          <div><strong>Upload Specs / Photos</strong><em>Upload documents or photos. We’ll extract details.</em></div>
+        </button>
+        <button onClick={() => setScreen(1)}>
+          <span className="actionIcon"><ClipboardList size={28} /></span>
+          <div><strong>Enter Specs Myself</strong><em>Manually enter the home information and specs.</em></div>
+        </button>
+      </div>
+
+      <aside className="smartParse">
+        <Sparkles size={16} />
+        <strong>COGNITION Smart Parse Enabled</strong>
+        <p>Our COGNITION Insight engine will extract specs and pre-fill as much information as possible.</p>
+        <ul>
+          <li><Check size={14} /> HVAC, windows, insulation, roof</li>
+          <li><Check size={14} /> Solar, batteries, EV charger</li>
+          <li><Check size={14} /> Flood zone, wind zone, and more</li>
+        </ul>
+      </aside>
+
+      <p className="privacy">Your data is secure and private.</p>
+    </div>
+  );
+}
+
+function PropertyDetails({ home, update, setScreen }) {
+  return (
+    <div className="screen formScreen">
+      <ProgressDots step={1} />
+      <h2>Add Property Details</h2>
+      <p className="subhead">Enter key property information and home characteristics.</p>
+
+      <section className="formSection">
+        <h3>Property Information</h3>
+        <Field wide label="Property Address" value={home.address} onChange={(v) => update("address", v)} />
+        <Field label="Home Type" value={home.homeType} onChange={(v) => update("homeType", v)} options={selectOptions.homeType} />
+        <Field label="Year Built" value={home.yearBuilt} onChange={(v) => update("yearBuilt", v)} />
+        <Field label="Square Footage" value={home.squareFeet} onChange={(v) => update("squareFeet", v)} />
+        <Field label="Stories" value={home.stories} onChange={(v) => update("stories", v)} options={selectOptions.stories} />
+        <Field label="Climate Zone" value={home.climateZone} onChange={(v) => update("climateZone", v)} options={selectOptions.climateZone} />
+        <Field label="Zip Code" value={home.zip} onChange={(v) => update("zip", v)} />
+        <Field label="Lot Size" value={home.lotSize} onChange={(v) => update("lotSize", v)} />
+      </section>
+
+      <section className="formSection">
+        <h3>Home Characteristics</h3>
+        <Field wide label="Occupancy Type" value={home.occupancy} onChange={(v) => update("occupancy", v)} options={selectOptions.occupancy} />
+        <Field label="Bedrooms" value={home.bedrooms} onChange={(v) => update("bedrooms", v)} />
+        <Field label="Bathrooms" value={home.bathrooms} onChange={(v) => update("bathrooms", v)} />
+        <Field wide label="Garage / Parking" value={home.garage} onChange={(v) => update("garage", v)} />
+      </section>
+
+      <button className="primaryButton stickyButton" onClick={() => setScreen(2)}>
+        Next: Home Specs <ArrowRight size={18} />
+      </button>
+    </div>
+  );
+}
+
+function HomeSpecs({ home, update, setScreen }) {
+  return (
+    <div className="screen formScreen">
+      <ProgressDots step={2} />
+      <h2>Add Home Specs</h2>
+      <p className="subhead">Use dropdowns to document the seven VPSF pillars.</p>
+
+      <section className="formSection">
+        <h3>Energy</h3>
+        <Field label="HERS Score" value={home.hers} onChange={(v) => update("hers", v)} options={selectOptions.hers} />
+        <Field label="HVAC System" value={home.hvac} onChange={(v) => update("hvac", v)} options={selectOptions.hvac} />
+        <Field label="Water Heating" value={home.waterHeater} onChange={(v) => update("waterHeater", v)} options={selectOptions.waterHeater} />
+        <Field label="Solar / Battery" value={home.solar} onChange={(v) => update("solar", v)} options={selectOptions.solar} />
+        <Field wide label="EV Readiness" value={home.evReady} onChange={(v) => update("evReady", v)} options={selectOptions.evReady} />
+      </section>
+
+      <section className="formSection">
+        <h3>Resilience + Health</h3>
+        <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)} options={selectOptions.fortified} />
+        <Field label="Flood Design" value={home.flood} onChange={(v) => update("flood", v)} options={selectOptions.flood} />
+        <Field label="Ventilation" value={home.ventilation} onChange={(v) => update("ventilation", v)} options={selectOptions.ventilation} />
+        <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
+      </section>
+
+      <section className="formSection">
+        <h3>Carbon, Water + Financial</h3>
+        <Field label="Carbon Strategy" value={home.carbonStrategy} onChange={(v) => update("carbonStrategy", v)} options={selectOptions.carbonStrategy} />
+        <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)} options={selectOptions.waterStandard} />
+        <Field label="Leak Protection" value={home.leak} onChange={(v) => update("leak", v)} options={selectOptions.leak} />
+        <Field label="PIETIM" value={home.pietim} onChange={(v) => update("pietim", v)} options={selectOptions.pietim} />
+      </section>
+
+      <button className="primaryButton stickyButton" onClick={() => setScreen(3)}>
+        Review & Confirm <ArrowRight size={18} />
+      </button>
+    </div>
+  );
+}
+
+function ReviewScreen({ home, setScreen }) {
+  const propertyRows = [
+    [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
+    [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
+    [ClipboardList, `Year Built: ${home.yearBuilt}`, `${home.bedrooms} Bed • ${home.bathrooms} Bath • ${home.garage}`],
+    [Sun, `Climate Zone: ${home.climateZone}`, `Lot Size: ${home.lotSize}`]
+  ];
+  const specRows = [
+    [Zap, "HVAC System", home.hvac],
+    [Droplets, "Water Heating", home.waterHeater],
+    [Home, "Roofing", home.roof],
+    [Wind, "Ventilation", home.ventilation],
+    [Sun, "Solar", home.solar]
+  ];
+
+  return (
+    <div className="screen reviewScreen">
+      <ProgressDots step={3} />
+      <h2>Review & Confirm</h2>
+      <p className="subhead">Review your information before generating your score.</p>
+
+      <section className="summaryCard">
+        <div className="summaryHeader"><h3>Property Summary</h3><button onClick={() => setScreen(1)}>Edit</button></div>
+        {propertyRows.map(([Icon, a, b]) => (
+          <div className="summaryRow" key={a}>
+            <Icon size={18} />
+            <div><strong>{a}</strong><span>{b}</span></div>
+          </div>
+        ))}
+      </section>
+
+      <section className="summaryCard">
+        <div className="summaryHeader"><h3>Home Specs Summary</h3><button onClick={() => setScreen(2)}>Edit</button></div>
+        {specRows.map(([Icon, a, b]) => (
+          <div className="summaryRow compact" key={a}>
+            <Icon size={17} />
+            <strong>{a}</strong>
+            <span>{b}</span>
+          </div>
+        ))}
+        <button className="textLink">View all specs (18)</button>
+      </section>
+
+      <button className="primaryButton stickyButton" onClick={() => setScreen(4)}>
+        Generate VPSF Score <ArrowRight size={18} />
+      </button>
+      <p className="privacy small">Your data is secure and private.</p>
+    </div>
+  );
+}
+
+function Dashboard({ result, setScreen, setSelectedPillar }) {
+  const scoreInfo = classification(result.total);
+  const pct = Math.min(100, Math.round((result.total / 1000) * 100));
+  return (
+    <div className="screen dashboardScreen withNav">
+      <header className="screenTop"><h2>VPSF Score Overview</h2><Share2 size={18} /></header>
+      <div className="scoreGauge" style={{ background: `conic-gradient(#54b96b ${pct * 3.6}deg, #dfe7ed 0)` }}>
+        <div>
+          <strong>{result.total}</strong>
+          <span>VPSF SCORE</span>
+          <em>out of 1000</em>
+        </div>
+      </div>
+      <h3 className="scoreTitle">{scoreInfo.label}</h3>
+      <p className="scoreMeaning">{scoreInfo.meaning}</p>
+      <button className="meaningButton">What does this mean?</button>
+
+      <section className="pillarPanel">
+        <h3>Pillar Performance</h3>
+        <p>Tap a pillar to see details & recommendations.</p>
+        <div className="pillarGrid">
+          {PILLARS.map((pillar) => (
+            <button key={pillar.key} onClick={() => { setSelectedPillar(pillar.key); setScreen(5); }}>
+              <MiniScore pillar={pillar} value={result.scores[pillar.key]} />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <BottomNav active="Overview" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function PillarBreakdown({ result, selectedPillar, setScreen }) {
+  const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
+  const Icon = pillar.icon;
+  const value = result.scores[pillar.key];
+  const pct = Math.round((value / pillar.max) * 100);
+  return (
+    <div className="screen pillarBreakdown withNav">
+      <header className="screenTop"><h2>{pillar.label}</h2></header>
+      <section className="pillarHero">
+        <div className="smallGauge" style={{ background: `conic-gradient(#54b96b ${pct * 3.6}deg, #dfe7ed 0)` }}>
+          <div><Icon size={20} /><strong>{value}</strong><span>/{pillar.max}</span></div>
+        </div>
+        <div>
+          <h3>{pillar.label.toUpperCase()}</h3>
+          <strong>{pct >= 75 ? "Excellent" : pct >= 55 ? "Good" : "Needs Improvement"}</strong>
+          <p>Your home is performing at {pct}% of available points in this pillar.</p>
+        </div>
+      </section>
+
+      <section className="detailCard">
+        <h3>Score Breakdown</h3>
+        <div className="detailRow"><span>Base Verified Performance</span><strong>{Math.max(40, value - 40)} / {pillar.max}</strong></div>
+        <div className="detailRow"><span>Feature Adders</span><strong>+ {Math.min(40, Math.max(0, value - 120))}</strong></div>
+        <div className="detailRow total"><span>Total</span><strong>{value} / {pillar.max}</strong></div>
+      </section>
+
+      <section className="detailCard">
+        <h3>What’s Helping You Score High</h3>
+        <ul className="checkList">
+          <li><Check size={15} /> Verified efficiency or certification data</li>
+          <li><Check size={15} /> High-performance systems documented</li>
+          <li><Check size={15} /> Lower operating-cost profile</li>
+        </ul>
+      </section>
+
+      <section className="detailCard">
+        <h3>Opportunities To Improve</h3>
+        <p>Additional documentation, third-party verification, or selected product upgrades may raise this pillar by 5 to 20 points.</p>
+      </section>
+
+      <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
+      <BottomNav active="Pillars" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function Recommendations({ setScreen }) {
+  const recs = [
+    [Droplets, "Water Performance", "Add Rainwater Harvesting System", "+15 pts", "Could improve your Water score and increase resilience."],
+    [Leaf, "Carbon & Materials", "Use Low-Carbon Concrete", "+10 pts", "Switching to lower-carbon concrete could improve your score."],
+    [Shield, "Resilience & Durability", "Upgrade to Impact-Resistant Roof", "+12 pts", "Consider a Class 4 impact-resistant roofing system."]
+  ];
+  return (
+    <div className="screen recommendations withNav">
+      <header className="screenTop"><h2>Recommendations</h2></header>
+      <div className="tabs"><button className="active">All (9)</button><button>High Impact (3)</button><button>Quick Wins (2)</button></div>
+      {recs.map(([Icon, eyebrow, title, gain, copy]) => (
+        <article className="recommendationCard" key={title}>
+          <div className="recHead"><Icon size={22} /><span>{eyebrow}</span><strong>{gain}</strong></div>
+          <h3>{title}</h3>
+          <p>{copy}</p>
+          <button>View Details</button>
+        </article>
+      ))}
+      <button className="primaryButton" onClick={() => setScreen(7)}>View Recommended Products</button>
+      <BottomNav active="Recommendations" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function Products({ setScreen }) {
+  const products = [
+    ["Heat Pump Water Heater", "Rheem Performance Platinum Hybrid", "Improve Energy & Water Scores", "heater"],
+    ["Rainwater Harvesting System", "Rainwater Management Solutions Tank", "Improve Water Score", "tank"],
+    ["Impact-Resistant Roofing", "CertainTeed Impact Resistant Shingles", "Improve Resilience Score", "roof"],
+    ["ERV Ventilation System", "RenewAire Energy Recovery Ventilator", "Improve Health Score", "erv"]
+  ];
+  return (
+    <div className="screen products withNav">
+      <header className="screenTop"><h2>Recommended Products</h2><Filter size={18} /></header>
+      <div className="tabs"><button className="active">All Pillars</button><button>Energy</button><button>Water</button><button>Resilience</button></div>
+      {products.map(([type, name, benefit, style]) => (
+        <article className="productCard" key={name}>
+          <div className={`productImage ${style}`}><Package size={30} /></div>
+          <div>
+            <span>{type}</span>
+            <h3>{name}</h3>
+            <p>{benefit}</p>
+            <button>View Product <ArrowRight size={15} /></button>
+          </div>
+        </article>
+      ))}
+      <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio</button>
+      <BottomNav active="More" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function MarketingStudio({ setScreen }) {
+  return (
+    <div className="screen marketing withNav">
+      <header className="screenTop"><h2>COGNITION Marketing Studio</h2></header>
+      <section className="copyCard">
+        <h3>MLS Copy</h3>
+        <p>A high-performance home designed for lower monthly costs, healthier indoor air, stronger storm protection, and long-term climate resilience.</p>
+      </section>
+      <section className="copyCard">
+        <h3>Sales Talking Points</h3>
+        <ul className="checkList">
+          <li><Check size={15} /> Lower utility and insurance costs</li>
+          <li><Check size={15} /> Healthier indoor environment</li>
+          <li><Check size={15} /> Stronger storm and flood protection</li>
+          <li><Check size={15} /> Higher resale value potential</li>
+        </ul>
+      </section>
+      <section className="smartDataUpsell">
+        <Sparkles size={22} />
+        <div><h3>Unlock Full COGNITION SmartData</h3><p>Get deeper market analytics, buyer insights, climate risk data, and more.</p></div>
+      </section>
+      <button className="primaryButton" onClick={() => setScreen(9)}>Generate VPSF Label <Award size={18} /></button>
+      <BottomNav active="More" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function LabelScreen({ result, setScreen }) {
+  const info = classification(result.total);
+  return (
+    <div className="screen labelScreen withNav">
+      <header className="screenTop"><h2>VPSF Home Label</h2><Share2 size={18} /></header>
+      <section className="homeLabel">
+        <div className="labelTop"><Award size={22} /><strong>VPSF CERTIFIED HOME</strong></div>
+        <div className="labelScore"><strong>{result.total}</strong><div><span>{info.label}</span><em>{info.meaning}</em></div></div>
+        <p>This home outperforms 78% of homes in its market.</p>
+        <h3>Pillar Scores</h3>
+        {PILLARS.map((pillar) => {
+          const Icon = pillar.icon;
+          const value = result.scores[pillar.key];
+          const pct = Math.round((value / pillar.max) * 100);
+          return (
+            <div className="labelPillar" key={pillar.key}>
+              <Icon size={14} />
+              <span>{pillar.short}</span>
+              <div><i style={{ width: `${pct}%` }} /></div>
+              <b>{gradeFor(value, pillar.max)}</b>
+              <em>{value}/{pillar.max}</em>
+            </div>
+          );
+        })}
+        <div className="benefits">
+          <div><strong>$1,820</strong><span>Utility Savings</span></div>
+          <div><strong>$1,150</strong><span>Insurance Savings</span></div>
+          <div><strong>2.1 tons</strong><span>CO₂ Avoided</span></div>
+        </div>
+        <div className="labelActions"><button>Download Label</button><button>Share Label</button></div>
+        <QrCode className="qrIcon" size={46} />
+      </section>
+      <button className="secondaryButton" onClick={() => setScreen(0)}>Start New Evaluation</button>
+      <BottomNav active="More" setScreen={setScreen} />
+    </div>
   );
 }
 
@@ -180,468 +682,525 @@ export default function App() {
   const [selectedPillar, setSelectedPillar] = useState("energy");
   const [home, setHome] = useState(defaultHome);
   const result = useMemo(() => scoreHome(home), [home]);
-  const update = (key, value) => setHome((h) => ({ ...h, [key]: value }));
-
-  const currentPillar = pillars.find((p) => p.key === selectedPillar);
+  const update = (key, value) => setHome((current) => ({ ...current, [key]: value }));
 
   return (
     <main className="app">
-      <section className="phone">
-        {screen > 0 && (
-          <button className="back" onClick={() => setScreen(screen - 1)}>
-            <ChevronLeft size={18} /> Back
-          </button>
-        )}
-
-        {screen === 0 && (
-          <div className="screen hero">
-            <p className="eyebrow">COGNITION SmartData</p>
-            <h1>Value Per Square Foot Calculator</h1>
-            <p className="lede">
-              Score homes across energy, water, health, resilience, carbon,
-              ownership risk, and community value.
-            </p>
-
-            <button className="primary" onClick={() => setScreen(1)}>
-              <FileSearch /> Import MLS Listing
-            </button>
-            <button className="secondary" onClick={() => setScreen(1)}>
-              <Upload /> Upload Specs / Photos
-            </button>
-            <button className="secondary" onClick={() => setScreen(1)}>
-              <ClipboardList /> Enter Specs Myself
-            </button>
-
-            <div className="note">
-              <strong>COGNITION Smart Parse</strong>
-              <span>Upload a listing, brochure, appraisal, or spec sheet to prefill home attributes.</span>
-            </div>
-          </div>
-        )}
-
-        {screen === 1 && (
-          <div className="screen">
-            <h2>Property Details</h2>
-            <p className="muted">Start with basic home information.</p>
-            <div className="grid">
-              <Field label="Property Address" value={home.address} onChange={(v) => update("address", v)} />
-              <Field label="City" value={home.city} onChange={(v) => update("city", v)} />
-              <Field label="State" value={home.state} onChange={(v) => update("state", v)} />
-              <Field label="ZIP Code" value={home.zip} onChange={(v) => update("zip", v)} />
-              <Field label="Square Feet" value={home.squareFeet} onChange={(v) => update("squareFeet", v)} />
-              <Field label="Year Built" value={home.yearBuilt} onChange={(v) => update("yearBuilt", v)} />
-              <Field label="Home Type" value={home.homeType} onChange={(v) => update("homeType", v)}
-                options={["Single-family", "Townhome", "Condo", "Multifamily", "Manufactured home"]} />
-            </div>
-            <button className="primary bottom" onClick={() => setScreen(2)}>Continue <ArrowRight /></button>
-          </div>
-        )}
-
-        {screen === 2 && (
-          <div className="screen">
-            <h2>Building Specs</h2>
-            <p className="muted">Use dropdowns to quickly classify the home.</p>
-            <div className="grid">
-              <Field label="HERS Score" value={home.hers} onChange={(v) => update("hers", v)}
-                options={["≤ 0", "1–10", "11–20", "21–30", "31–40", "41–50", "51–60", "61–70", "71–80", "81–90", "Code-minimum"]} />
-              <Field label="HVAC" value={home.hvac} onChange={(v) => update("hvac", v)}
-                options={["Heat pump", "Gas furnace", "Electric resistance", "Geothermal"]} />
-              <Field label="Water Heater" value={home.waterHeater} onChange={(v) => update("waterHeater", v)}
-                options={["Heat pump water heater", "Tank electric", "Tank gas", "Tankless", "Solar thermal"]} />
-              <Field label="Solar / Battery" value={home.solar} onChange={(v) => update("solar", v)}
-                options={["None", "PV", "PV + battery"]} />
-              <Field label="EV Readiness" value={home.evReady} onChange={(v) => update("evReady", v)}
-                options={["None", "EV ready", "EV charger installed"]} />
-              <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)}
-                options={["FORTIFIED Gold", "FORTIFIED Silver", "FORTIFIED Bronze", "Wildfire Prepared Home", "None"]} />
-              <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)}
-                options={["WaterSense Home v2", "HERS H2O", "WERS rated", "Code-minimum"]} />
-              <Field label="Carbon Strategy" value={home.carbon} onChange={(v) => update("carbon", v)}
-                options={["Zero Carbon Certified", "Documented EPDs", "Partial disclosure", "No accounting"]} />
-            </div>
-            <button className="primary bottom" onClick={() => setScreen(3)}>Review Home <ArrowRight /></button>
-          </div>
-        )}
-
-        {screen === 3 && (
-          <div className="screen">
-            <h2>Review</h2>
-            <div className="review">
-              <p><strong>Address:</strong> {home.address || "Not entered"}</p>
-              <p><strong>Size:</strong> {home.squareFeet || "Not entered"} sq. ft.</p>
-              <p><strong>Home Type:</strong> {home.homeType}</p>
-              <p><strong>Energy:</strong> {home.hers}, {home.hvac}, {home.solar}</p>
-              <p><strong>Resilience:</strong> {home.fortified}</p>
-              <p><strong>Water:</strong> {home.waterStandard}</p>
-              <p><strong>Carbon:</strong> {home.carbon}</p>
-            </div>
-            <button className="primary bottom" onClick={() => setScreen(4)}>
-              Generate VPSF Score <BarChart3 />
-            </button>
-          </div>
-        )}
-
-        {screen === 4 && (
-          <div className="screen">
-            <p className="eyebrow">VPSF Score</p>
-            <h1 className="score">{result.total}</h1>
-            <h2>{classification(result.total)}</h2>
-            <p className="muted">Tap any pillar to see score drivers and improvement opportunities.</p>
-            <div className="pillars">
-              {pillars.map((p) => (
-                <PillarCard
-                  key={p.key}
-                  pillar={p}
-                  value={result.scores[p.key]}
-                  onClick={() => {
-                    setSelectedPillar(p.key);
-                    setScreen(5);
-                  }}
-                />
-              ))}
-            </div>
-            <button className="primary bottom" onClick={() => setScreen(6)}>
-              COGNITION Recommendations <ArrowRight />
-            </button>
-          </div>
-        )}
-
-        {screen === 5 && (
-          <div className="screen">
-            <p className="eyebrow">Pillar Detail</p>
-            <h2>{currentPillar.label}</h2>
-            <div className="bigCard">
-              <currentPillar.icon size={32} />
-              <h1>{result.scores[selectedPillar]}/{currentPillar.max}</h1>
-              <p>{Math.round((result.scores[selectedPillar] / currentPillar.max) * 100)}% of available points</p>
-            </div>
-
-            <div className="insight">
-              <CheckCircle /> Strong performance indicators detected.
-            </div>
-            <div className="warning">
-              <AlertTriangle /> Additional verification could increase this pillar score.
-            </div>
-
-            <button className="primary bottom" onClick={() => setScreen(6)}>
-              View Recommendations <ArrowRight />
-            </button>
-          </div>
-        )}
-
-        {screen === 6 && (
-          <div className="screen">
-            <p className="eyebrow">COGNITION Insight</p>
-            <h2>Recommendations</h2>
-
-            <div className="rec">
-              <Droplets />
-              <div>
-                <strong>Improve Water Performance</strong>
-                <p>Add leak detection, smart shutoff, and drought-tolerant landscaping.</p>
-                <span>Potential VPSF gain: +15</span>
-              </div>
-            </div>
-
-            <div className="rec">
-              <Shield />
-              <div>
-                <strong>Strengthen Resilience</strong>
-                <p>Document roof attachments, impact openings, and backup power.</p>
-                <span>Potential VPSF gain: +20</span>
-              </div>
-            </div>
-
-            <div className="rec">
-              <Leaf />
-              <div>
-                <strong>Improve Carbon Documentation</strong>
-                <p>Add EPD-backed materials and lower-carbon concrete selections.</p>
-                <span>Potential VPSF gain: +10</span>
-              </div>
-            </div>
-
-            <button className="primary bottom" onClick={() => setScreen(7)}>
-              Recommended Products <Package />
-            </button>
-          </div>
-        )}
-
-        {screen === 7 && (
-          <div className="screen">
-            <p className="eyebrow">Product Intelligence</p>
-            <h2>Recommended Products</h2>
-
-            {[
-              ["Leak Detection System", "Water + Financial Risk", "+15 VPSF"],
-              ["Heat Pump Water Heater", "Energy + Carbon", "+12 VPSF"],
-              ["ERV Ventilation System", "Health", "+20 VPSF"]
-            ].map(([name, category, gain]) => (
-              <div className="product" key={name}>
-                <div className="thumb"><Package /></div>
-                <div>
-                  <strong>{name}</strong>
-                  <p>{category}</p>
-                  <span>{gain}</span>
-                </div>
-              </div>
-            ))}
-
-            <button className="primary bottom" onClick={() => setScreen(8)}>
-              Marketing Studio <Megaphone />
-            </button>
-          </div>
-        )}
-
-        {screen === 8 && (
-          <div className="screen">
-            <p className="eyebrow">COGNITION Marketing Studio</p>
-            <h2>Buyer Messaging</h2>
-
-            <div className="copyBox">
-              <strong>MLS Talking Point</strong>
-              <p>
-                This home is positioned as a high-performance, lower-risk property
-                with strong energy, health, and resilience features designed to
-                reduce ownership costs over time.
-              </p>
-            </div>
-
-            <div className="copyBox">
-              <strong>Sales Strategy</strong>
-              <p>
-                Lead with monthly cost stability, healthier indoor air, lower
-                maintenance risk, and future-ready systems.
-              </p>
-            </div>
-
-            <button className="primary bottom" onClick={() => setScreen(9)}>
-              Generate VPSF Label <Award />
-            </button>
-          </div>
-        )}
-
-        {screen === 9 && (
-          <div className="screen">
-            <p className="eyebrow">Home Performance Label</p>
-            <div className="label">
-              <h2>VPSF Certified Home</h2>
-              <h1>{result.total}</h1>
-              <p>{classification(result.total)}</p>
-              {pillars.map((p) => (
-                <div className="labelRow" key={p.key}>
-                  <span>{p.label}</span>
-                  <strong>{result.scores[p.key]}/{p.max}</strong>
-                </div>
-              ))}
-              <div className="qr">QR</div>
-            </div>
-            <button className="secondary bottom" onClick={() => setScreen(0)}>
-              Start New Evaluation <Home />
-            </button>
-          </div>
-        )}
-      </section>
+      <AppChrome screen={screen} setScreen={setScreen}>
+        {screen === 0 && <StartScreen setScreen={setScreen} />}
+        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
+        {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
+        {screen === 3 && <ReviewScreen home={home} setScreen={setScreen} />}
+        {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
+        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
+        {screen === 6 && <Recommendations setScreen={setScreen} />}
+        {screen === 7 && <Products setScreen={setScreen} />}
+        {screen === 8 && <MarketingStudio setScreen={setScreen} />}
+        {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
+      </AppChrome>
 
       <style>{`
+        :root {
+          --navy: #071a2c;
+          --navy-2: #0d2943;
+          --blue: #126fd2;
+          --bright-blue: #29aef5;
+          --green: #2f9b4d;
+          --green-2: #5fc16f;
+          --gold: #f2a51a;
+          --red: #e44f46;
+          --ink: #0a2340;
+          --muted: #65758a;
+          --line: #dfe6ee;
+          --soft: #f6f8fb;
+          --card: #ffffff;
+        }
+
         * { box-sizing: border-box; }
-        body { margin: 0; }
+        body { margin: 0; background: var(--soft); }
+        button, input, select { font: inherit; }
+        button { cursor: pointer; }
+
         .app {
           min-height: 100vh;
-          background:
-            radial-gradient(circle at top left, rgba(44,188,255,.25), transparent 35%),
-            linear-gradient(135deg, #061420, #0a2135 55%, #071827);
           display: flex;
+          align-items: flex-start;
           justify-content: center;
-          align-items: center;
           padding: 28px;
-          font-family: Inter, Arial, sans-serif;
-          color: white;
+          background:
+            radial-gradient(circle at top, rgba(15, 87, 160, 0.08), transparent 34%),
+            linear-gradient(180deg, #fbfcfe 0%, #f4f7fa 100%);
+          color: var(--ink);
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         }
-        .phone {
-          width: 420px;
+
+        .phoneShell {
+          width: 390px;
           min-height: 820px;
-          background: rgba(10,32,52,.92);
-          border: 1px solid rgba(255,255,255,.1);
-          border-radius: 36px;
-          box-shadow: 0 28px 100px rgba(0,0,0,.4);
-          padding: 24px;
+          max-height: calc(100vh - 56px);
+          overflow-y: auto;
+          background: var(--card);
+          border: 1px solid var(--line);
+          border-radius: 28px;
+          box-shadow: 0 24px 72px rgba(11, 37, 65, 0.14);
           position: relative;
-          overflow: hidden;
+          scrollbar-width: thin;
         }
-        .screen { padding-top: 28px; }
-        .hero { padding-top: 70px; }
-        .eyebrow {
-          color: #67d4ff;
-          font-weight: 800;
-          letter-spacing: .08em;
-          text-transform: uppercase;
-          font-size: 12px;
+
+        .screen {
+          padding: 22px 22px 88px;
         }
-        h1 { font-size: 38px; line-height: 1.02; margin: 10px 0 16px; }
-        h2 { font-size: 28px; margin: 8px 0 12px; }
-        .lede, .muted { color: #c8d8e8; line-height: 1.5; }
-        .score { font-size: 84px; margin-bottom: 0; }
-        button {
-          cursor: pointer;
-          font: inherit;
+
+        .withNav { padding-bottom: 82px; }
+
+        .backButton {
+          position: sticky;
+          top: 16px;
+          left: 16px;
+          z-index: 10;
+          width: 34px;
+          height: 34px;
+          margin: 16px 0 -50px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--line);
+          border-radius: 999px;
+          background: rgba(255,255,255,0.94);
+          color: var(--ink);
+          box-shadow: 0 6px 18px rgba(9, 33, 59, 0.08);
         }
-        .primary, .secondary {
+
+        .brandRow {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 9px;
+          margin-bottom: 38px;
+          color: var(--ink);
+        }
+        .logoMark {
+          width: 30px;
+          height: 30px;
+          display: grid;
+          place-items: center;
+          color: var(--green);
+          font-weight: 950;
+          border: 2px solid var(--green);
+          border-radius: 8px;
+        }
+        .brandRow strong { display: block; font-size: 28px; letter-spacing: -0.04em; line-height: 1; }
+        .brandRow span { display: block; font-size: 9px; font-weight: 900; letter-spacing: .08em; max-width: 90px; }
+
+        h1, h2, h3, p { margin-top: 0; }
+        h1 { font-size: 25px; letter-spacing: -0.04em; margin-bottom: 8px; }
+        h2 { font-size: 18px; letter-spacing: -0.03em; text-align: center; margin-bottom: 8px; }
+        h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink); }
+        .centerCopy, .subhead { color: #40556c; line-height: 1.45; font-size: 14px; text-align: center; }
+
+        .startScreen { padding-top: 36px; }
+        .startScreen h1 { text-align: center; font-size: 24px; }
+        .startActions { display: grid; gap: 12px; margin: 22px 0; }
+        .startActions button {
+          display: grid;
+          grid-template-columns: 50px 1fr;
+          gap: 12px;
+          align-items: center;
           width: 100%;
-          border: 0;
-          border-radius: 18px;
+          text-align: left;
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 13px;
+          padding: 14px;
+          color: var(--ink);
+          box-shadow: 0 8px 22px rgba(9, 33, 59, 0.05);
+        }
+        .actionIcon {
+          width: 46px;
+          height: 46px;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          background: #e9f4fe;
+          color: var(--blue);
+        }
+        .startActions strong { display: block; font-size: 14px; }
+        .startActions em { display: block; margin-top: 4px; color: #52657a; font-style: normal; font-size: 12px; line-height: 1.35; }
+
+        .smartParse {
+          border: 1px solid #cfe6c9;
+          background: #f1f8ee;
+          border-radius: 13px;
           padding: 16px;
+          margin-top: 16px;
+        }
+        .smartParse > svg { color: var(--green); margin-right: 5px; vertical-align: middle; }
+        .smartParse strong { color: #164d2b; }
+        .smartParse p { margin: 8px 0 10px; color: #3f5b48; line-height: 1.4; font-size: 13px; }
+        .smartParse ul, .checkList { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+        .smartParse li, .checkList li { display: flex; align-items: center; gap: 8px; color: #244633; font-size: 12px; }
+        .privacy { margin: 28px 0 0; text-align: center; color: #7a8795; font-size: 11px; }
+        .privacy.small { margin-top: 14px; }
+
+        .progressDots {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 22px;
+          height: 24px;
+          margin-bottom: 14px;
+        }
+        .progressDots span {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background: #c7d0db;
+          position: relative;
+        }
+        .progressDots span:not(:last-child)::after {
+          content: "";
+          width: 22px;
+          height: 2px;
+          background: #d9e1e9;
+          position: absolute;
+          left: 9px;
+          top: 4px;
+        }
+        .progressDots span.active { background: var(--blue); }
+        .progressDots span.active:not(:last-child)::after { background: var(--blue); }
+
+        .formSection, .summaryCard, .detailCard, .recommendationCard, .productCard, .copyCard, .smartDataUpsell {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 14px;
+          padding: 14px;
           margin-top: 14px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
+        }
+        .formSection {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .formSection h3 { grid-column: 1 / -1; margin-bottom: 0; }
+        .field { display: block; }
+        .fieldWide { grid-column: 1 / -1; }
+        .field span {
+          display: block;
+          color: #273f59;
+          font-size: 11px;
+          font-weight: 750;
+          margin-bottom: 5px;
+        }
+        .field input, .field select {
+          width: 100%;
+          height: 42px;
+          color: var(--ink);
+          background: #fbfdff;
+          border: 1px solid #d9e3ec;
+          border-radius: 8px;
+          padding: 0 10px;
+          outline: none;
+          font-size: 12px;
+          font-weight: 650;
+        }
+        .field input:focus, .field select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(18, 111, 210, .12); }
+
+        .primaryButton, .secondaryButton {
+          width: 100%;
+          height: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
+          border-radius: 10px;
           font-weight: 850;
-        }
-        .primary {
-          background: #2ec7ff;
-          color: #061420;
-        }
-        .secondary {
-          background: rgba(255,255,255,.08);
-          color: white;
-          border: 1px solid rgba(255,255,255,.12);
-        }
-        .bottom { margin-top: 24px; }
-        .back {
-          position: absolute;
-          top: 18px;
-          left: 18px;
-          background: rgba(255,255,255,.08);
-          color: white;
-          border: 1px solid rgba(255,255,255,.1);
-          border-radius: 999px;
-          padding: 8px 12px;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .note, .review, .bigCard, .copyBox, .label {
-          background: rgba(255,255,255,.08);
-          border: 1px solid rgba(255,255,255,.12);
-          border-radius: 24px;
-          padding: 18px;
-          margin-top: 18px;
-        }
-        .note span { display: block; color: #c8d8e8; margin-top: 6px; line-height: 1.45; }
-        .grid {
-          display: grid;
-          gap: 12px;
-          margin-top: 18px;
-        }
-        .field span {
-          display: block;
-          color: #b6cadb;
           font-size: 13px;
-          margin-bottom: 6px;
+          margin-top: 16px;
         }
-        .field input, .field select {
-          width: 100%;
-          border: 1px solid rgba(255,255,255,.14);
-          background: rgba(255,255,255,.08);
-          color: white;
-          border-radius: 14px;
-          padding: 13px;
-          outline: none;
-        }
-        .field option { color: #061420; }
-        .pillars {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-          margin-top: 18px;
-        }
-        .pillarCard {
-          background: rgba(255,255,255,.08);
-          border: 1px solid rgba(255,255,255,.12);
-          color: white;
-          border-radius: 20px;
-          padding: 14px;
-          text-align: left;
-        }
-        .pillarTop {
+        .primaryButton { border: 0; background: var(--blue); color: white; box-shadow: 0 10px 22px rgba(18,111,210,.2); }
+        .secondaryButton { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+        .stickyButton { position: sticky; bottom: 16px; }
+
+        .summaryHeader, .screenTop {
           display: flex;
           align-items: center;
-          gap: 8px;
-        }
-        .bar {
-          height: 8px;
-          background: rgba(255,255,255,.14);
-          border-radius: 999px;
-          overflow: hidden;
-          margin-top: 12px;
-        }
-        .bar div {
-          height: 100%;
-          background: #2ec7ff;
-        }
-        .pillarCard p { color: #c8d8e8; font-size: 13px; margin-bottom: 0; }
-        .bigCard {
-          text-align: center;
-        }
-        .bigCard h1 { font-size: 56px; }
-        .insight, .warning, .rec, .product {
-          background: rgba(255,255,255,.08);
-          border: 1px solid rgba(255,255,255,.12);
-          border-radius: 20px;
-          padding: 16px;
-          margin-top: 14px;
-          display: flex;
+          justify-content: space-between;
           gap: 12px;
-          align-items: flex-start;
         }
-        .warning { border-color: rgba(255,190,80,.35); }
-        .rec p, .product p, .copyBox p { color: #c8d8e8; line-height: 1.45; margin: 6px 0; }
-        .rec span, .product span {
-          color: #67d4ff;
+        .screenTop h2 { text-align: center; flex: 1; margin: 0; }
+        .screenTop svg { color: var(--ink); }
+        .summaryHeader h3 { margin: 0; }
+        .summaryHeader button, .textLink {
+          background: transparent;
+          border: 0;
+          color: var(--blue);
+          padding: 0;
+          font-weight: 800;
+          font-size: 11px;
+        }
+        .summaryRow {
+          display: grid;
+          grid-template-columns: 24px 1fr;
+          gap: 9px;
+          align-items: start;
+          margin-top: 13px;
+          font-size: 12px;
+        }
+        .summaryRow svg { color: #42627e; }
+        .summaryRow strong { display: block; color: var(--ink); }
+        .summaryRow span { color: #52657a; }
+        .summaryRow.compact { grid-template-columns: 24px 1fr 1fr; align-items: center; }
+
+        .scoreGauge {
+          width: 178px;
+          height: 178px;
+          border-radius: 50%;
+          margin: 24px auto 14px;
+          display: grid;
+          place-items: center;
+        }
+        .scoreGauge > div {
+          width: 130px;
+          height: 130px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: #fff;
+          box-shadow: inset 0 0 0 1px #e4ebf2;
+        }
+        .scoreGauge strong { font-size: 46px; letter-spacing: -0.07em; color: #1e5c32; line-height: .9; }
+        .scoreGauge span { font-size: 11px; font-weight: 900; color: var(--ink); }
+        .scoreGauge em { font-style: normal; font-size: 10px; color: #52657a; margin-top: -14px; }
+        .scoreTitle { color: var(--green); text-align: center; font-size: 15px; margin: 0; }
+        .scoreMeaning { text-align: center; color: #52657a; font-size: 13px; margin: 4px 0 12px; }
+        .meaningButton {
+          height: 34px;
+          display: block;
+          margin: 0 auto 18px;
+          padding: 0 18px;
+          border: 1px solid #ccd9e5;
+          color: #123e66;
+          background: #fff;
+          border-radius: 7px;
+          font-size: 12px;
           font-weight: 800;
         }
-        .thumb {
-          min-width: 62px;
-          height: 62px;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #2ec7ff, #d7f5ff);
-          color: #061420;
-          display: flex;
+        .pillarPanel h3 { margin-bottom: 2px; }
+        .pillarPanel p { color: #52657a; font-size: 12px; margin-bottom: 10px; }
+        .pillarGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 10px;
+        }
+        .pillarGrid > button { border: 0; background: transparent; padding: 0; }
+        .miniScore {
+          --ring: var(--green);
+          position: relative;
+          height: 98px;
+          display: grid;
+          justify-items: center;
+          align-content: center;
+          gap: 1px;
+          border-right: 1px solid #e7edf3;
+          color: var(--ink);
+        }
+        .miniScore.blue { --ring: var(--bright-blue); }
+        .miniScore.gold { --ring: var(--gold); }
+        .miniScore svg { color: var(--ring); }
+        .miniScore span { font-size: 10px; font-weight: 750; }
+        .miniScore strong { font-size: 22px; line-height: 1; }
+        .miniScore em { font-size: 10px; color: #52657a; font-style: normal; }
+        .miniRing {
+          position: absolute;
+          bottom: 2px;
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          opacity: .28;
+          z-index: -1;
+        }
+
+        .pillarHero {
+          display: grid;
+          grid-template-columns: 88px 1fr;
+          gap: 14px;
           align-items: center;
-          justify-content: center;
+          margin-top: 18px;
         }
-        .label {
-          background: #f4fbff;
-          color: #071827;
-          text-align: center;
+        .smallGauge {
+          width: 82px;
+          height: 82px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
         }
-        .label h1 {
-          font-size: 78px;
-          margin: 8px 0 0;
+        .smallGauge > div {
+          width: 62px;
+          height: 62px;
+          border-radius: 50%;
+          background: #fff;
+          display: grid;
+          place-items: center;
+          box-shadow: inset 0 0 0 1px #e4ebf2;
         }
-        .labelRow {
+        .smallGauge strong { font-size: 22px; line-height: .9; }
+        .smallGauge span { font-size: 10px; color: #52657a; margin-top: -8px; }
+        .pillarHero h3 { color: var(--green); margin-bottom: 4px; }
+        .pillarHero p { color: #52657a; font-size: 12px; line-height: 1.4; margin: 4px 0 0; }
+        .detailRow {
           display: flex;
           justify-content: space-between;
-          border-top: 1px solid #d6e7f2;
           padding: 10px 0;
-          text-align: left;
+          border-bottom: 1px solid #e8eef4;
+          font-size: 13px;
         }
-        .qr {
-          margin: 18px auto 0;
-          width: 74px;
-          height: 74px;
+        .detailRow.total { border-bottom: 0; font-weight: 900; }
+        .detailCard p { color: #52657a; font-size: 13px; line-height: 1.45; margin-bottom: 0; }
+
+        .tabs { display: flex; gap: 8px; margin: 18px 0; }
+        .tabs button {
+          border: 1px solid var(--line);
+          background: #f5f8fb;
+          color: #273f59;
+          border-radius: 8px;
+          padding: 8px 10px;
+          font-size: 11px;
+          font-weight: 800;
+        }
+        .tabs button.active { background: var(--blue); color: white; border-color: var(--blue); }
+        .recommendationCard { padding: 16px; }
+        .recHead { display: flex; align-items: center; gap: 8px; }
+        .recHead svg { color: var(--bright-blue); }
+        .recHead span { text-transform: uppercase; color: var(--blue); font-size: 10px; font-weight: 950; flex: 1; }
+        .recHead strong { color: var(--red); font-size: 12px; }
+        .recommendationCard h3 { text-transform: none; letter-spacing: 0; font-size: 14px; margin: 10px 0 4px; }
+        .recommendationCard p { color: #52657a; line-height: 1.45; font-size: 13px; }
+        .recommendationCard button, .productCard button {
+          border: 0;
+          background: transparent;
+          color: var(--blue);
+          font-size: 12px;
+          padding: 0;
+          font-weight: 850;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .productCard {
+          display: grid;
+          grid-template-columns: 76px 1fr;
+          gap: 12px;
+          align-items: center;
+        }
+        .productImage {
+          width: 76px;
+          height: 76px;
           border-radius: 10px;
-          background: repeating-linear-gradient(45deg, #071827, #071827 5px, white 5px, white 10px);
-          color: transparent;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          background: linear-gradient(135deg, #aeb9c2, #56616d);
         }
-        @media (max-width: 520px) {
-          .app { padding: 0; }
-          .phone {
-            width: 100%;
-            min-height: 100vh;
-            border-radius: 0;
-          }
+        .productImage.heater { background: linear-gradient(135deg, #e8edf1, #94a4b2); color: #17314d; }
+        .productImage.tank { background: linear-gradient(135deg, #709583, #2d5e4d); }
+        .productImage.roof { background: linear-gradient(135deg, #9a9c9c, #3e474a); }
+        .productImage.erv { background: linear-gradient(135deg, #d8dfe5, #7d8b97); color: #17314d; }
+        .productCard span { text-transform: uppercase; color: var(--blue); font-size: 10px; font-weight: 900; }
+        .productCard h3 { text-transform: none; letter-spacing: 0; font-size: 13px; margin: 4px 0; }
+        .productCard p { color: var(--green); font-size: 12px; margin-bottom: 8px; }
+
+        .copyCard h3, .smartDataUpsell h3 { text-transform: none; letter-spacing: 0; font-size: 15px; margin-bottom: 8px; }
+        .copyCard p, .smartDataUpsell p { color: #52657a; font-size: 13px; line-height: 1.5; margin-bottom: 0; }
+        .smartDataUpsell { display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f4f9ff; }
+        .smartDataUpsell svg { color: var(--blue); }
+
+        .homeLabel {
+          margin-top: 18px;
+          border-radius: 14px;
+          overflow: hidden;
+          border: 1px solid #d2dde8;
+          background: #fff;
+          box-shadow: 0 10px 28px rgba(9, 33, 59, 0.08);
+        }
+        .labelTop {
+          background: var(--navy);
+          color: white;
+          padding: 15px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          font-size: 16px;
+        }
+        .labelScore {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: center;
+          padding: 18px 18px 8px;
+          gap: 15px;
+        }
+        .labelScore > strong { color: var(--green); font-size: 58px; line-height: 1; letter-spacing: -0.08em; }
+        .labelScore span { color: var(--green); display: block; font-weight: 950; text-transform: uppercase; font-size: 15px; }
+        .labelScore em { color: #52657a; font-style: normal; font-size: 12px; }
+        .homeLabel > p { padding: 0 18px 14px; color: #52657a; font-size: 12px; border-bottom: 1px solid #e7edf3; }
+        .homeLabel h3 { padding: 0 18px; margin: 13px 0 8px; }
+        .labelPillar {
+          display: grid;
+          grid-template-columns: 18px 78px 1fr 28px 48px;
+          align-items: center;
+          gap: 7px;
+          padding: 6px 18px;
+          font-size: 11px;
+        }
+        .labelPillar svg { color: var(--green); }
+        .labelPillar div { height: 7px; background: #e5ebf1; border-radius: 99px; overflow: hidden; }
+        .labelPillar i { display: block; height: 100%; background: var(--green); border-radius: 99px; }
+        .labelPillar b { background: var(--green); color: white; border-radius: 99px; text-align: center; padding: 2px 0; font-size: 10px; }
+        .labelPillar em { color: #52657a; font-style: normal; text-align: right; }
+        .benefits {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 8px;
+          margin: 14px 18px;
+          border-top: 1px solid #e7edf3;
+          padding-top: 14px;
+        }
+        .benefits div { text-align: center; }
+        .benefits strong { display: block; color: var(--ink); font-size: 14px; }
+        .benefits span { display: block; color: #52657a; font-size: 10px; }
+        .labelActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 18px 14px; }
+        .labelActions button { height: 38px; border: 0; background: var(--blue); color: white; border-radius: 8px; font-size: 11px; font-weight: 900; }
+        .qrIcon { display: block; margin: 0 auto 18px; color: var(--navy); }
+
+        .bottomNav {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 62px;
+          border-top: 1px solid #e5edf4;
+          background: rgba(255,255,255,.96);
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          backdrop-filter: blur(12px);
+        }
+        .bottomNav button {
+          border: 0;
+          background: transparent;
+          display: grid;
+          place-items: center;
+          align-content: center;
+          gap: 3px;
+          color: #596d82;
+          font-size: 10px;
+        }
+        .bottomNav button.active { color: var(--blue); font-weight: 900; }
+
+        @media (max-width: 540px) {
+          .app { padding: 0; background: #fff; }
+          .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+          .bottomNav { position: fixed; }
         }
       `}</style>
     </main>

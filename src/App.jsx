@@ -569,13 +569,29 @@ function TakeawayCard({ title, pillar, value, isBest }) {
 }
 
 function PillarBreakdown({ result, selectedPillar, setScreen }) {
-  const ranked = [...PILLARS].sort((a, b) => {
-    const bPct = result.scores[b.key] / b.max;
-    const aPct = result.scores[a.key] / a.max;
-    return bPct - aPct;
-  });
-  const bestPillar = ranked[0];
-  const weakestPillar = ranked[ranked.length - 1];
+  const pillarPriority = {
+    health: 1,
+    resilience: 2,
+    energy: 3,
+    carbon: 4,
+    water: 5,
+    financial: 6,
+    community: 7
+  };
+
+  const bestPillar = [...PILLARS].sort((a, b) => {
+    const rawDifference = result.scores[b.key] - result.scores[a.key];
+    if (rawDifference !== 0) return rawDifference;
+    return pillarPriority[a.key] - pillarPriority[b.key];
+  })[0];
+
+  const opportunityPillar = [...PILLARS].sort((a, b) => {
+    const aGap = a.max - result.scores[a.key];
+    const bGap = b.max - result.scores[b.key];
+    if (bGap !== aGap) return bGap - aGap;
+    return pillarPriority[a.key] - pillarPriority[b.key];
+  })[0];
+
   const focusPillar = PILLARS.find((item) => item.key === selectedPillar) || bestPillar;
   const focusValue = result.scores[focusPillar.key];
 
@@ -584,16 +600,16 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
       <header className="screenTop keyHeader"><h2>Key Takeaway</h2></header>
 
       <TakeawayCard
-        title="Best Score"
+        title="Key Strength"
         pillar={bestPillar}
         value={result.scores[bestPillar.key]}
         isBest
       />
 
       <TakeawayCard
-        title="Weakest Score"
-        pillar={weakestPillar}
-        value={result.scores[weakestPillar.key]}
+        title="Biggest Opportunity"
+        pillar={opportunityPillar}
+        value={result.scores[opportunityPillar.key]}
       />
 
       <section className="detailCard compactDetail">
@@ -1158,18 +1174,19 @@ export default function App() {
           place-items: center;
         }
         .takeawayGauge > div {
-          width: 56px;
-          height: 56px;
+          width: 58px;
+          height: 58px;
           border-radius: 50%;
           background: #fff;
-          display: grid;
-          place-items: center;
-          align-content: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
           box-shadow: inset 0 0 0 1px #e4ebf2;
         }
-        .takeawayGauge svg { color: var(--takeaway-ring); margin-bottom: -2px; }
-        .takeawayGauge strong { font-size: 22px; line-height: .85; color: var(--ink); }
-        .takeawayGauge span { font-size: 10px; color: #52657a; margin-top: -7px; }
+        .takeawayGauge svg { color: var(--takeaway-ring); margin-bottom: 1px; }
+        .takeawayGauge strong { font-size: 20px; line-height: .9; color: var(--ink); }
+        .takeawayGauge span { font-size: 9px; color: #52657a; margin-top: 1px; }
         .takeawayText em {
           display: block;
           color: #52657a;

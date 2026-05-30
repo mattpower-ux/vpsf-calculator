@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import {
   ArrowRight,
@@ -31,6 +31,14 @@ import {
 } from "lucide-react";
 
 const VPSF_BANNER = vpsfBanner;
+
+const DEMO_MLS = {
+  mlsNumber: "ORL-32101-8847",
+  address: "1313 Cognition Drive, Orlando, FL 32101",
+  url: "https://demo.vpsf.greenbuildermedia.com/listings/ORL-32101-8847",
+  scanName: "demo-mls-listing-1313-cognition-drive.pdf",
+  note: "DEMO MODE: This screen simulates MLS import. Later, these fields can be wired to the backend parser without changing the user flow."
+};
 
 const PILLARS = [
   { key: "energy", label: "Energy", short: "Energy", max: 200, icon: Zap, accent: "green" },
@@ -443,9 +451,9 @@ function StartScreen({ setScreen }) {
       <p className="centerCopy">Choose how you’d like to provide information about the home.</p>
 
       <div className="startActions">
-        <button onClick={() => setScreen(1)}>
+        <button onClick={() => setScreen(11)}>
           <span className="actionIcon"><Home size={28} /></span>
-          <div><strong>Import MLS Listing</strong><em>We’ll pull property details from the MLS.</em></div>
+          <div><strong>Import MLS Listing</strong><em>Demo import using MLS number, address, listing URL, or scan.</em></div>
         </button>
         <button onClick={() => setScreen(1)}>
           <span className="actionIcon"><Upload size={28} /></span>
@@ -469,6 +477,153 @@ function StartScreen({ setScreen }) {
       </aside>
 
       <p className="privacy">Your data is secure and private.</p>
+    </div>
+  );
+}
+
+
+function DemoHelpButton({ title, body }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button className="demoHelpButton" onClick={() => setOpen(true)} aria-label={`Help: ${title}`}>
+        ?
+      </button>
+      {open && (
+        <div className="demoOverlay" onClick={() => setOpen(false)}>
+          <div className="demoModal" onClick={(event) => event.stopPropagation()}>
+            <strong>{title}</strong>
+            <p>{body}</p>
+            <button className="primaryButton" onClick={() => setOpen(false)}>Got it</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function DemoMlsImportScreen({ setScreen }) {
+  return (
+    <div className="screen formScreen demoMlsScreen">
+      <ProgressDots step={1} />
+      <div className="demoBadge">DEMO ASSET</div>
+      <h2>Import MLS Listing</h2>
+      <p className="subhead">
+        This demo screen shows how VPSF will accept listing information before the real MLS parser is connected.
+      </p>
+
+      <section className="demoAssetNote">
+        <Sparkles size={18} />
+        <div>
+          <strong>COGNITION Smart Parse Preview</strong>
+          <p>{DEMO_MLS.note}</p>
+        </div>
+      </section>
+
+      <section className="formSection demoFormSection">
+        <h3>MLS Import Options</h3>
+
+        <label className="field fieldWide demoField">
+          <span>Enter MLS Number</span>
+          <div className="fieldWithHelp">
+            <input value={DEMO_MLS.mlsNumber} readOnly />
+            <DemoHelpButton
+              title="MLS Number Demo"
+              body="In the finished version, this field can query an MLS connector or a licensed listing-data API. For now, it is prefilled with a fake listing number."
+            />
+          </div>
+        </label>
+
+        <label className="field fieldWide demoField">
+          <span>Enter Address of Property</span>
+          <div className="fieldWithHelp">
+            <input value={DEMO_MLS.address} readOnly />
+            <DemoHelpButton
+              title="Address Lookup Demo"
+              body="Later, this can trigger geocoding, climate-zone lookup, flood-risk checks, utility-rate lookup, and local market comparison."
+            />
+          </div>
+        </label>
+
+        <label className="field fieldWide demoField">
+          <span>Enter URL of Listing</span>
+          <div className="fieldWithHelp">
+            <input value={DEMO_MLS.url} readOnly />
+            <DemoHelpButton
+              title="Listing URL Demo"
+              body="In production, this can send the listing URL to a backend parser that extracts description text, photos, features, age, and system details."
+            />
+          </div>
+        </label>
+
+        <label className="field fieldWide demoField">
+          <span>Upload Scan of Listing</span>
+          <div className="fakeUpload">
+            <Upload size={20} />
+            <div>
+              <strong>{DEMO_MLS.scanName}</strong>
+              <em>Demo file selected · PDF / JPG / PNG supported later</em>
+            </div>
+            <DemoHelpButton
+              title="Upload Scan Demo"
+              body="The live backend can later use OCR and document parsing to identify home systems, certifications, square footage, and green-building attributes."
+            />
+          </div>
+        </label>
+      </section>
+
+      <section className="demoParsePreview">
+        <h3>What COGNITION would prefill</h3>
+        <ul>
+          <li><Check size={15} /> Address, year built, square footage, bedrooms, bathrooms</li>
+          <li><Check size={15} /> HVAC, water heater, roof, windows, insulation</li>
+          <li><Check size={15} /> Solar, battery, EV readiness, certifications</li>
+          <li><Check size={15} /> Early VPSF confidence flags for missing documentation</li>
+        </ul>
+      </section>
+
+      <button className="primaryButton stickyButton scanReportButton" onClick={() => setScreen(12)}>
+        Scan and Report <ArrowRight size={18} />
+      </button>
+      <button className="secondaryButton" onClick={() => setScreen(0)}>
+        Back to Start
+      </button>
+    </div>
+  );
+}
+
+
+function DemoAnalyzingScreen({ setScreen }) {
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setScreen(4);
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [setScreen]);
+
+  return (
+    <div className="screen analyzingScreen">
+      <div className="analyzingStage">
+        <div className="brainOrb">
+          <Sparkles className="brainPulseIcon" size={54} />
+          <div className="brainRing one" />
+          <div className="brainRing two" />
+          <div className="brainRing three" />
+        </div>
+
+        <h2>ANALYZING ...</h2>
+        <p>
+          COGNITION Smart Parse is scanning the demo MLS listing, identifying home specs,
+          and calculating the seven VPSF pillars.
+        </p>
+
+        <div className="analysisSteps">
+          <span>Reading listing data</span>
+          <span>Matching building features</span>
+          <span>Generating VPSF report</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -725,12 +880,12 @@ function PillarDetailScreen({ result, selectedPillar, setScreen }) {
         </article>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(4)}>
-        Back to VPSF Results
+      <button className="primaryButton" onClick={() => setScreen(6)}>
+        View Recommendations <ArrowRight size={18} />
       </button>
 
       <button className="secondaryButton" onClick={() => setScreen(5)}>
-        Dive Deeper Into Insights →
+        Skip to Key Insights <Sparkles size={18} />
       </button>
 
       <BottomNav active="Pillars" setScreen={setScreen} />
@@ -789,7 +944,7 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
         <p>Use this screen as a quick executive summary before opening the full COGNITION recommendations.</p>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(6)}>Back to VPSF Results</button>
+      <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
       <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );
@@ -933,6 +1088,8 @@ export default function App() {
         {screen === 8 && <MarketingStudio setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
+        {screen === 11 && <DemoMlsImportScreen setScreen={setScreen} />}
+        {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -1598,6 +1755,215 @@ export default function App() {
         .labelActions button { height: 38px; border: 0; background: var(--blue); color: white; border-radius: 8px; font-size: 11px; font-weight: 900; }
         .qrIcon { display: block; margin: 0 auto 18px; color: var(--navy); }
 
+
+        .demoBadge {
+          width: max-content;
+          margin: 0 auto 10px;
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: #fff6df;
+          color: #9a6400;
+          border: 1px solid #f2d387;
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: .08em;
+        }
+        .demoAssetNote {
+          display: grid;
+          grid-template-columns: 28px 1fr;
+          gap: 10px;
+          align-items: start;
+          border: 1px solid #cfe6c9;
+          background: #f1f8ee;
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 16px;
+        }
+        .demoAssetNote svg { color: var(--green); }
+        .demoAssetNote strong { color: #164d2b; font-size: 13px; }
+        .demoAssetNote p { color: #3f5b48; font-size: 12px; line-height: 1.4; margin: 5px 0 0; }
+        .demoFormSection {
+          grid-template-columns: 1fr;
+        }
+        .fieldWithHelp {
+          display: grid;
+          grid-template-columns: 1fr 34px;
+          gap: 8px;
+          align-items: center;
+        }
+        .demoHelpButton {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 2px solid var(--gold);
+          background: var(--navy-2);
+          color: white;
+          font-weight: 950;
+          box-shadow: 0 6px 16px rgba(7, 26, 44, 0.18);
+        }
+        .fakeUpload {
+          display: grid;
+          grid-template-columns: 28px 1fr 34px;
+          gap: 10px;
+          align-items: center;
+          min-height: 54px;
+          border: 1px dashed #b9c8d6;
+          background: #fbfdff;
+          border-radius: 10px;
+          padding: 10px;
+        }
+        .fakeUpload > svg { color: var(--blue); }
+        .fakeUpload strong { display: block; font-size: 12px; color: var(--ink); }
+        .fakeUpload em { display: block; font-size: 11px; color: #52657a; font-style: normal; margin-top: 2px; }
+        .demoParsePreview {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 14px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
+        }
+        .demoParsePreview ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 8px;
+        }
+        .demoParsePreview li {
+          display: grid;
+          grid-template-columns: 18px 1fr;
+          gap: 8px;
+          color: #344d66;
+          font-size: 12px;
+          line-height: 1.35;
+        }
+        .demoParsePreview svg { color: var(--green); margin-top: 1px; }
+        .demoOverlay {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          background: rgba(7, 26, 44, .45);
+          display: grid;
+          place-items: center;
+          padding: 24px;
+        }
+        .demoModal {
+          width: min(340px, 100%);
+          background: #fff;
+          border-radius: 18px;
+          padding: 18px;
+          box-shadow: 0 22px 70px rgba(0,0,0,.28);
+          border: 1px solid var(--line);
+        }
+        .demoModal strong { display: block; font-size: 16px; color: var(--ink); }
+        .demoModal p { color: #52657a; font-size: 13px; line-height: 1.45; margin: 8px 0 14px; }
+
+
+        .scanReportButton {
+          text-transform: uppercase;
+          letter-spacing: .05em;
+        }
+        .analyzingScreen {
+          min-height: 680px;
+          display: grid;
+          place-items: center;
+          padding-bottom: 42px;
+          background:
+            radial-gradient(circle at center 38%, rgba(41, 174, 245, .16), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+        }
+        .analyzingStage {
+          text-align: center;
+          width: 100%;
+          max-width: 310px;
+          margin: 0 auto;
+        }
+        .brainOrb {
+          width: 150px;
+          height: 150px;
+          margin: 0 auto 26px;
+          border-radius: 50%;
+          position: relative;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 50% 50%, rgba(242, 165, 26, .22), transparent 36%),
+            radial-gradient(circle at 50% 50%, rgba(41, 174, 245, .25), transparent 62%),
+            linear-gradient(135deg, var(--navy), var(--navy-2));
+          box-shadow:
+            0 22px 60px rgba(7, 26, 44, .24),
+            inset 0 0 0 2px rgba(255,255,255,.08);
+          overflow: visible;
+        }
+        .brainPulseIcon {
+          color: #ffffff;
+          z-index: 3;
+          filter: drop-shadow(0 0 14px rgba(242, 165, 26, .55));
+          animation: brainPulse 1.4s ease-in-out infinite;
+        }
+        .brainRing {
+          position: absolute;
+          inset: 10px;
+          border-radius: 50%;
+          border: 2px solid rgba(242, 165, 26, .62);
+          animation: brainOrbit 2.2s linear infinite;
+        }
+        .brainRing.two {
+          inset: 22px;
+          border-color: rgba(41, 174, 245, .58);
+          animation-duration: 1.6s;
+          animation-direction: reverse;
+        }
+        .brainRing.three {
+          inset: -8px;
+          border-color: rgba(47, 155, 77, .28);
+          animation-duration: 3.4s;
+        }
+        .analyzingStage h2 {
+          font-size: 24px;
+          letter-spacing: .11em;
+          color: var(--navy);
+          margin-bottom: 10px;
+        }
+        .analyzingStage p {
+          color: #52657a;
+          font-size: 13px;
+          line-height: 1.5;
+          margin-bottom: 18px;
+        }
+        .analysisSteps {
+          display: grid;
+          gap: 8px;
+        }
+        .analysisSteps span {
+          display: block;
+          padding: 10px 12px;
+          border: 1px solid #dbe6ef;
+          border-radius: 999px;
+          background: rgba(255,255,255,.82);
+          color: #27435f;
+          font-size: 12px;
+          font-weight: 800;
+          animation: stepGlow 1.8s ease-in-out infinite;
+        }
+        .analysisSteps span:nth-child(2) { animation-delay: .35s; }
+        .analysisSteps span:nth-child(3) { animation-delay: .7s; }
+
+        @keyframes brainPulse {
+          0%, 100% { transform: scale(1); opacity: .92; }
+          50% { transform: scale(1.12); opacity: 1; }
+        }
+        @keyframes brainOrbit {
+          0% { transform: rotate(0deg) scale(1); opacity: .72; }
+          50% { transform: rotate(180deg) scale(1.06); opacity: 1; }
+          100% { transform: rotate(360deg) scale(1); opacity: .72; }
+        }
+        @keyframes stepGlow {
+          0%, 100% { box-shadow: 0 0 0 rgba(41,174,245,0); transform: translateY(0); }
+          50% { box-shadow: 0 8px 22px rgba(41,174,245,.14); transform: translateY(-1px); }
+        }
+
         .bottomNav {
           position: absolute;
           left: 0;
@@ -1626,7 +1992,216 @@ export default function App() {
           .app { padding: 0; background: #fff; }
           .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
           .bannerWrap { border-radius: 0; }
-          .bottomNav { position: fixed; }
+  
+        .demoBadge {
+          width: max-content;
+          margin: 0 auto 10px;
+          padding: 6px 10px;
+          border-radius: 999px;
+          background: #fff6df;
+          color: #9a6400;
+          border: 1px solid #f2d387;
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: .08em;
+        }
+        .demoAssetNote {
+          display: grid;
+          grid-template-columns: 28px 1fr;
+          gap: 10px;
+          align-items: start;
+          border: 1px solid #cfe6c9;
+          background: #f1f8ee;
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 16px;
+        }
+        .demoAssetNote svg { color: var(--green); }
+        .demoAssetNote strong { color: #164d2b; font-size: 13px; }
+        .demoAssetNote p { color: #3f5b48; font-size: 12px; line-height: 1.4; margin: 5px 0 0; }
+        .demoFormSection {
+          grid-template-columns: 1fr;
+        }
+        .fieldWithHelp {
+          display: grid;
+          grid-template-columns: 1fr 34px;
+          gap: 8px;
+          align-items: center;
+        }
+        .demoHelpButton {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 2px solid var(--gold);
+          background: var(--navy-2);
+          color: white;
+          font-weight: 950;
+          box-shadow: 0 6px 16px rgba(7, 26, 44, 0.18);
+        }
+        .fakeUpload {
+          display: grid;
+          grid-template-columns: 28px 1fr 34px;
+          gap: 10px;
+          align-items: center;
+          min-height: 54px;
+          border: 1px dashed #b9c8d6;
+          background: #fbfdff;
+          border-radius: 10px;
+          padding: 10px;
+        }
+        .fakeUpload > svg { color: var(--blue); }
+        .fakeUpload strong { display: block; font-size: 12px; color: var(--ink); }
+        .fakeUpload em { display: block; font-size: 11px; color: #52657a; font-style: normal; margin-top: 2px; }
+        .demoParsePreview {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 14px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
+        }
+        .demoParsePreview ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 8px;
+        }
+        .demoParsePreview li {
+          display: grid;
+          grid-template-columns: 18px 1fr;
+          gap: 8px;
+          color: #344d66;
+          font-size: 12px;
+          line-height: 1.35;
+        }
+        .demoParsePreview svg { color: var(--green); margin-top: 1px; }
+        .demoOverlay {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          background: rgba(7, 26, 44, .45);
+          display: grid;
+          place-items: center;
+          padding: 24px;
+        }
+        .demoModal {
+          width: min(340px, 100%);
+          background: #fff;
+          border-radius: 18px;
+          padding: 18px;
+          box-shadow: 0 22px 70px rgba(0,0,0,.28);
+          border: 1px solid var(--line);
+        }
+        .demoModal strong { display: block; font-size: 16px; color: var(--ink); }
+        .demoModal p { color: #52657a; font-size: 13px; line-height: 1.45; margin: 8px 0 14px; }
+
+
+        .scanReportButton {
+          text-transform: uppercase;
+          letter-spacing: .05em;
+        }
+        .analyzingScreen {
+          min-height: 680px;
+          display: grid;
+          place-items: center;
+          padding-bottom: 42px;
+          background:
+            radial-gradient(circle at center 38%, rgba(41, 174, 245, .16), transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+        }
+        .analyzingStage {
+          text-align: center;
+          width: 100%;
+          max-width: 310px;
+          margin: 0 auto;
+        }
+        .brainOrb {
+          width: 150px;
+          height: 150px;
+          margin: 0 auto 26px;
+          border-radius: 50%;
+          position: relative;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 50% 50%, rgba(242, 165, 26, .22), transparent 36%),
+            radial-gradient(circle at 50% 50%, rgba(41, 174, 245, .25), transparent 62%),
+            linear-gradient(135deg, var(--navy), var(--navy-2));
+          box-shadow:
+            0 22px 60px rgba(7, 26, 44, .24),
+            inset 0 0 0 2px rgba(255,255,255,.08);
+          overflow: visible;
+        }
+        .brainPulseIcon {
+          color: #ffffff;
+          z-index: 3;
+          filter: drop-shadow(0 0 14px rgba(242, 165, 26, .55));
+          animation: brainPulse 1.4s ease-in-out infinite;
+        }
+        .brainRing {
+          position: absolute;
+          inset: 10px;
+          border-radius: 50%;
+          border: 2px solid rgba(242, 165, 26, .62);
+          animation: brainOrbit 2.2s linear infinite;
+        }
+        .brainRing.two {
+          inset: 22px;
+          border-color: rgba(41, 174, 245, .58);
+          animation-duration: 1.6s;
+          animation-direction: reverse;
+        }
+        .brainRing.three {
+          inset: -8px;
+          border-color: rgba(47, 155, 77, .28);
+          animation-duration: 3.4s;
+        }
+        .analyzingStage h2 {
+          font-size: 24px;
+          letter-spacing: .11em;
+          color: var(--navy);
+          margin-bottom: 10px;
+        }
+        .analyzingStage p {
+          color: #52657a;
+          font-size: 13px;
+          line-height: 1.5;
+          margin-bottom: 18px;
+        }
+        .analysisSteps {
+          display: grid;
+          gap: 8px;
+        }
+        .analysisSteps span {
+          display: block;
+          padding: 10px 12px;
+          border: 1px solid #dbe6ef;
+          border-radius: 999px;
+          background: rgba(255,255,255,.82);
+          color: #27435f;
+          font-size: 12px;
+          font-weight: 800;
+          animation: stepGlow 1.8s ease-in-out infinite;
+        }
+        .analysisSteps span:nth-child(2) { animation-delay: .35s; }
+        .analysisSteps span:nth-child(3) { animation-delay: .7s; }
+
+        @keyframes brainPulse {
+          0%, 100% { transform: scale(1); opacity: .92; }
+          50% { transform: scale(1.12); opacity: 1; }
+        }
+        @keyframes brainOrbit {
+          0% { transform: rotate(0deg) scale(1); opacity: .72; }
+          50% { transform: rotate(180deg) scale(1.06); opacity: 1; }
+          100% { transform: rotate(360deg) scale(1); opacity: .72; }
+        }
+        @keyframes stepGlow {
+          0%, 100% { box-shadow: 0 0 0 rgba(41,174,245,0); transform: translateY(0); }
+          50% { box-shadow: 0 8px 22px rgba(41,174,245,.14); transform: translateY(-1px); }
+        }
+
+        .bottomNav { position: fixed; }
         }
       `}</style>
     </main>

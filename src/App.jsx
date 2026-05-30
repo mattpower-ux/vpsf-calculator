@@ -1106,14 +1106,34 @@ export default function App() {
           height: 50px;
           border-radius: 50%;
           background: #fff;
-          display: grid;
-          place-items: center;
-          align-content: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0;
           box-shadow: 0 0 0 1px #eef3f7;
+          overflow: hidden;
         }
-        .miniScore svg { color: var(--ring); margin-bottom: -2px; }
-        .miniScore strong { font-size: 18px; line-height: .9; letter-spacing: -0.04em; }
-        .miniScore em { font-size: 9px; color: #52657a; font-style: normal; }
+        .miniScore svg { 
+          color: var(--ring); 
+          width: 14px;
+          height: 14px;
+          margin: 0 0 1px;
+          flex: 0 0 auto;
+        }
+        .miniScore strong { 
+          font-size: 17px; 
+          line-height: 1; 
+          letter-spacing: -0.04em;
+          flex: 0 0 auto;
+        }
+        .miniScore em { 
+          font-size: 8px; 
+          line-height: 1;
+          color: #52657a; 
+          font-style: normal; 
+          flex: 0 0 auto;
+        }
         .diveButton {
           margin: 22px 0 8px;
           height: 50px;

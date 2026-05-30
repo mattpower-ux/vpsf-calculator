@@ -42,6 +42,121 @@ const PILLARS = [
   { key: "community", label: "Community & Mobility", short: "Community", max: 50, icon: Bike, accent: "green" }
 ];
 
+
+const PILLAR_DETAILS = {
+  energy: {
+    title: "Energy Performance",
+    summary: "This score reflects verified efficiency, electrification, solar readiness, and the home's ability to reduce monthly energy exposure.",
+    pros: [
+      "Heat pump HVAC system",
+      "Heat pump water heater",
+      "Solar PV plus battery storage",
+      "EV charger installed",
+      "HERS range places the home above code-minimum performance"
+    ],
+    cons: [
+      "Demand-response readiness is not yet documented",
+      "Exact modeled annual kWh use is not included",
+      "Utility-rate comparison is not yet connected to SmartData"
+    ]
+  },
+  water: {
+    title: "Water Performance",
+    summary: "This score reflects fixture efficiency, water reuse, leak protection, landscaping, and local water-risk context.",
+    pros: [
+      "Low-flow showerheads",
+      "Low-flow toilets",
+      "Xeriscaped yard",
+      "WaterSense Home v2 performance",
+      "Rainwater harvesting strategy documented"
+    ],
+    cons: [
+      "No installed leak detection",
+      "High local water usage rates",
+      "Dry climate zone",
+      "No greywater reuse documentation"
+    ]
+  },
+  health: {
+    title: "Health & Indoor Environment",
+    summary: "This score reflects indoor air quality, ventilation, material emissions, daylighting, acoustics, and third-party health-related documentation.",
+    pros: [
+      "EPA Indoor airPLUS documentation",
+      "ERV / HRV ventilation",
+      "Low / no-VOC material selections",
+      "IAQ monitoring included",
+      "Daylighting and acoustic comfort features documented"
+    ],
+    cons: [
+      "Filtration level is not yet verified",
+      "CO2, PM2.5, and VOC sensor specifications are not attached",
+      "No post-occupancy IAQ test results included"
+    ]
+  },
+  resilience: {
+    title: "Resilience & Durability",
+    summary: "This score reflects storm, flood, fire, moisture, backup-power, and durability features that reduce ownership and insurance risk.",
+    pros: [
+      "FORTIFIED Silver certification",
+      "Elevated / flood-resistant design",
+      "Enhanced moisture management",
+      "Battery backup",
+      "Impact-rated roof or roof system documentation"
+    ],
+    cons: [
+      "FORTIFIED Gold documentation is not present",
+      "No verified insurance-discount letter attached",
+      "Wildfire defensible-space features are not documented"
+    ]
+  },
+  carbon: {
+    title: "Carbon & Materials",
+    summary: "This score reflects embodied carbon, operational carbon, material disclosure, EPD documentation, and lower-carbon construction strategies.",
+    pros: [
+      "Documented EPDs + CLF benchmark approach",
+      "Low-carbon concrete selected",
+      "Wood-heavy structural strategy",
+      "Electrified systems reduce operational emissions"
+    ],
+    cons: [
+      "Full whole-home embodied carbon model is not attached",
+      "Zero Carbon certification is not documented",
+      "Manufacturer-specific EPD links are incomplete"
+    ]
+  },
+  financial: {
+    title: "Financial / Ownership Risk",
+    summary: "This score reflects monthly cost exposure, insurance risk, warranty protection, maintenance planning, and risk-adjusted ownership cost.",
+    pros: [
+      "Verified insurance discount",
+      "Long-term warranties",
+      "Maintenance cost model provided",
+      "Leak protection contributes to lower ownership risk"
+    ],
+    cons: [
+      "Full PIETIM calculation is not yet connected to buyer income",
+      "Local insurance quote data is not attached",
+      "Maintenance assumptions need third-party verification"
+    ]
+  },
+  community: {
+    title: "Community & Mobility",
+    summary: "This score reflects access to services, transportation options, open space, shared amenities, and low-car lifestyle potential.",
+    pros: [
+      "WalkScore above 70",
+      "Nearby transit and services",
+      "Community green space",
+      "Shared amenities",
+      "Bike infrastructure"
+    ],
+    cons: [
+      "Transit frequency is not yet verified",
+      "School, food, and medical access scores are not connected",
+      "Long-term neighborhood climate-risk data is not yet included"
+    ]
+  }
+};
+
 const defaultHome = {
   address: "123 Harbor View Dr.",
   city: "Jacksonville",
@@ -504,7 +619,7 @@ function Dashboard({ result, setScreen, setSelectedPillar }) {
         <p>Tap a pillar to see details & recommendations.</p>
         <div className="pillarGrid">
           {PILLARS.map((pillar) => (
-            <button className="pillarTap" key={pillar.key} onClick={() => { setSelectedPillar(pillar.key); setScreen(5); }}>
+            <button className="pillarTap" key={pillar.key} onClick={() => { setSelectedPillar(pillar.key); setScreen(10); }}>
               <MiniScore pillar={pillar} value={result.scores[pillar.key]} />
             </button>
           ))}
@@ -565,6 +680,61 @@ function TakeawayCard({ title, pillar, value, isBest }) {
         <p>{takeawaySentence(pillar.key, isBest)}</p>
       </div>
     </section>
+  );
+}
+
+
+function PillarDetailScreen({ result, selectedPillar, setScreen }) {
+  const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
+  const details = PILLAR_DETAILS[pillar.key];
+  const Icon = pillar.icon;
+  const value = result.scores[pillar.key];
+  const pct = Math.round((value / pillar.max) * 100);
+
+  return (
+    <div className="screen pillarDetailScreen withNav">
+      <header className="screenTop"><h2>{details.title}</h2></header>
+
+      <section className={`pillarDetailHero ${pillar.accent}`}>
+        <div className="takeawayGauge" style={{ background: `conic-gradient(var(--takeaway-ring) ${pct * 3.6}deg, #dfe7ed 0)` }}>
+          <div><Icon size={20} /><strong>{value}</strong><span>/{pillar.max}</span></div>
+        </div>
+        <div>
+          <em>{pillarPerformanceLabel(value, pillar.max)}</em>
+          <p>{details.summary}</p>
+        </div>
+      </section>
+
+      <section className="prosConsGrid">
+        <article className="prosCard">
+          <h3>Pros</h3>
+          <ul>
+            {details.pros.map((item) => (
+              <li key={item}><Check size={15} /> {item}</li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="consCard">
+          <h3>Cons</h3>
+          <ul>
+            {details.cons.map((item) => (
+              <li key={item}><Flame size={15} /> {item}</li>
+            ))}
+          </ul>
+        </article>
+      </section>
+
+      <button className="primaryButton" onClick={() => setScreen(6)}>
+        View Recommendations <ArrowRight size={18} />
+      </button>
+
+      <button className="secondaryButton" onClick={() => setScreen(5)}>
+        Skip to Key Insights <Sparkles size={18} />
+      </button>
+
+      <BottomNav active="Pillars" setScreen={setScreen} />
+    </div>
   );
 }
 
@@ -762,6 +932,7 @@ export default function App() {
         {screen === 7 && <Products setScreen={setScreen} />}
         {screen === 8 && <MarketingStudio setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
+        {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -1168,6 +1339,73 @@ export default function App() {
         .smallGauge span { font-size: 10px; color: #52657a; margin-top: -8px; }
         .pillarHero h3 { color: var(--green); margin-bottom: 4px; }
         .pillarHero p { color: #52657a; font-size: 12px; line-height: 1.4; margin: 4px 0 0; }
+
+        .pillarDetailHero {
+          --takeaway-ring: var(--green);
+          display: grid;
+          grid-template-columns: 82px 1fr;
+          gap: 14px;
+          align-items: center;
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          padding: 14px;
+          margin-top: 18px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
+        }
+        .pillarDetailHero.blue { --takeaway-ring: var(--bright-blue); }
+        .pillarDetailHero.gold { --takeaway-ring: var(--gold); }
+        .pillarDetailHero em {
+          display: block;
+          color: var(--takeaway-ring);
+          font-style: normal;
+          font-weight: 950;
+          font-size: 15px;
+          margin-bottom: 6px;
+        }
+        .pillarDetailHero p {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.4;
+          margin: 0;
+        }
+        .prosConsGrid {
+          display: grid;
+          gap: 14px;
+          margin-top: 16px;
+        }
+        .prosCard, .consCard {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          padding: 15px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
+        }
+        .prosCard h3, .consCard h3 {
+          font-size: 14px;
+          margin-bottom: 12px;
+        }
+        .prosCard h3 { color: var(--green); }
+        .consCard h3 { color: #c68200; }
+        .prosCard ul, .consCard ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: grid;
+          gap: 9px;
+        }
+        .prosCard li, .consCard li {
+          display: grid;
+          grid-template-columns: 18px 1fr;
+          gap: 8px;
+          align-items: start;
+          color: #344d66;
+          font-size: 13px;
+          line-height: 1.35;
+        }
+        .prosCard svg { color: var(--green); margin-top: 1px; }
+        .consCard svg { color: var(--gold); margin-top: 1px; }
+
         .keyHeader h2 {
           font-size: 22px;
           margin-bottom: 18px;

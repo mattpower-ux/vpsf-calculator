@@ -40,7 +40,7 @@ function demoMlsFromProperty(property) {
     mlsNumber: property.mlsNumber,
     address: property.address,
     url: property.listingUrl,
-    scanName: `demo-mls-listing-${property.id}.pdf`
+    scanName: `mls-listing-${property.id}.pdf`
   };
 }
 
@@ -516,81 +516,70 @@ function DemoHelpButton({ title, body }) {
 }
 
 function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultMode, setScreen }) {
-  const demoMls = demoMlsFromProperty(selectedProperty);
+  const selectedListing = demoProperties[0];
+  const demoMls = demoMlsFromProperty(selectedListing);
+
+  useEffect(() => {
+    setSelectedProperty(selectedListing);
+  }, [setSelectedProperty, selectedListing]);
+
   return (
     <div className="screen formScreen demoMlsScreen">
       <ProgressDots step={1} />
-      <div className="demoBadge">DEMO ASSET</div>
       <h2>Import MLS Listing</h2>
       <p className="subhead">
-        Choose a demo property or use the prefilled MLS import fields below.
+        Enter a listing number, property address, or upload listing documents to create a VPSF report.
       </p>
 
-      <section className="demoPropertySelector">
-        <h3>Choose Demo Property</h3>
-        <div className="demoPropertyCards">
-          {demoProperties.map((property) => (
-            <button
-              key={property.id}
-              className={property.id === selectedProperty.id ? "active" : ""}
-              onClick={() => setSelectedProperty(property)}
-            >
-              <strong>{property.name}</strong>
-              <span>{property.propertyType}</span>
-              <em>{property.vpsfScore} VPSF</em>
-            </button>
-          ))}
+      <section className="mlsPropertyPreview">
+        <img src={demoOrlandoHome} alt="1313 Cognition Drive exterior" />
+        <div>
+          <strong>{selectedListing.name}</strong>
+          <p>{selectedListing.address}</p>
+          <div className="heroBadges">
+            <span>{selectedListing.squareFeet} sq. ft.</span>
+            <span>Built {selectedListing.yearBuilt}</span>
+            <span>{selectedListing.propertyType}</span>
+          </div>
         </div>
       </section>
-
 
       <section className="formSection demoFormSection">
         <h3 className="importOptionsTitle">Import Options</h3>
 
         <label className="field fieldWide demoField">
-          <span>Enter MLS Number</span>
+          <span>MLS Number</span>
           <div className="fieldWithHelp">
             <input value={demoMls.mlsNumber} readOnly />
             <DemoHelpButton
-              title="MLS Number Demo"
-              body="In the finished version, this field can query an MLS connector or a licensed listing-data API. For now, it is prefilled with a fake listing number."
+              title="MLS Number"
+              body="In the finished version, this field can query an MLS connector or licensed listing-data API to retrieve property facts and listing text."
             />
           </div>
         </label>
 
         <label className="field fieldWide demoField">
-          <span>Enter Address of Property</span>
+          <span>Property Address</span>
           <div className="fieldWithHelp">
             <input value={demoMls.address} readOnly />
             <DemoHelpButton
-              title="Address Lookup Demo"
-              body="Later, this can trigger geocoding, climate-zone lookup, flood-risk checks, utility-rate lookup, and local market comparison."
+              title="Address Lookup"
+              body="This can trigger geocoding, climate-zone lookup, flood-risk checks, utility-rate lookup, and local market comparison."
             />
           </div>
         </label>
 
         <label className="field fieldWide demoField">
-          <span>Enter URL of Listing</span>
-          <div className="fieldWithHelp">
-            <input value={demoMls.url} readOnly />
-            <DemoHelpButton
-              title="Listing URL Demo"
-              body="In production, this can send the listing URL to a backend parser that extracts description text, photos, features, age, and system details."
-            />
-          </div>
-        </label>
-
-        <label className="field fieldWide demoField">
-          <span>Upload Scan of Listing</span>
-          <div className="fakeUpload">
-            <Upload size={20} />
+          <span>Upload and Scan Documents</span>
+          <div className="fakeUpload uploadDropZone">
+            <Upload size={22} />
             <div>
-              <strong>{demoMls.scanName}</strong>
-              <em>Demo file selected · PDF / JPG / PNG supported later</em>
+              <strong>Drag and drop MLS sheet, appraisal, or product specs</strong>
+              <em>{demoMls.scanName} selected · PDF / JPG / PNG</em>
             </div>
             <DemoHelpButton
-              title="Upload Scan Demo"
-              body="The live backend can later use OCR and document parsing to identify home systems, certifications, square footage, and green-building attributes."
+              title="Document Scan"
+              body="The live backend can use OCR and document parsing to identify home systems, certifications, square footage, and green-building attributes."
             />
           </div>
         </label>
@@ -599,14 +588,15 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
       <section className="demoParsePreview">
         <h3>What COGNITION Will Analyze</h3>
         <ul>
-          <li><Check size={15} /> Address, year built, square footage, bedrooms, bathrooms</li>
+          <li><Check size={15} /> Listing facts, square footage, year built, bedrooms, bathrooms</li>
           <li><Check size={15} /> HVAC, water heater, roof, windows, insulation</li>
           <li><Check size={15} /> Solar, battery, EV readiness, certifications</li>
-          <li><Check size={15} /> Early VPSF confidence flags for missing documentation</li>
+          <li><Check size={15} /> Missing documentation that could affect the VPSF score</li>
         </ul>
       </section>
 
       <button className="primaryButton stickyButton scanReportButton" onClick={() => {
+        setSelectedProperty(selectedListing);
         setResultMode("demo");
         setScreen(12);
       }}>
@@ -618,7 +608,6 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
     </div>
   );
 }
-
 
 function DemoAnalyzingScreen({ setScreen }) {
   useEffect(() => {
@@ -967,11 +956,11 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
         value={result.scores[opportunityPillar.key]}
       />
 
-      <section className="detailCard compactDetail">
-        <h3>Selected Pillar Detail</h3>
-        <div className="detailRow"><span>{focusPillar.label}</span><strong>{focusValue} / {focusPillar.max}</strong></div>
-        <div className="detailRow"><span>Performance Level</span><strong>{pillarPerformanceLabel(focusValue, focusPillar.max)}</strong></div>
-        <p>Use this screen as a quick executive summary before opening the full COGNITION recommendations.</p>
+      <section className="detailCard compactDetail affordableUpgradeCard">
+        <h3>Affordable Upgrade</h3>
+        <div className="detailRow"><span>Smart Leak Detection</span><strong>+8 VPSF</strong></div>
+        <div className="detailRow"><span>Estimated Installed Cost</span><strong>&lt; $2,000</strong></div>
+        <p>Adding whole-home leak detection with automatic shutoff is a relatively low-cost upgrade that can reduce water losses, limit damage risk, and may qualify for insurance rebates with some carriers.</p>
       </section>
 
       <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
@@ -2111,6 +2100,57 @@ export default function App() {
           font-size: 12px;
         }
 
+
+        .mlsPropertyPreview {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          overflow: hidden;
+          margin-top: 16px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
+        }
+        .mlsPropertyPreview img {
+          width: 100%;
+          height: 142px;
+          object-fit: cover;
+          display: block;
+          background: #eef4f8;
+        }
+        .mlsPropertyPreview div {
+          padding: 13px;
+        }
+        .mlsPropertyPreview strong {
+          display: block;
+          color: var(--ink);
+          font-size: 17px;
+          line-height: 1.1;
+          margin-bottom: 5px;
+        }
+        .mlsPropertyPreview p {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.35;
+          margin: 0 0 9px;
+        }
+        .uploadDropZone {
+          min-height: 76px;
+          border-width: 2px;
+          background: #f7fbff;
+        }
+        .uploadDropZone strong {
+          font-size: 13px;
+        }
+        .affordableUpgradeCard {
+          border-color: #f1d48b;
+          background: #fffaf0;
+        }
+        .affordableUpgradeCard h3 {
+          color: #9a6400;
+        }
+        .affordableUpgradeCard .detailRow strong {
+          color: #2f9b4d;
+        }
+
         .demoBadge {
           width: max-content;
           margin: 0 auto 10px;
@@ -2404,6 +2444,57 @@ export default function App() {
           font-style: normal;
           font-weight: 950;
           font-size: 12px;
+        }
+
+
+        .mlsPropertyPreview {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          overflow: hidden;
+          margin-top: 16px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
+        }
+        .mlsPropertyPreview img {
+          width: 100%;
+          height: 142px;
+          object-fit: cover;
+          display: block;
+          background: #eef4f8;
+        }
+        .mlsPropertyPreview div {
+          padding: 13px;
+        }
+        .mlsPropertyPreview strong {
+          display: block;
+          color: var(--ink);
+          font-size: 17px;
+          line-height: 1.1;
+          margin-bottom: 5px;
+        }
+        .mlsPropertyPreview p {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.35;
+          margin: 0 0 9px;
+        }
+        .uploadDropZone {
+          min-height: 76px;
+          border-width: 2px;
+          background: #f7fbff;
+        }
+        .uploadDropZone strong {
+          font-size: 13px;
+        }
+        .affordableUpgradeCard {
+          border-color: #f1d48b;
+          background: #fffaf0;
+        }
+        .affordableUpgradeCard h3 {
+          color: #9a6400;
+        }
+        .affordableUpgradeCard .detailRow strong {
+          color: #2f9b4d;
         }
 
         .demoBadge {

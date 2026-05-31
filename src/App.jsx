@@ -2,6 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
+import atasRoofingThumb from "./assets/Atas-roofing.jpg";
+import certainteedSolarisThumb from "./assets/Certainteed-Solaris.jpg";
+import euroshieldThumb from "./assets/euroshield.jpg";
+import kohlerFaucetThumb from "./assets/kohler-faucet.jpg";
+import moenShowerThumb from "./assets/moen-shower.jpg";
+import niagaraToiletThumb from "./assets/Niagara-toilet.jpg";
 import { demoProperties } from "./demo/demoProperties";
 import { demoProducts } from "./demo/demoProducts";
 import {
@@ -1041,6 +1047,7 @@ const demoMatchingProducts = {
       name: "Kohler WaterSense Bathroom Faucet",
       category: "Low-Flow Faucet",
       impact: "+3 VPSF",
+      image: kohlerFaucetThumb,
       note: "Reduces lavatory water use while preserving everyday performance."
     },
     {
@@ -1048,6 +1055,7 @@ const demoMatchingProducts = {
       name: "Moen Eco-Performance Showerhead",
       category: "Low-Flow Showerhead",
       impact: "+4 VPSF",
+      image: moenShowerThumb,
       note: "Cuts shower water demand, one of the highest-use fixture categories."
     },
     {
@@ -1055,6 +1063,7 @@ const demoMatchingProducts = {
       name: "Niagara Low-Flow Toilet",
       category: "High-Efficiency Toilet",
       impact: "+5 VPSF",
+      image: niagaraToiletThumb,
       note: "High-efficiency flushing can materially reduce indoor water demand."
     },
     {
@@ -1071,6 +1080,7 @@ const demoMatchingProducts = {
       name: "ATAS Solar-Ready Metal Roofing",
       category: "Solar-Ready Roofing",
       impact: "+8 VPSF",
+      image: atasRoofingThumb,
       note: "Standing-seam metal roofing designed for future solar integration and long-term durability."
     },
     {
@@ -1078,6 +1088,7 @@ const demoMatchingProducts = {
       name: "CertainTeed Solaris Cool Roof Shingles",
       category: "Reflective Roofing",
       impact: "+6 VPSF",
+      image: certainteedSolarisThumb,
       note: "Solar-reflective shingles that reduce roof heat gain and cooling demand."
     },
     {
@@ -1085,6 +1096,7 @@ const demoMatchingProducts = {
       name: "Euroshield Recycled Rubber Roofing",
       category: "Impact-Resistant Roofing",
       impact: "+9 VPSF",
+      image: euroshieldThumb,
       note: "Class 4 impact-resistant roofing made from recycled rubber with exceptional durability."
     }
   ],
@@ -1172,7 +1184,9 @@ function MatchingProducts({ recommendation, setScreen }) {
       <div className="matchProductList">
         {products.map((product) => (
           <article className="matchProductCard" key={product.id}>
-            <div className="matchIcon"><Icon size={24} /></div>
+            <div className={product.image ? "matchImage" : "matchIcon"}>
+              {product.image ? <img src={product.image} alt={product.name} /> : <Icon size={24} />}
+            </div>
             <div>
               <span>{product.category}</span>
               <h3>{product.name}</h3>
@@ -2899,6 +2913,25 @@ export default function App() {
           margin-left: -22px;
           margin-right: -22px;
           margin-bottom: -82px;
+        }
+
+
+        .matchImage {
+          width: 58px;
+          height: 58px;
+          border-radius: 14px;
+          overflow: hidden;
+          border: 1px solid #d7eafa;
+          background: #eef7ff;
+        }
+        .matchImage img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
+        }
+        .matchingProductsScreen .matchProductCard {
+          grid-template-columns: 58px 1fr;
         }
 
         @media (max-width: 540px) {

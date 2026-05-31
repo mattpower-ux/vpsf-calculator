@@ -547,7 +547,8 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
         <div>
           <strong>{selectedListing.name}</strong>
           <p>{selectedListing.address}</p>
-</div>
+          
+        </div>
       </section>
 
       <section className="formSection demoFormSection">
@@ -1467,7 +1468,8 @@ function MarketingStudio({ selectedProperty, setScreen }) {
         <div className="marketingHeroContent">
           <strong>{selectedProperty.name}</strong>
           <p>{selectedProperty.address}</p>
-</div>
+          
+        </div>
       </section>
 
       <section className="copyCard overviewCard">
@@ -2293,8 +2295,8 @@ export default function App() {
           background: #eef4f8;
         }
         .marketingHeroContent {
-          padding: 14px;
-        }
+  padding: 10px 14px 6px;
+}
         .marketingHeroContent strong {
           display: block;
           color: var(--ink);
@@ -2303,23 +2305,36 @@ export default function App() {
           margin-bottom: 5px;
         }
         .marketingHeroContent p {
-          color: #52657a;
-          font-size: 12px;
-          line-height: 1.35;
-          margin: 0 0 10px;
+  color: #52657a;
+  font-size: 12px;
+  line-height: 1.25;
+  margin: 0 0 4px;
+}
+        .heroBadges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
         }
-        
+        .heroBadges span {
+          background: #eef5fb;
+          color: var(--blue);
+          border: 1px solid #d9e8f4;
+          border-radius: 999px;
+          padding: 4px 9px;
+          font-size: 10px;
+          font-weight: 900;
+        }
         .overviewCard p {
-          font-size: 13px;
-          line-height: 1.5;
-        }
+  font-size: 13px;
+  line-height: 1.35;
+}
         .highlightCard .checkList {
-          gap: 8px;
-        }
+  gap: 4px;
+}
         .highlightCard .checkList li {
-          font-size: 12px;
-          line-height: 1.35;
-        }
+  font-size: 12px;
+  line-height: 1.2;
+}
         .labelHomePhoto {
           width: 100%;
           height: 118px;

@@ -1003,26 +1003,97 @@ function Recommendations({ setScreen }) {
   );
 }
 
-function Products({ setScreen }) {
+function Products({ setScreen, setSelectedProduct }) {
   return (
     <div className="screen products withNav">
       <header className="screenTop"><h2>Recommended Products</h2><Filter size={18} /></header>
       <div className="tabs"><button className="active">All Pillars</button><button>Energy</button><button>Water</button><button>Resilience</button></div>
-      {demoProducts.map((product) => (
-        <article className="productCard" key={product.id}>
-          <div className="productImage realProductImage">
-            <img src={product.image} alt={product.name} />
-          </div>
-          <div>
-            <span>{product.category}</span>
-            <h3>{product.name}</h3>
-            <p>{product.description}</p>
-            <em>{product.improvement}</em>
-            <button>View Product <ArrowRight size={15} /></button>
-          </div>
-        </article>
-      ))}
+      <div className="productList">
+        {demoProducts.map((product) => (
+          <article className="productCard" key={product.id}>
+            <div className="productImage realProductImage">
+              <img src={product.image} alt={product.name} />
+            </div>
+            <div>
+              <span>{product.category}</span>
+              <h3>{product.name}</h3>
+              <p>{product.description}</p>
+              <em>{product.improvement}</em>
+              <button onClick={() => {
+                setSelectedProduct(product);
+                setScreen(13);
+              }}>
+                More Details <ArrowRight size={15} />
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
       <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio</button>
+      <BottomNav active="More" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function ProductDetail({ product, setScreen }) {
+  const [showLeadForm, setShowLeadForm] = useState(false);
+
+  return (
+    <div className="screen productDetailScreen withNav">
+      <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
+
+      <section className="productHeroCard">
+        <img src={product.image} alt={product.name} />
+        <div>
+          <span>{product.category}</span>
+          <h3>{product.name}</h3>
+          <em>{product.improvement}</em>
+        </div>
+      </section>
+
+      <section className="copyCard">
+        <h3>Technical Overview</h3>
+        <p>{product.technicalWriteup}</p>
+      </section>
+
+      <section className="copyCard">
+        <h3>Why it matters for VPSF</h3>
+        <p>{product.description}</p>
+      </section>
+
+      <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
+        Request Specs and Pricing <ArrowRight size={18} />
+      </button>
+
+      {showLeadForm && (
+        <section className="leadFormCard">
+          <h3>Request Specs and Pricing</h3>
+          <label className="field fieldWide">
+            <span>Name</span>
+            <input placeholder="Your name" />
+          </label>
+          <label className="field fieldWide">
+            <span>Email</span>
+            <input placeholder="name@example.com" />
+          </label>
+
+          <div className="leadFormActions">
+            <button className="secondaryButton" onClick={() => setScreen(7)}>
+              Return to Products
+            </button>
+            <button className="primaryButton" onClick={() => setScreen(9)}>
+              Create Score Card
+            </button>
+          </div>
+        </section>
+      )}
+
+      {!showLeadForm && (
+        <button className="secondaryButton" onClick={() => setScreen(7)}>
+          Return to Products
+        </button>
+      )}
+
       <BottomNav active="More" setScreen={setScreen} />
     </div>
   );
@@ -1096,6 +1167,7 @@ function LabelScreen({ result, setScreen }) {
 export default function App() {
   const [screen, setScreen] = useState(0);
   const [selectedPillar, setSelectedPillar] = useState("energy");
+  const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
@@ -1114,12 +1186,13 @@ export default function App() {
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} />}
-        {screen === 7 && <Products setScreen={setScreen} />}
+        {screen === 7 && <Products setScreen={setScreen} setSelectedProduct={setSelectedProduct} />}
         {screen === 8 && <MarketingStudio setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
+        {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -1740,6 +1813,84 @@ export default function App() {
           font-style: normal;
           font-weight: 950;
           margin-bottom: 8px;
+        }
+
+
+        .productList {
+          display: grid;
+          gap: 9px;
+        }
+        .products .productCard {
+          margin-top: 0;
+          padding: 10px;
+          grid-template-columns: 70px 1fr;
+          gap: 10px;
+        }
+        .products .productImage {
+          width: 70px;
+          height: 70px;
+        }
+        .productHeroCard {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          overflow: hidden;
+          margin-top: 18px;
+          box-shadow: 0 10px 26px rgba(9, 33, 59, 0.06);
+        }
+        .productHeroCard img {
+          width: 100%;
+          height: 170px;
+          display: block;
+          object-fit: cover;
+          background: #f4f7fa;
+        }
+        .productHeroCard div {
+          padding: 15px;
+        }
+        .productHeroCard span {
+          display: block;
+          color: var(--blue);
+          text-transform: uppercase;
+          font-size: 11px;
+          font-weight: 950;
+          margin-bottom: 5px;
+        }
+        .productHeroCard h3 {
+          text-transform: none;
+          letter-spacing: 0;
+          font-size: 18px;
+          margin-bottom: 7px;
+        }
+        .productHeroCard em {
+          color: var(--gold);
+          font-style: normal;
+          font-weight: 950;
+          font-size: 12px;
+        }
+        .leadFormCard {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          padding: 15px;
+          margin-top: 14px;
+          box-shadow: 0 10px 26px rgba(9, 33, 59, 0.06);
+        }
+        .leadFormCard h3 {
+          text-transform: none;
+          letter-spacing: 0;
+          font-size: 16px;
+          margin-bottom: 12px;
+        }
+        .leadFormActions {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+          margin-top: 12px;
+        }
+        .leadFormActions .primaryButton,
+        .leadFormActions .secondaryButton {
+          margin-top: 0;
         }
 
         .copyCard h3, .smartDataUpsell h3 { text-transform: none; letter-spacing: 0; font-size: 15px; margin-bottom: 8px; }

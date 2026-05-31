@@ -2464,6 +2464,16 @@ export default function App() {
           font-size: 1.05rem;
         }
 
+
+        .demoMlsScreen .scanReportButton {
+          position: relative;
+          z-index: 2;
+          margin-top: 14px;
+          margin-bottom: 8px;
+          text-transform: uppercase;
+          letter-spacing: .05em;
+        }
+
         @media (max-width: 540px) {
           .app { padding: 0; background: #fff; }
           .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }

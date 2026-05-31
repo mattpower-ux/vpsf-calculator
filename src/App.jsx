@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
+import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import { demoProperties } from "./demo/demoProperties";
 import { demoProducts } from "./demo/demoProducts";
 import {
@@ -1099,27 +1100,55 @@ function ProductDetail({ product, setScreen }) {
   );
 }
 
-function MarketingStudio({ setScreen }) {
+
+function marketingOverviewForProperty(property) {
+  if (property?.id === "vision-house") {
+    return "This high-performance Orlando showcase home already sits near the top of the VPSF scale, with strong energy, health, resilience, and water systems. Its market story should emphasize lower operating costs, verified performance, and long-term value protection.";
+  }
+
+  if (property?.id === "net-zero") {
+    return "This net-zero showcase residence is positioned as a future-ready asset with exceptional energy, carbon, resilience, and water performance. The strongest message is not just sustainability—it is reduced risk, lower lifetime costs, and premium resale positioning.";
+  }
+
+  return "This well-maintained Orlando-area home is located in a hot, humid, high-utility-rate market and has several good performance features, but it needs greater attention to water conservation to stay ahead of operating costs. Adding smart irrigation, leak detection, and reflective roofing would dramatically improve its VPSF status.";
+}
+
+function MarketingStudio({ selectedProperty, setScreen }) {
   return (
     <div className="screen marketing withNav">
       <header className="screenTop"><h2>COGNITION Marketing Studio</h2></header>
-      <section className="copyCard">
-        <h3>MLS Copy</h3>
-        <p>A high-performance home designed for lower monthly costs, healthier indoor air, stronger storm protection, and long-term climate resilience.</p>
+
+      <section className="marketingHero realHomeHero">
+        <img
+          src={demoOrlandoHome}
+          alt={`${selectedProperty.name} exterior`}
+          className="marketingHeroPhoto"
+        />
+        <div className="marketingHeroContent">
+          <strong>{selectedProperty.name}</strong>
+          <p>{selectedProperty.address}</p>
+          <div className="heroBadges">
+            <span>{selectedProperty.squareFeet} sq. ft.</span>
+            <span>Built {selectedProperty.yearBuilt}</span>
+            <span>VPSF {selectedProperty.vpsfScore}</span>
+          </div>
+        </div>
       </section>
-      <section className="copyCard">
-        <h3>Sales Talking Points</h3>
+
+      <section className="copyCard overviewCard">
+        <h3>Home Evaluation Overview</h3>
+        <p>{marketingOverviewForProperty(selectedProperty)}</p>
+      </section>
+
+      <section className="copyCard highlightCard">
+        <h3>Performance Highlights</h3>
         <ul className="checkList">
-          <li><Check size={15} /> Lower utility and insurance costs</li>
-          <li><Check size={15} /> Healthier indoor environment</li>
-          <li><Check size={15} /> Stronger storm and flood protection</li>
-          <li><Check size={15} /> Higher resale value potential</li>
+          <li><Check size={15} /> Strong performance story around efficiency, resilience, and ownership risk</li>
+          <li><Check size={15} /> Clear improvement path tied to VPSF score gains</li>
+          <li><Check size={15} /> Technical features translated into buyer-friendly value</li>
         </ul>
       </section>
-      <section className="smartDataUpsell">
-        <Sparkles size={22} />
-        <div><h3>Unlock Full COGNITION SmartData</h3><p>Get deeper market analytics, buyer insights, climate risk data, and more.</p></div>
-      </section>
+
       <button className="primaryButton" onClick={() => setScreen(9)}>Generate VPSF Label <Award size={18} /></button>
       <BottomNav active="More" setScreen={setScreen} />
     </div>
@@ -1133,6 +1162,11 @@ function LabelScreen({ result, setScreen }) {
       <header className="screenTop"><h2>VPSF Home Label</h2><Share2 size={18} /></header>
       <section className="homeLabel">
         <div className="labelTop"><Award size={22} /><strong>VPSF CERTIFIED HOME</strong></div>
+        <img
+          src={demoOrlandoHome}
+          alt="VPSF certified home exterior"
+          className="labelHomePhoto"
+        />
         <div className="labelScore"><strong>{result.total}</strong><div><span>{info.label}</span><em>{info.meaning}</em></div></div>
         <p>This home outperforms 78% of homes in its market.</p>
         <h3>Pillar Scores</h3>
@@ -1187,7 +1221,7 @@ export default function App() {
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} />}
         {screen === 7 && <Products setScreen={setScreen} setSelectedProduct={setSelectedProduct} />}
-        {screen === 8 && <MarketingStudio setScreen={setScreen} />}
+        {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
@@ -1897,6 +1931,69 @@ export default function App() {
         .copyCard p, .smartDataUpsell p { color: #52657a; font-size: 13px; line-height: 1.5; margin-bottom: 0; }
         .smartDataUpsell { display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f4f9ff; }
         .smartDataUpsell svg { color: var(--blue); }
+
+
+        .realHomeHero {
+          display: block;
+          padding: 0;
+          overflow: hidden;
+        }
+        .marketingHeroPhoto {
+          width: 100%;
+          height: 176px;
+          object-fit: cover;
+          display: block;
+          background: #eef4f8;
+        }
+        .marketingHeroContent {
+          padding: 14px;
+        }
+        .marketingHeroContent strong {
+          display: block;
+          color: var(--ink);
+          font-size: 18px;
+          line-height: 1.1;
+          margin-bottom: 5px;
+        }
+        .marketingHeroContent p {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.35;
+          margin: 0 0 10px;
+        }
+        .heroBadges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .heroBadges span {
+          background: #eef5fb;
+          color: var(--blue);
+          border: 1px solid #d9e8f4;
+          border-radius: 999px;
+          padding: 4px 9px;
+          font-size: 10px;
+          font-weight: 900;
+        }
+        .overviewCard p {
+          font-size: 13px;
+          line-height: 1.5;
+        }
+        .highlightCard .checkList {
+          gap: 8px;
+        }
+        .highlightCard .checkList li {
+          font-size: 12px;
+          line-height: 1.35;
+        }
+        .labelHomePhoto {
+          width: 100%;
+          height: 118px;
+          object-fit: cover;
+          display: block;
+          border-bottom: 1px solid #e7edf3;
+          background: #eef4f8;
+        }
 
         .homeLabel {
           margin-top: 18px;

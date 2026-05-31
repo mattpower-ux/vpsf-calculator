@@ -1127,7 +1127,6 @@ function Recommendations({ setScreen, setSelectedRecommendation }) {
   return (
     <div className="screen recommendations withNav">
       <header className="screenTop"><h2>Recommendations</h2></header>
-      <div className="tabs"><button className="active">All (9)</button><button>High Impact (3)</button><button>Quick Wins (2)</button></div>
       {demoRecommendationDetails.map((rec) => {
         const Icon = rec.icon;
         return (
@@ -1215,7 +1214,6 @@ function Products({ setScreen, setSelectedProduct }) {
   return (
     <div className="screen products withNav">
       <header className="screenTop"><h2>Recommended Products</h2><Filter size={18} /></header>
-      <div className="tabs"><button className="active">All Pillars</button><button>Energy</button><button>Water</button><button>Resilience</button></div>
       <div className="productList">
         {demoProducts.map((product) => (
           <article className="productCard" key={product.id}>
@@ -3284,6 +3282,18 @@ export default function App() {
         }
         .comparisonNote {
           margin-top: 14px;
+        }
+
+
+        .recommendations .recommendationCard:first-of-type,
+        .products .productList {
+          margin-top: 18px;
+        }
+        .recommendations .recommendationCard {
+          margin-top: 10px;
+        }
+        .products .productCard {
+          margin-top: 0;
         }
 
         @media (max-width: 540px) {

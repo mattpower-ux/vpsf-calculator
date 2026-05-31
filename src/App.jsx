@@ -547,12 +547,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
         <div>
           <strong>{selectedListing.name}</strong>
           <p>{selectedListing.address}</p>
-          <div className="heroBadges">
-            <span>{selectedListing.squareFeet} sq. ft.</span>
-            <span>Built {selectedListing.yearBuilt}</span>
-            <span>{selectedListing.propertyType}</span>
-          </div>
-        </div>
+</div>
       </section>
 
       <section className="formSection demoFormSection">
@@ -1472,12 +1467,7 @@ function MarketingStudio({ selectedProperty, setScreen }) {
         <div className="marketingHeroContent">
           <strong>{selectedProperty.name}</strong>
           <p>{selectedProperty.address}</p>
-          <div className="heroBadges">
-            <span>{selectedProperty.squareFeet} sq. ft.</span>
-            <span>Built {selectedProperty.yearBuilt}</span>
-            <span>VPSF {selectedProperty.vpsfScore}</span>
-          </div>
-        </div>
+</div>
       </section>
 
       <section className="copyCard overviewCard">
@@ -2318,20 +2308,7 @@ export default function App() {
           line-height: 1.35;
           margin: 0 0 10px;
         }
-        .heroBadges {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 7px;
-        }
-        .heroBadges span {
-          background: #eef5fb;
-          color: var(--blue);
-          border: 1px solid #d9e8f4;
-          border-radius: 999px;
-          padding: 4px 9px;
-          font-size: 10px;
-          font-weight: 900;
-        }
+        
         .overviewCard p {
           font-size: 13px;
           line-height: 1.5;

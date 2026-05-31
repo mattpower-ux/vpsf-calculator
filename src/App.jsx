@@ -803,8 +803,7 @@ function Dashboard({ result, setScreen, setSelectedPillar }) {
           <em>out of 1000</em>
         </div>
       </div>
-      <h3 className="scoreTitle">{scoreInfo.label}</h3>
-      <p className="scoreMeaning">{scoreInfo.meaning}</p>
+      <h3 className="scoreTitle rankingTitle">RANKING = {scoreInfo.label}</h3>
       <section className="pillarPanel">
         <h3>Pillar Performance</h3>
         <p>Tap a pillar to see details & recommendations.</p>
@@ -1163,12 +1162,6 @@ function MatchingProducts({ recommendation, setScreen }) {
     <div className="screen matchingProductsScreen withNav">
       <header className="screenTop"><h2>Matching Products</h2><Package size={18} /></header>
 
-      <section className="recommendationSummaryHero compactMatchHero">
-        <div className="recHead"><Icon size={22} /><span>{recommendation.eyebrow}</span><strong>{recommendation.gain}</strong></div>
-        <h3>{recommendation.title}</h3>
-        <p>These product categories are matched to the improvement path highlighted in the smart summary.</p>
-      </section>
-
       <div className="matchProductList">
         {products.map((product) => (
           <article className="matchProductCard" key={product.id}>
@@ -1183,7 +1176,7 @@ function MatchingProducts({ recommendation, setScreen }) {
         ))}
       </div>
 
-      <button className="primaryButton" onClick={() => setScreen(7)}>View General Product Library</button>
+      <button className="primaryButton" onClick={() => setScreen(7)}>View General Product Recommendations</button>
       <button className="secondaryButton" onClick={() => setScreen(15)}>Return to Smart Summary</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
@@ -2870,6 +2863,37 @@ export default function App() {
           font-size: 12px;
         }
 
+
+        .rankingTitle {
+          color: var(--green);
+          text-align: center;
+          font-size: 15px;
+          margin: 0 0 14px;
+          letter-spacing: .08em;
+        }
+        .matchingProductsScreen,
+        .products {
+          padding-bottom: 120px;
+        }
+        .matchingProductsScreen .matchProductList {
+          margin-top: 18px;
+          padding-bottom: 8px;
+        }
+        .matchingProductsScreen .primaryButton,
+        .matchingProductsScreen .secondaryButton,
+        .products .primaryButton {
+          position: relative;
+          z-index: 3;
+        }
+        .bottomNav {
+          position: sticky;
+          bottom: 0;
+          z-index: 50;
+          margin-left: -22px;
+          margin-right: -22px;
+          margin-bottom: -82px;
+        }
+
         @media (max-width: 540px) {
           .app { padding: 0; background: #fff; }
           .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
@@ -3209,7 +3233,7 @@ export default function App() {
           50% { box-shadow: 0 8px 22px rgba(41,174,245,.14); transform: translateY(-1px); }
         }
 
-        .bottomNav { position: fixed; }
+        .bottomNav { position: sticky; }
         }
       `}</style>
     </main>

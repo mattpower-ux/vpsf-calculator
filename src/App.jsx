@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import { demoProperties } from "./demo/demoProperties";
+import { demoProducts } from "./demo/demoProducts";
 import {
   ArrowRight,
   Award,
@@ -1003,23 +1004,20 @@ function Recommendations({ setScreen }) {
 }
 
 function Products({ setScreen }) {
-  const products = [
-    ["Heat Pump Water Heater", "Rheem Performance Platinum Hybrid", "Improve Energy & Water Scores", "heater"],
-    ["Rainwater Harvesting System", "Rainwater Management Solutions Tank", "Improve Water Score", "tank"],
-    ["Impact-Resistant Roofing", "CertainTeed Impact Resistant Shingles", "Improve Resilience Score", "roof"],
-    ["ERV Ventilation System", "RenewAire Energy Recovery Ventilator", "Improve Health Score", "erv"]
-  ];
   return (
     <div className="screen products withNav">
       <header className="screenTop"><h2>Recommended Products</h2><Filter size={18} /></header>
       <div className="tabs"><button className="active">All Pillars</button><button>Energy</button><button>Water</button><button>Resilience</button></div>
-      {products.map(([type, name, benefit, style]) => (
-        <article className="productCard" key={name}>
-          <div className={`productImage ${style}`}><Package size={30} /></div>
+      {demoProducts.map((product) => (
+        <article className="productCard" key={product.id}>
+          <div className="productImage realProductImage">
+            <img src={product.image} alt={product.name} />
+          </div>
           <div>
-            <span>{type}</span>
-            <h3>{name}</h3>
-            <p>{benefit}</p>
+            <span>{product.category}</span>
+            <h3>{product.name}</h3>
+            <p>{product.description}</p>
+            <em>{product.improvement}</em>
             <button>View Product <ArrowRight size={15} /></button>
           </div>
         </article>
@@ -1716,6 +1714,17 @@ export default function App() {
           place-items: center;
           color: #fff;
           background: linear-gradient(135deg, #aeb9c2, #56616d);
+          overflow: hidden;
+        }
+        .realProductImage {
+          background: #f4f7fa;
+          border: 1px solid #dbe6ef;
+        }
+        .realProductImage img {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
         }
         .productImage.heater { background: linear-gradient(135deg, #e8edf1, #94a4b2); color: #17314d; }
         .productImage.tank { background: linear-gradient(135deg, #709583, #2d5e4d); }
@@ -1723,7 +1732,15 @@ export default function App() {
         .productImage.erv { background: linear-gradient(135deg, #d8dfe5, #7d8b97); color: #17314d; }
         .productCard span { text-transform: uppercase; color: var(--blue); font-size: 10px; font-weight: 900; }
         .productCard h3 { text-transform: none; letter-spacing: 0; font-size: 13px; margin: 4px 0; }
-        .productCard p { color: var(--green); font-size: 12px; margin-bottom: 8px; }
+        .productCard p { color: var(--green); font-size: 12px; margin-bottom: 5px; }
+        .productCard em {
+          display: block;
+          color: var(--gold);
+          font-size: 11px;
+          font-style: normal;
+          font-weight: 950;
+          margin-bottom: 8px;
+        }
 
         .copyCard h3, .smartDataUpsell h3 { text-transform: none; letter-spacing: 0; font-size: 15px; margin-bottom: 8px; }
         .copyCard p, .smartDataUpsell p { color: #52657a; font-size: 13px; line-height: 1.5; margin-bottom: 0; }

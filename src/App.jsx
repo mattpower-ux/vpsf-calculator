@@ -8,6 +8,8 @@ import euroshieldThumb from "./assets/euroshield.jpg";
 import kohlerFaucetThumb from "./assets/kohler-faucet.jpg";
 import moenShowerThumb from "./assets/moen-shower.jpg";
 import niagaraToiletThumb from "./assets/Niagara-toilet.jpg";
+import arboristThumb from "./assets/ARBORIST1.jpg";
+import rachioThumb from "./assets/rachio.jpg";
 import { demoProperties } from "./demo/demoProperties";
 import { demoProducts } from "./demo/demoProducts";
 import {
@@ -1071,6 +1073,7 @@ const demoMatchingProducts = {
       name: "Rachio Smart Irrigation Controller",
       category: "Smart Irrigation",
       impact: "+6 VPSF",
+      image: rachioThumb,
       note: "Weather-based scheduling reduces outdoor irrigation waste."
     }
   ],
@@ -1106,6 +1109,7 @@ const demoMatchingProducts = {
       name: "Certified Arborist Tree Plan",
       category: "Site Risk",
       impact: "+4 VPSF",
+      image: arboristThumb,
       note: "Balances shade benefits with storm and maintenance risk."
     },
     {
@@ -1113,6 +1117,7 @@ const demoMatchingProducts = {
       name: "Storm-Season Tree Pruning",
       category: "Maintenance",
       impact: "+4 VPSF",
+      image: arboristThumb,
       note: "Reduces limb-over-roof exposure before severe weather."
     }
   ]

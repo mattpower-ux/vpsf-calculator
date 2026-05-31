@@ -991,7 +991,7 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
         <p>Whole-home leak detection with automatic shutoff can reduce water loss, limit damage risk, and may qualify for insurance rebates.</p>
       </section>
 
-      <button className="primaryButton keyInsightsAction" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
+      <button className="primaryButton keyInsightsAction" onClick={() => setScreen(17)}>View Path to 700 VPSF <ArrowRight size={18} /></button>
       <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );
@@ -1142,7 +1142,8 @@ function Recommendations({ setScreen, setSelectedRecommendation }) {
           </article>
         );
       })}
-      <button className="primaryButton" onClick={() => setScreen(7)}>View Recommended Products</button>
+      <button className="primaryButton" onClick={() => setScreen(18)}>View Future Cost Exposure <ArrowRight size={18} /></button>
+      <button className="secondaryButton" onClick={() => setScreen(7)}>View Recommended Products</button>
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
   );
@@ -1304,6 +1305,149 @@ function ProductDetail({ product, setScreen }) {
 }
 
 
+
+function PathTo700Screen({ result, setScreen }) {
+  const current = result.total;
+  const goal = 700;
+  const steps = [
+    ["Leak Detection", 8],
+    ["Low-Flow Fixtures", 12],
+    ["Smart Irrigation", 15],
+    ["Cool Roof Upgrade", 20],
+    ["Energy Recovery Ventilation", 15]
+  ];
+  const totalGain = steps.reduce((sum, [, gain]) => sum + gain, 0);
+  const projected = Math.min(goal, current + totalGain);
+  const progressPct = Math.min(100, Math.round((current / goal) * 100));
+  const projectedPct = Math.min(100, Math.round((projected / goal) * 100));
+
+  return (
+    <div className="screen path700Screen withNav">
+      <header className="screenTop"><h2>Path to 700 VPSF</h2><Sparkles size={18} /></header>
+
+      <section className="pathHeroCard">
+        <p>A practical upgrade path that moves this home toward a stronger VPSF ranking without rebuilding the whole property.</p>
+        <div className="pathScoreRow">
+          <div><strong>{current}</strong><span>Current</span></div>
+          <ArrowRight size={22} />
+          <div><strong>{goal}</strong><span>Goal</span></div>
+        </div>
+        <div className="pathBar">
+          <i style={{ width: `${progressPct}%` }} />
+          <b style={{ left: `${projectedPct}%` }} />
+        </div>
+        <div className="pathLabels"><span>{current}</span><span>{projected}</span><span>{goal}</span></div>
+      </section>
+
+      <section className="upgradePlanCard">
+        <h3>Recommended Path</h3>
+        {steps.map(([name, gain]) => (
+          <div className="upgradeStep" key={name}>
+            <span>{name}</span>
+            <strong>+{gain} VPSF</strong>
+          </div>
+        ))}
+        <div className="upgradeStep total">
+          <span>Total Potential Gain</span>
+          <strong>+{totalGain}</strong>
+        </div>
+      </section>
+
+      <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
+      <BottomNav active="Recommendations" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function FutureCostExposureScreen({ setScreen }) {
+  const costs = [
+    { item: "Roof Replacement", timing: "3 years", cost: "$12,000", icon: Home },
+    { item: "HVAC Replacement", timing: "7 years", cost: "$6,800", icon: Wind },
+    { item: "Water Heater", timing: "2 years", cost: "$1,600", icon: Droplets }
+  ];
+
+  return (
+    <div className="screen futureCostScreen withNav">
+      <header className="screenTop"><h2>Future Cost Exposure</h2><Wallet size={18} /></header>
+
+      <section className="costIntroCard">
+        <h3>Potential Major Expenses</h3>
+        <p>This older home carries near-term maintenance risk. VPSF uses these cost signals to show buyers and owners where risk may affect value.</p>
+      </section>
+
+      <section className="costListCard">
+        {costs.map(({ item, timing, cost, icon: Icon }) => (
+          <article className="costItem" key={item}>
+            <div><Icon size={20} /></div>
+            <div><strong>{item}</strong><span>Estimated Cost: {cost}</span></div>
+            <em>{timing}</em>
+          </article>
+        ))}
+        <div className="costTotal">
+          <span>Estimated Total / Next 10 Years</span>
+          <strong>$20,400</strong>
+        </div>
+      </section>
+
+      <button className="primaryButton" onClick={() => setScreen(19)}>Compare This Home <ArrowRight size={18} /></button>
+      <button className="secondaryButton" onClick={() => setScreen(7)}>View Product Solutions</button>
+      <BottomNav active="Recommendations" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function CompetingHomeComparisonScreen({ result, setScreen }) {
+  const comparisons = [
+    { label: "This Home", value: result.total },
+    { label: "Typical Existing", value: 480 },
+    { label: "Typical New", value: 720 },
+    { label: "Net-Zero", value: 920 }
+  ];
+  const max = 1000;
+
+  return (
+    <div className="screen comparisonScreen withNav">
+      <header className="screenTop"><h2>Competing Home Comparison</h2><BarChartIcon /></header>
+
+      <section className="comparisonCard">
+        <h3>VPSF Score Context</h3>
+        <p>See how this home compares with common market alternatives.</p>
+        <div className="comparisonBars">
+          {comparisons.map((item) => (
+            <div className="comparisonBar" key={item.label}>
+              <strong>{item.value}</strong>
+              <div><i style={{ height: `${Math.round((item.value / max) * 100)}%` }} /></div>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="copyCard comparisonNote">
+        <h3>What this means</h3>
+        <p>Higher VPSF scores signal better performance, lower operating costs, stronger documentation, and a clearer value story for buyers.</p>
+      </section>
+
+      <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio <ArrowRight size={18} /></button>
+      <button className="secondaryButton" onClick={() => setScreen(9)}>Create VPSF Score Card</button>
+      <BottomNav active="More" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function BarChartIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 19V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 19H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 16V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 16V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M16 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+
 function marketingOverviewForProperty(property) {
   if (property?.id === "vision-house") {
     return "This high-performance Orlando showcase home already sits near the top of the VPSF scale, with strong energy, health, resilience, and water systems. Its market story should emphasize lower operating costs, verified performance, and long-term value protection.";
@@ -1434,6 +1578,9 @@ export default function App() {
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} />}
+        {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
+        {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
+        {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -2937,6 +3084,206 @@ export default function App() {
         }
         .matchingProductsScreen .matchProductCard {
           grid-template-columns: 58px 1fr;
+        }
+
+
+        .pathHeroCard,
+        .upgradePlanCard,
+        .costIntroCard,
+        .costListCard,
+        .comparisonCard {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 16px;
+          padding: 15px;
+          margin-top: 18px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
+        }
+        .pathHeroCard p,
+        .costIntroCard p,
+        .comparisonCard p {
+          color: #52657a;
+          font-size: 13px;
+          line-height: 1.45;
+          margin-bottom: 14px;
+        }
+        .pathScoreRow {
+          display: grid;
+          grid-template-columns: 1fr 34px 1fr;
+          align-items: center;
+          gap: 12px;
+          color: var(--green);
+          margin-bottom: 13px;
+        }
+        .pathScoreRow div {
+          display: grid;
+          gap: 1px;
+        }
+        .pathScoreRow div:last-child {
+          text-align: right;
+        }
+        .pathScoreRow strong {
+          font-size: 30px;
+          line-height: 1;
+          color: var(--green);
+        }
+        .pathScoreRow span {
+          color: #52657a;
+          font-size: 11px;
+          font-weight: 850;
+        }
+        .pathBar {
+          position: relative;
+          height: 10px;
+          border-radius: 999px;
+          overflow: hidden;
+          background: #e7eef4;
+        }
+        .pathBar i {
+          display: block;
+          height: 100%;
+          background: var(--green);
+          border-radius: 999px;
+        }
+        .pathBar b {
+          position: absolute;
+          top: -4px;
+          width: 4px;
+          height: 18px;
+          border-radius: 999px;
+          background: var(--gold);
+          transform: translateX(-2px);
+        }
+        .pathLabels {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 6px;
+          color: #52657a;
+          font-size: 10px;
+          font-weight: 850;
+        }
+        .upgradePlanCard h3,
+        .costIntroCard h3,
+        .comparisonCard h3 {
+          margin-bottom: 11px;
+        }
+        .upgradeStep {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 8px 0;
+          border-bottom: 1px solid #e8eef4;
+          font-size: 12px;
+          color: #273f59;
+        }
+        .upgradeStep strong {
+          color: var(--green);
+          white-space: nowrap;
+        }
+        .upgradeStep.total {
+          border-bottom: 0;
+          margin-top: 4px;
+          font-weight: 950;
+        }
+        .costItem {
+          display: grid;
+          grid-template-columns: 38px 1fr 58px;
+          gap: 10px;
+          align-items: center;
+          padding: 11px 0;
+          border-bottom: 1px solid #e8eef4;
+        }
+        .costItem > div:first-child {
+          width: 38px;
+          height: 38px;
+          border-radius: 12px;
+          background: #f4f8fc;
+          color: var(--blue);
+          display: grid;
+          place-items: center;
+        }
+        .costItem strong {
+          display: block;
+          color: var(--ink);
+          font-size: 13px;
+        }
+        .costItem span {
+          color: #52657a;
+          font-size: 11px;
+        }
+        .costItem em {
+          color: var(--red);
+          font-style: normal;
+          font-size: 11px;
+          font-weight: 950;
+          text-align: right;
+        }
+        .costTotal {
+          margin-top: 14px;
+          padding: 14px;
+          border: 1px solid #f1d48b;
+          background: #fff6e8;
+          border-radius: 12px;
+          text-align: center;
+        }
+        .costTotal span {
+          display: block;
+          color: #52657a;
+          font-size: 11px;
+          margin-bottom: 5px;
+        }
+        .costTotal strong {
+          color: var(--red);
+          font-size: 24px;
+        }
+        .comparisonBars {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          align-items: end;
+          min-height: 174px;
+          margin-top: 14px;
+        }
+        .comparisonBar {
+          display: grid;
+          justify-items: center;
+          gap: 7px;
+          min-width: 0;
+        }
+        .comparisonBar strong {
+          color: var(--green);
+          font-size: 15px;
+        }
+        .comparisonBar div {
+          width: 34px;
+          height: 112px;
+          border-radius: 999px;
+          background: #e7eef4;
+          display: flex;
+          align-items: end;
+          overflow: hidden;
+        }
+        .comparisonBar i {
+          width: 100%;
+          display: block;
+          background: linear-gradient(180deg, #29aef5, #126fd2);
+          border-radius: 999px;
+        }
+        .comparisonBar:first-child i {
+          background: linear-gradient(180deg, #5fc16f, #2f9b4d);
+        }
+        .comparisonBar:last-child i {
+          background: linear-gradient(180deg, #8d5cf6, #5c36c9);
+        }
+        .comparisonBar span {
+          color: #52657a;
+          font-size: 10px;
+          line-height: 1.15;
+          text-align: center;
+          font-weight: 850;
+        }
+        .comparisonNote {
+          margin-top: 14px;
         }
 
         @media (max-width: 540px) {

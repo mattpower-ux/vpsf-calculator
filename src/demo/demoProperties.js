@@ -15,18 +15,18 @@ export const demoProperties = [
     treeCoverPercent: 42,
     roofType: "Asphalt shingle",
     roofAgeYears: 12,
-    vpsfScore: 525,
+    vpsfScore: 520,
     scores: {
       energy: 115,
-      water: 40,
+      water: 25,
       health: 105,
-      resilience: 85,
-      carbon: 55,
-      financial: 75,
+      resilience: 95,
+      carbon: 65,
+      financial: 65,
       community: 50
     },
     description:
-      "A typical older Florida home with some useful performance features, but aging roof risk, water-efficiency gaps, limited carbon documentation, and tree-maintenance exposure keep the VPSF score in the middle range.",
+      "A typical older Florida home with some useful performance features, but aging roof risk, weak water performance, limited carbon documentation, and tree-maintenance exposure keep the VPSF score in the middle range.",
     backendAssumptions: {
       roofRisk:
         "Asphalt shingle roof is assumed to be 12 years old. Because many asphalt roofs require major repair or replacement around the 15-year mark in hot, humid climates, the model applies a near-term replacement-risk penalty.",

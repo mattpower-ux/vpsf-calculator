@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
-import cognitionIcon from "./assets/cognition-icon.png";
 import { demoProperties } from "./demo/demoProperties";
 import { demoProducts } from "./demo/demoProducts";
 import {
@@ -423,7 +422,7 @@ function AppChrome({ children, screen, setScreen }) {
 
 function BottomNav({ active, setScreen }) {
   const items = [
-    ["Restart", Home, 0],
+    ["Overview", Home, 4],
     ["Pillars", Zap, 5],
     ["Recommendations", HeartPulse, 6],
     ["More", Sparkles, 8]
@@ -618,8 +617,8 @@ function DemoAnalyzingScreen({ setScreen }) {
   return (
     <div className="screen analyzingScreen">
       <div className="analyzingStage">
-        <div className="brainOrb cognitionBrainOrb">
-          <img src={cognitionIcon} alt="COGNITION analyzing" className="brainPulseIcon cognitionBrainIcon" />
+        <div className="brainOrb">
+          <Sparkles className="brainPulseIcon" size={54} />
           <div className="brainRing one" />
           <div className="brainRing two" />
           <div className="brainRing three" />
@@ -677,12 +676,12 @@ function PropertyDetails({ home, update, setScreen }) {
 
 function HomeSpecs({ home, update, setScreen }) {
   return (
-    <div className="screen formScreen compactFormScreen">
+    <div className="screen formScreen">
       <ProgressDots step={2} />
       <h2>Add Home Specs</h2>
-      <p className="subhead">Start with energy, resilience, and health details.</p>
+      <p className="subhead">Use dropdowns to document the seven VPSF pillars.</p>
 
-      <section className="formSection compactSpecsSection">
+      <section className="formSection">
         <h3>Energy</h3>
         <Field label="HERS Score" value={home.hers} onChange={(v) => update("hers", v)} options={selectOptions.hers} />
         <Field label="HVAC System" value={home.hvac} onChange={(v) => update("hvac", v)} options={selectOptions.hvac} />
@@ -691,7 +690,7 @@ function HomeSpecs({ home, update, setScreen }) {
         <Field wide label="EV Readiness" value={home.evReady} onChange={(v) => update("evReady", v)} options={selectOptions.evReady} />
       </section>
 
-      <section className="formSection compactSpecsSection">
+      <section className="formSection">
         <h3>Resilience + Health</h3>
         <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)} options={selectOptions.fortified} />
         <Field label="Flood Design" value={home.flood} onChange={(v) => update("flood", v)} options={selectOptions.flood} />
@@ -699,21 +698,7 @@ function HomeSpecs({ home, update, setScreen }) {
         <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(14)}>
-        Next: Water, Carbon + Financial <ArrowRight size={18} />
-      </button>
-    </div>
-  );
-}
-
-function HomeSpecsMore({ home, update, setScreen }) {
-  return (
-    <div className="screen formScreen compactFormScreen">
-      <ProgressDots step={3} />
-      <h2>More Home Specs</h2>
-      <p className="subhead">Finish the water, carbon, and ownership-risk inputs.</p>
-
-      <section className="formSection compactSpecsSection">
+      <section className="formSection">
         <h3>Carbon, Water + Financial</h3>
         <Field label="Carbon Strategy" value={home.carbonStrategy} onChange={(v) => update("carbonStrategy", v)} options={selectOptions.carbonStrategy} />
         <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)} options={selectOptions.waterStandard} />
@@ -721,15 +706,7 @@ function HomeSpecsMore({ home, update, setScreen }) {
         <Field label="PIETIM" value={home.pietim} onChange={(v) => update("pietim", v)} options={selectOptions.pietim} />
       </section>
 
-      <section className="formSection compactSpecsSection">
-        <h3>Community + Mobility</h3>
-        <Field label="WalkScore" value={home.walkscore} onChange={(v) => update("walkscore", v)} options={selectOptions.walkscore} />
-        <Field label="Transit / Services" value={home.transit} onChange={(v) => update("transit", v)} options={selectOptions.transit} />
-        <Field label="Green Space" value={home.greenspace} onChange={(v) => update("greenspace", v)} options={selectOptions.greenspace} />
-        <Field label="Bike Access" value={home.bike} onChange={(v) => update("bike", v)} options={selectOptions.bike} />
-      </section>
-
-      <button className="primaryButton" onClick={() => setScreen(3)}>
+      <button className="primaryButton stickyButton" onClick={() => setScreen(3)}>
         Review & Confirm <ArrowRight size={18} />
       </button>
     </div>
@@ -805,6 +782,8 @@ function Dashboard({ result, setScreen, setSelectedPillar }) {
       </div>
       <h3 className="scoreTitle">{scoreInfo.label}</h3>
       <p className="scoreMeaning">{scoreInfo.meaning}</p>
+      <button className="meaningButton">What does this mean?</button>
+
       <section className="pillarPanel">
         <h3>Pillar Performance</h3>
         <p>Tap a pillar to see details & recommendations.</p>
@@ -846,7 +825,7 @@ function takeawaySentence(key, isBest) {
   };
   const weak = {
     energy: "Missing demand-response readiness or additional efficiency documentation is keeping the energy score from reaching the top tier.",
-    water: "Lack of low-flow fixtures, reuse systems, or verified water performance can cost dollars and waste H₂O.",
+    water: "Low-flow fixtures, smart irrigation, and leak detection are the clearest near-term path to reducing operating costs and lifting the VPSF score.",
     health: "Limited ventilation, low-emission material documentation, or IAQ monitoring can reduce buyer confidence in indoor health.",
     resilience: "Missing roof, flood, fire, or backup-power documentation can raise insurance and ownership-risk concerns.",
     carbon: "Weak material disclosure or lack of EPD-backed products makes the carbon story harder to prove.",
@@ -946,12 +925,16 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
     return pillarPriority[a.key] - pillarPriority[b.key];
   })[0];
 
-  const opportunityPillar = [...PILLARS].sort((a, b) => {
-    const aGap = a.max - result.scores[a.key];
-    const bGap = b.max - result.scores[b.key];
-    if (bGap !== aGap) return bGap - aGap;
-    return pillarPriority[a.key] - pillarPriority[b.key];
-  })[0];
+  const waterPillar = PILLARS.find((item) => item.key === "water");
+  const opportunityPillar =
+    waterPillar && result.scores.water <= 50
+      ? waterPillar
+      : [...PILLARS].sort((a, b) => {
+          const aPct = result.scores[a.key] / a.max;
+          const bPct = result.scores[b.key] / b.max;
+          if (aPct !== bPct) return aPct - bPct;
+          return pillarPriority[a.key] - pillarPriority[b.key];
+        })[0];
 
   const focusPillar = PILLARS.find((item) => item.key === selectedPillar) || bestPillar;
   const focusValue = result.scores[focusPillar.key];
@@ -986,99 +969,60 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
   );
 }
 
-const demoRecommendationDetails = [
-  {
-    id: "rainwater",
-    icon: Droplets,
-    eyebrow: "Water Performance",
-    title: "Add Rainwater Harvesting System",
-    gain: "+15 pts",
-    copy: "Could improve your Water score and increase resilience.",
-    bullets: [
-      "Captures roof runoff for irrigation and non-potable reuse.",
-      "Reduces potable water demand during dry months.",
-      "Improves drought resilience and may lower outdoor water costs.",
-      "Pairs well with smart irrigation and drought-tolerant landscaping."
-    ]
-  },
-  {
-    id: "low-carbon",
-    icon: Leaf,
-    eyebrow: "Carbon & Materials",
-    title: "Use Low-Carbon Concrete",
-    gain: "+10 pts",
-    copy: "Switching to lower-carbon concrete could improve your score.",
-    bullets: [
-      "Reduces embodied carbon in foundations, slabs, and hardscape.",
-      "Creates a stronger carbon story for buyers and appraisers.",
-      "Can be documented through EPD-backed product selections.",
-      "Supports the Carbon & Materials pillar without changing floor plan."
-    ]
-  },
-  {
-    id: "impact-roof",
-    icon: Shield,
-    eyebrow: "Resilience & Durability",
-    title: "Upgrade to Impact-Resistant Roof",
-    gain: "+12 pts",
-    copy: "Consider a Class 4 impact-resistant roofing system.",
-    bullets: [
-      "Improves protection against hail, wind-driven debris, and severe weather.",
-      "Can support insurance conversations in storm-prone markets.",
-      "Strengthens durability, resale messaging, and long-term ownership confidence.",
-      "Pairs well with roof-deck attachment and moisture-management documentation."
-    ]
-  }
-];
-
-function Recommendations({ setScreen, setSelectedRecommendation }) {
+function Recommendations({ setScreen }) {
+  const recs = [
+    [Droplets, "Water Performance", "Add Rainwater Harvesting System", "+15 pts", "Could improve your Water score and increase resilience."],
+    [Leaf, "Carbon & Materials", "Use Low-Carbon Concrete", "+10 pts", "Switching to lower-carbon concrete could improve your score."],
+    [Shield, "Resilience & Durability", "Upgrade to Impact-Resistant Roof", "+12 pts", "Consider a Class 4 impact-resistant roofing system."]
+  ];
   return (
     <div className="screen recommendations withNav">
       <header className="screenTop"><h2>Recommendations</h2></header>
       <div className="tabs"><button className="active">All (9)</button><button>High Impact (3)</button><button>Quick Wins (2)</button></div>
-      {demoRecommendationDetails.map((rec) => {
-        const Icon = rec.icon;
-        return (
-          <article className="recommendationCard" key={rec.id}>
-            <div className="recHead"><Icon size={22} /><span>{rec.eyebrow}</span><strong>{rec.gain}</strong></div>
-            <h3>{rec.title}</h3>
-            <p>{rec.copy}</p>
-            <button onClick={() => {
-              setSelectedRecommendation(rec);
-              setScreen(15);
-            }}>View Details</button>
-          </article>
-        );
-      })}
+      {recs.map(([Icon, eyebrow, title, gain, copy]) => (
+        <article className="recommendationCard" key={title}>
+          <div className="recHead"><Icon size={22} /><span>{eyebrow}</span><strong>{gain}</strong></div>
+          <h3>{title}</h3>
+          <p>{copy}</p>
+          <button>View Details</button>
+        </article>
+      ))}
       <button className="primaryButton" onClick={() => setScreen(7)}>View Recommended Products</button>
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
   );
 }
 
-function RecommendationDetail({ recommendation, setScreen }) {
-  const Icon = recommendation.icon;
+
+function MatchingProducts({ recommendation, setScreen }) {
+  const products = demoMatchingProducts[recommendation.id] || demoMatchingProducts.rainwater;
+
   return (
-    <div className="screen recommendationDetailScreen withNav">
-      <header className="screenTop"><h2>Smart Summary</h2><Icon size={20} /></header>
+    <div className="screen matchingProductsScreen withNav">
+      <header className="screenTop"><h2>Matching Products</h2><Package size={18} /></header>
 
-      <section className="recommendationSummaryHero">
-        <div className="recHead"><Icon size={24} /><span>{recommendation.eyebrow}</span><strong>{recommendation.gain}</strong></div>
+      <section className="recommendationSummaryHero compactMatchHero">
+        <div className="recHead"><Droplets size={22} /><span>{recommendation.eyebrow}</span><strong>{recommendation.gain}</strong></div>
         <h3>{recommendation.title}</h3>
-        <p>{recommendation.copy}</p>
+        <p>These product categories target the highest-impact water-saving upgrades for the demo home.</p>
       </section>
 
-      <section className="copyCard">
-        <h3>Details</h3>
-        <ul className="smartSummaryList">
-          {recommendation.bullets.map((item) => (
-            <li key={item}><Check size={15} /> {item}</li>
-          ))}
-        </ul>
-      </section>
+      <div className="matchProductList">
+        {products.map((product) => (
+          <article className="matchProductCard" key={product.id}>
+            <div className="matchIcon"><Droplets size={24} /></div>
+            <div>
+              <span>{product.category}</span>
+              <h3>{product.name}</h3>
+              <p>{product.note}</p>
+              <em>{product.impact}</em>
+            </div>
+          </article>
+        ))}
+      </div>
 
-      <button className="primaryButton" onClick={() => setScreen(7)}>See Matching Products <ArrowRight size={18} /></button>
-      <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
+      <button className="primaryButton" onClick={() => setScreen(7)}>View General Product Library</button>
+      <button className="secondaryButton" onClick={() => setScreen(15)}>Return to Smart Summary</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
@@ -1280,7 +1224,6 @@ export default function App() {
   const [screen, setScreen] = useState(0);
   const [selectedPillar, setSelectedPillar] = useState("energy");
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
-  const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
@@ -1298,7 +1241,7 @@ export default function App() {
         {screen === 3 && <ReviewScreen home={home} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
-        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} />}
+        {screen === 6 && <Recommendations setScreen={setScreen} />}
         {screen === 7 && <Products setScreen={setScreen} setSelectedProduct={setSelectedProduct} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
@@ -1306,8 +1249,6 @@ export default function App() {
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} />}
-        {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
-        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -1387,21 +1328,16 @@ export default function App() {
           top: 86px;
           left: 18px;
           z-index: 20;
-          width: 26px;
-          height: 26px;
+          width: 44px;
+          height: 44px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid #0a7faa;
+          border: 3px solid var(--gold);
           border-radius: 999px;
-          background: #0a7faa;
+          background: var(--navy-2);
           color: #ffffff;
-          box-shadow: 0 6px 16px rgba(10, 127, 170, 0.22);
-        }
-        .backButton svg {
-          width: 17px;
-          height: 17px;
-          stroke-width: 5;
+          box-shadow: 0 10px 26px rgba(7, 26, 44, 0.28);
         }
 
         .brandRow {
@@ -2634,74 +2570,62 @@ export default function App() {
         }
 
 
-        .compactFormScreen {
-          padding-bottom: 120px;
+        .compactMatchHero {
+          margin-top: 18px;
+          padding: 13px;
         }
-        .compactSpecsSection {
-          gap: 8px;
-          padding: 12px;
+        .matchProductList {
+          display: grid;
+          gap: 10px;
+          margin-top: 14px;
         }
-        .compactSpecsSection .field input,
-        .compactSpecsSection .field select {
-          height: 38px;
-          font-size: 11px;
-        }
-        .compactSpecsSection .field span {
-          margin-bottom: 4px;
-        }
-        .cognitionBrainOrb {
-          background: transparent;
-          box-shadow: none;
-          overflow: visible;
-        }
-        .cognitionBrainIcon {
-          width: 116px;
-          height: 116px;
-          object-fit: contain;
-          z-index: 3;
-          filter: drop-shadow(0 12px 26px rgba(7,26,44,.18));
-        }
-        .cognitionBrainOrb .brainRing {
-          border-color: rgba(10, 127, 170, .38);
-        }
-        .recommendationSummaryHero {
+        .matchProductCard {
+          display: grid;
+          grid-template-columns: 48px 1fr;
+          gap: 12px;
+          align-items: start;
           border: 1px solid var(--line);
           background: #fff;
-          border-radius: 16px;
-          padding: 15px;
-          margin-top: 18px;
-          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
+          border-radius: 15px;
+          padding: 12px;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
         }
-        .recommendationSummaryHero h3 {
+        .matchIcon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          background: #eef7ff;
+          color: var(--bright-blue);
+          border: 1px solid #d7eafa;
+        }
+        .matchProductCard span {
+          display: block;
+          color: var(--blue);
+          text-transform: uppercase;
+          font-size: 10px;
+          font-weight: 950;
+          margin-bottom: 3px;
+        }
+        .matchProductCard h3 {
           text-transform: none;
           letter-spacing: 0;
-          font-size: 17px;
-          margin: 12px 0 6px;
+          color: var(--ink);
+          font-size: 14px;
+          margin-bottom: 4px;
         }
-        .recommendationSummaryHero p {
+        .matchProductCard p {
           color: #52657a;
-          font-size: 13px;
-          line-height: 1.4;
-          margin: 0;
-        }
-        .smartSummaryList {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          gap: 9px;
-        }
-        .smartSummaryList li {
-          display: grid;
-          grid-template-columns: 18px 1fr;
-          gap: 8px;
-          color: #344d66;
-          font-size: 13px;
+          font-size: 12px;
           line-height: 1.35;
+          margin-bottom: 5px;
         }
-        .smartSummaryList svg {
+        .matchProductCard em {
           color: var(--green);
-          margin-top: 1px;
+          font-style: normal;
+          font-weight: 950;
+          font-size: 12px;
         }
 
         @media (max-width: 540px) {

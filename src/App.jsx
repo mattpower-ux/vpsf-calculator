@@ -1733,8 +1733,8 @@ export default function App() {
         .smartParse > svg { color: var(--green); margin-right: 5px; vertical-align: middle; }
         .smartParse strong { color: #164d2b; }
         .smartParse p { margin: 8px 0 10px; color: #3f5b48; line-height: 1.4; font-size: 13px; }
-        .smartParse ul, .checkList { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
-        .smartParse li, .checkList li { display: flex; align-items: center; gap: 8px; color: #244633; font-size: 12px; }
+        .smartParse ul, .checkList { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
+        .smartParse li, .checkList li { display: flex; align-items: center; gap: 8px; color: #244633; font-size: 12px; padding: 2px 0; line-height: 1.1; }
         .privacy { margin: 28px 0 0; text-align: center; color: #7a8795; font-size: 11px; }
         .privacy.small { margin-top: 14px; }
 
@@ -2326,8 +2326,18 @@ export default function App() {
         }
         .overviewCard p {
   font-size: 13px;
-  line-height: 1.35;
+  line-height: 1.2;
+  margin: 0;
 }
+        .overviewCard,
+        .highlightCard {
+          padding: 14px 16px !important;
+          margin-top: 10px !important;
+        }
+        .overviewCard h3,
+        .highlightCard h3 {
+          margin-bottom: 8px;
+        }
         .highlightCard .checkList {
   gap: 4px;
 }

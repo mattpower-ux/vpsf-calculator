@@ -532,7 +532,10 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
       </p>
 
       <section className="mlsPropertyPreview">
-        <img src={demoOrlandoHome} alt="1313 Cognition Drive exterior" />
+        <div className="mlsPhotoWrap">
+          <img src={demoOrlandoHome} alt="1313 Cognition Drive exterior" />
+          <span>DEMO LISTING</span>
+        </div>
         <div>
           <strong>{selectedListing.name}</strong>
           <p>{selectedListing.address}</p>
@@ -546,9 +549,10 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
 
       <section className="formSection demoFormSection">
         <h3 className="importOptionsTitle">Import Options</h3>
+        <p className="importOptionsHelp">Entering a new MLS number, address, or uploaded document would update the property preview above.</p>
 
         <label className="field fieldWide demoField">
-          <span>MLS Number</span>
+          <span>Enter MLS Number</span>
           <div className="fieldWithHelp">
             <input value={demoMls.mlsNumber} readOnly />
             <DemoHelpButton
@@ -559,7 +563,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
         </label>
 
         <label className="field fieldWide demoField">
-          <span>Property Address</span>
+          <span>Enter Property Address</span>
           <div className="fieldWithHelp">
             <input value={demoMls.address} readOnly />
             <DemoHelpButton
@@ -2055,7 +2059,7 @@ export default function App() {
           background: #fff;
           border-radius: 14px;
           padding: 14px;
-          margin-top: 16px;
+          margin-top: 12px;
           box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
         }
         .demoPropertySelector h3 {
@@ -2101,23 +2105,50 @@ export default function App() {
         }
 
 
+
+        .mlsPhotoWrap {
+          position: relative;
+          height: 132px;
+          overflow: hidden;
+        }
+        .mlsPhotoWrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          background: #eef4f8;
+        }
+        .mlsPhotoWrap span {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: rgba(7, 26, 44, .92);
+          color: #fff;
+          border: 1px solid rgba(242, 165, 26, .92);
+          border-radius: 999px;
+          padding: 5px 10px;
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: .08em;
+        }
+        .importOptionsHelp {
+          grid-column: 1 / -1;
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.35;
+          margin: -2px 0 2px;
+        }
+
         .mlsPropertyPreview {
           border: 1px solid var(--line);
           background: #fff;
           border-radius: 16px;
           overflow: hidden;
-          margin-top: 16px;
+          margin-top: 12px;
           box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
         }
-        .mlsPropertyPreview img {
-          width: 100%;
-          height: 142px;
-          object-fit: cover;
-          display: block;
-          background: #eef4f8;
-        }
-        .mlsPropertyPreview div {
-          padding: 13px;
+        .mlsPropertyPreview > div:not(.mlsPhotoWrap) {
+          padding: 10px 12px 11px;
         }
         .mlsPropertyPreview strong {
           display: block;
@@ -2401,7 +2432,7 @@ export default function App() {
           background: #fff;
           border-radius: 14px;
           padding: 14px;
-          margin-top: 16px;
+          margin-top: 12px;
           box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
         }
         .demoPropertySelector h3 {
@@ -2447,23 +2478,50 @@ export default function App() {
         }
 
 
+
+        .mlsPhotoWrap {
+          position: relative;
+          height: 132px;
+          overflow: hidden;
+        }
+        .mlsPhotoWrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          background: #eef4f8;
+        }
+        .mlsPhotoWrap span {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: rgba(7, 26, 44, .92);
+          color: #fff;
+          border: 1px solid rgba(242, 165, 26, .92);
+          border-radius: 999px;
+          padding: 5px 10px;
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: .08em;
+        }
+        .importOptionsHelp {
+          grid-column: 1 / -1;
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.35;
+          margin: -2px 0 2px;
+        }
+
         .mlsPropertyPreview {
           border: 1px solid var(--line);
           background: #fff;
           border-radius: 16px;
           overflow: hidden;
-          margin-top: 16px;
+          margin-top: 12px;
           box-shadow: 0 8px 20px rgba(9, 33, 59, 0.05);
         }
-        .mlsPropertyPreview img {
-          width: 100%;
-          height: 142px;
-          object-fit: cover;
-          display: block;
-          background: #eef4f8;
-        }
-        .mlsPropertyPreview div {
-          padding: 13px;
+        .mlsPropertyPreview > div:not(.mlsPhotoWrap) {
+          padding: 10px 12px 11px;
         }
         .mlsPropertyPreview strong {
           display: block;

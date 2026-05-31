@@ -410,7 +410,7 @@ function AppChrome({ children, screen, setScreen }) {
       <div className="bannerWrap">
         <img src={VPSF_BANNER} alt="VPSF Value Per Square Foot" />
       </div>
-      {screen > 0 && (
+      {screen > 0 && screen !== 11 && (
         <button className="backButton" onClick={() => setScreen(Math.max(0, screen - 1))} aria-label="Go back">
           <ChevronLeft size={24} strokeWidth={4} />
         </button>
@@ -524,8 +524,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
   }, [setSelectedProperty, selectedListing]);
 
   return (
-    <div className="screen formScreen demoMlsScreen">
-      <ProgressDots step={1} />
+    <div className="screen formScreen demoMlsScreen withNav">
       <h2>Import MLS Listing</h2>
       <p className="subhead">
         Enter a listing number, property address, or upload listing documents to create a VPSF report.
@@ -609,6 +608,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
       <button className="secondaryButton" onClick={() => setScreen(0)}>
         Back to Start
       </button>
+      <BottomNav active="More" setScreen={setScreen} />
     </div>
   );
 }
@@ -2171,16 +2171,6 @@ export default function App() {
         .uploadDropZone strong {
           font-size: 13px;
         }
-        .affordableUpgradeCard {
-          border-color: #f1d48b;
-          background: #fffaf0;
-        }
-        .affordableUpgradeCard h3 {
-          color: #9a6400;
-        }
-        .affordableUpgradeCard .detailRow strong {
-          color: #2f9b4d;
-        }
 
         .demoBadge {
           width: max-content;
@@ -2414,6 +2404,66 @@ export default function App() {
         }
         .bottomNav button.active { color: var(--blue); font-weight: 900; }
 
+
+        .demoMlsScreen {
+          padding-bottom: 150px;
+        }
+        .demoMlsScreen .stickyButton {
+          position: relative;
+          bottom: auto;
+          margin-top: 16px;
+          z-index: 1;
+        }
+        .demoMlsScreen .secondaryButton {
+          margin-top: 8px;
+        }
+        .demoMlsScreen .demoParsePreview {
+          margin-bottom: 4px;
+        }
+        .demoMlsScreen .uploadDropZone {
+          min-height: 62px;
+          padding: 8px 10px;
+          align-items: center;
+        }
+        .demoMlsScreen .uploadDropZone strong {
+          font-size: 12px;
+          line-height: 1.2;
+        }
+        .demoMlsScreen .uploadDropZone em {
+          font-size: 10px;
+          line-height: 1.2;
+        }
+        .demoMlsScreen .formSection {
+          gap: 8px;
+        }
+        .demoMlsScreen .field span {
+          margin-bottom: 4px;
+        }
+
+        .affordableUpgradeCard {
+          background: #fff6e8;
+          border: 2px solid #f2cf82;
+        }
+        .affordableUpgradeCard h3 {
+          color: #071a2c;
+          font-weight: 950;
+          letter-spacing: .02em;
+        }
+        .affordableUpgradeCard p {
+          font-size: 13px;
+          line-height: 1.35;
+          margin-top: 8px;
+          margin-bottom: 0;
+        }
+        .affordableUpgradeCard .detailRow {
+          padding: 8px 0;
+        }
+        .affordableUpgradeCard .detailRow strong {
+          color: #2f9b4d;
+          font-weight: 950;
+          font-size: 1.05rem;
+        }
+
         @media (max-width: 540px) {
           .app { padding: 0; background: #fff; }
           .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
@@ -2543,16 +2593,6 @@ export default function App() {
         }
         .uploadDropZone strong {
           font-size: 13px;
-        }
-        .affordableUpgradeCard {
-          border-color: #f1d48b;
-          background: #fffaf0;
-        }
-        .affordableUpgradeCard h3 {
-          color: #9a6400;
-        }
-        .affordableUpgradeCard .detailRow strong {
-          color: #2f9b4d;
         }
 
         .demoBadge {

@@ -1067,18 +1067,25 @@ const demoMatchingProducts = {
   ],
   "roof-risk": [
     {
-      id: "certainteed-impact-shingle",
-      name: "Impact-Resistant Asphalt Shingle",
-      category: "Roofing",
+      id: "atas-solar-ready",
+      name: "ATAS Solar-Ready Metal Roofing",
+      category: "Solar-Ready Roofing",
       impact: "+8 VPSF",
-      note: "Improves storm resistance and supports risk-reduction messaging."
+      note: "Standing-seam metal roofing designed for future solar integration and long-term durability."
     },
     {
-      id: "reflective-roofing",
-      name: "Reflective Roofing Upgrade",
-      category: "Cooling + Roof",
-      impact: "+5 VPSF",
-      note: "Can lower roof heat gain while replacing aging asphalt."
+      id: "certainteed-solaris",
+      name: "CertainTeed Solaris Cool Roof Shingles",
+      category: "Reflective Roofing",
+      impact: "+6 VPSF",
+      note: "Solar-reflective shingles that reduce roof heat gain and cooling demand."
+    },
+    {
+      id: "euroshield-roofing",
+      name: "Euroshield Recycled Rubber Roofing",
+      category: "Impact-Resistant Roofing",
+      impact: "+9 VPSF",
+      note: "Class 4 impact-resistant roofing made from recycled rubber with exceptional durability."
     }
   ],
   "tree-risk": [

@@ -588,14 +588,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
         </label>
       </section>
 
-      <section className="demoParsePreview">
-        <h3>What COGNITION Will Analyze</h3>
-        <ul>
-          <li><Check size={15} /> Property facts, year built, square footage</li>
-          <li><Check size={15} /> HVAC, water, roof, windows, insulation</li>
-          <li><Check size={15} /> Solar, battery, certifications, missing data</li>
-        </ul>
-      </section>
+      
 
       <button className="primaryButton stickyButton scanReportButton" onClick={() => {
         setSelectedProperty(selectedListing);
@@ -1049,10 +1042,7 @@ function ProductDetail({ product, setScreen }) {
         <p>{product.technicalWriteup}</p>
       </section>
 
-      <section className="copyCard">
-        <h3>Why it matters for VPSF</h3>
-        <p>{product.description}</p>
-      </section>
+      
 
       <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
         Request Specs and Pricing <ArrowRight size={18} />
@@ -2416,9 +2406,7 @@ export default function App() {
         .demoMlsScreen .secondaryButton {
           margin-top: 8px;
         }
-        .demoMlsScreen .demoParsePreview {
-          margin-bottom: 4px;
-        }
+        
         .demoMlsScreen .uploadDropZone {
           min-height: 62px;
           padding: 8px 10px;
@@ -2532,20 +2520,10 @@ export default function App() {
           height: 38px;
           font-size: 11px;
         }
-        .demoMlsScreen .demoParsePreview {
-          padding: 12px;
-          margin-top: 10px;
-        }
-        .demoMlsScreen .demoParsePreview h3 {
-          margin-bottom: 8px;
-        }
-        .demoMlsScreen .demoParsePreview ul {
-          gap: 5px;
-        }
-        .demoMlsScreen .demoParsePreview li {
-          font-size: 11px;
-          line-height: 1.25;
-        }
+        
+        
+        
+        
         .demoMlsScreen .scanReportButton {
           margin-top: 12px;
           margin-bottom: 8px;

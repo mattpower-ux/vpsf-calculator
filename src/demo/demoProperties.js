@@ -6,23 +6,37 @@ export const demoProperties = [
     mlsNumber: "ORL-32101-8847",
     listingUrl: "https://demo.vpsf.greenbuildermedia.com/listings/ORL-32101-8847",
     image: "/demo-images/existing-home.jpg",
-    propertyType: "Existing Home",
-    yearBuilt: 2014,
+    propertyType: "Older Existing Home",
+    yearBuilt: 2012,
     squareFeet: 2450,
     beds: 4,
     baths: 3,
-    vpsfScore: 74,
+    lotSizeAcres: 0.32,
+    treeCoverPercent: 42,
+    roofType: "Asphalt shingle",
+    roofAgeYears: 12,
+    vpsfScore: 525,
     scores: {
-      energy: 165,
-      water: 45,
-      health: 170,
-      resilience: 170,
-      carbon: 120,
-      financial: 80,
-      community: 40
+      energy: 115,
+      water: 40,
+      health: 105,
+      resilience: 85,
+      carbon: 55,
+      financial: 75,
+      community: 50
     },
     description:
-      "A typical modern Florida home with strong energy performance but significant opportunities for improvement in water efficiency and carbon reduction."
+      "A typical older Florida home with some useful performance features, but aging roof risk, water-efficiency gaps, limited carbon documentation, and tree-maintenance exposure keep the VPSF score in the middle range.",
+    backendAssumptions: {
+      roofRisk:
+        "Asphalt shingle roof is assumed to be 12 years old. Because many asphalt roofs require major repair or replacement around the 15-year mark in hot, humid climates, the model applies a near-term replacement-risk penalty.",
+      treeCoverRisk:
+        "Large-lot tree cover creates a mixed score effect: mature trees can reduce cooling loads through shading, but higher tree cover also increases likely maintenance, storm cleanup, limb removal, and insurance-risk exposure.",
+      waterRisk:
+        "No verified leak detection or smart irrigation is assumed. Outdoor water demand is treated as a cost-risk factor in a hot, humid Florida market with high irrigation exposure.",
+      scoringIntent:
+        "Most existing homes should fall in the 400–650 VPSF range unless they have verified high-performance systems, documented resilience features, modern water controls, and low ownership-risk indicators."
+    }
   },
 
   {
@@ -37,18 +51,22 @@ export const demoProperties = [
     squareFeet: 2850,
     beds: 4,
     baths: 3.5,
-    vpsfScore: 91,
+    lotSizeAcres: 0.18,
+    treeCoverPercent: 18,
+    roofType: "High-reflectance architectural shingle",
+    roofAgeYears: 0,
+    vpsfScore: 790,
     scores: {
-      energy: 195,
-      water: 95,
-      health: 195,
-      resilience: 190,
-      carbon: 145,
-      financial: 95,
-      community: 45
+      energy: 170,
+      water: 85,
+      health: 175,
+      resilience: 160,
+      carbon: 120,
+      financial: 50,
+      community: 30
     },
     description:
-      "A showcase high-performance residence featuring advanced building science, resilience, indoor air quality, and low operating costs."
+      "A showcase high-performance residence with strong building science, resilience, indoor air quality, and operating-cost advantages."
   },
 
   {
@@ -63,17 +81,21 @@ export const demoProperties = [
     squareFeet: 3100,
     beds: 4,
     baths: 4,
-    vpsfScore: 96,
+    lotSizeAcres: 0.21,
+    treeCoverPercent: 24,
+    roofType: "Solar-ready standing seam metal",
+    roofAgeYears: 0,
+    vpsfScore: 875,
     scores: {
-      energy: 200,
-      water: 100,
-      health: 195,
-      resilience: 195,
-      carbon: 150,
-      financial: 95,
-      community: 48
+      energy: 190,
+      water: 95,
+      health: 185,
+      resilience: 175,
+      carbon: 145,
+      financial: 55,
+      community: 30
     },
     description:
-      "A demonstration property designed to maximize performance across all seven VPSF pillars."
+      "A demonstration property designed to show top-tier performance across the seven VPSF pillars."
   }
 ];

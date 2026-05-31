@@ -526,8 +526,8 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
   return (
     <div className="screen formScreen demoMlsScreen withNav">
       <h2>Import MLS Listing</h2>
-      <p className="subhead">
-        Enter a listing number, property address, or upload listing documents to create a VPSF report.
+      <p className="subhead tightSubhead">
+        Enter a listing number, address, or documents to create a VPSF report.
       </p>
 
       <section className="mlsPropertyPreview">
@@ -591,10 +591,9 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
       <section className="demoParsePreview">
         <h3>What COGNITION Will Analyze</h3>
         <ul>
-          <li><Check size={15} /> Listing facts, square footage, year built, bedrooms, bathrooms</li>
-          <li><Check size={15} /> HVAC, water heater, roof, windows, insulation</li>
-          <li><Check size={15} /> Solar, battery, EV readiness, certifications</li>
-          <li><Check size={15} /> Missing documentation that could affect the VPSF score</li>
+          <li><Check size={15} /> Property facts, year built, square footage</li>
+          <li><Check size={15} /> HVAC, water, roof, windows, insulation</li>
+          <li><Check size={15} /> Solar, battery, certifications, missing data</li>
         </ul>
       </section>
 
@@ -964,10 +963,10 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
         <h3>Affordable Upgrade</h3>
         <div className="detailRow"><span>Smart Leak Detection</span><strong>+8 VPSF</strong></div>
         <div className="detailRow"><span>Estimated Installed Cost</span><strong>&lt; $2,000</strong></div>
-        <p>Adding whole-home leak detection with automatic shutoff is a relatively low-cost upgrade that can reduce water losses, limit damage risk, and may qualify for insurance rebates with some carriers.</p>
+        <p>Whole-home leak detection with automatic shutoff can reduce water loss, limit damage risk, and may qualify for insurance rebates.</p>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
+      <button className="primaryButton keyInsightsAction" onClick={() => setScreen(6)}>View Recommendations <ArrowRight size={18} /></button>
       <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );
@@ -2472,6 +2471,84 @@ export default function App() {
           margin-bottom: 8px;
           text-transform: uppercase;
           letter-spacing: .05em;
+        }
+
+
+        .keyTakeawayScreen {
+          padding-bottom: 132px;
+        }
+        .keyInsightsAction {
+          position: relative;
+          z-index: 5;
+          margin-bottom: 18px;
+        }
+        .affordableUpgradeCard {
+          padding: 12px 14px;
+        }
+        .affordableUpgradeCard p {
+          font-size: 12px;
+          line-height: 1.28;
+          margin-top: 7px;
+        }
+        .affordableUpgradeCard .detailRow {
+          padding: 7px 0;
+          font-size: 12px;
+        }
+        .demoMlsScreen {
+          padding-top: 20px;
+        }
+        .demoMlsScreen .tightSubhead {
+          font-size: 12px;
+          line-height: 1.28;
+          margin-bottom: 10px;
+        }
+        .demoMlsScreen .mlsPropertyPreview {
+          margin-top: 10px;
+        }
+        .demoMlsScreen .mlsPhotoWrap {
+          height: 116px;
+        }
+        .demoMlsScreen .mlsPropertyPreview > div:not(.mlsPhotoWrap) {
+          padding: 8px 10px 9px;
+        }
+        .demoMlsScreen .heroBadges {
+          gap: 5px;
+        }
+        .demoMlsScreen .heroBadges span {
+          padding: 3px 7px;
+          font-size: 9px;
+        }
+        .demoMlsScreen .formSection {
+          margin-top: 10px;
+          padding: 12px;
+          gap: 7px;
+        }
+        .demoMlsScreen .importOptionsHelp {
+          font-size: 11px;
+          line-height: 1.25;
+          margin-bottom: 0;
+        }
+        .demoMlsScreen .field input {
+          height: 38px;
+          font-size: 11px;
+        }
+        .demoMlsScreen .demoParsePreview {
+          padding: 12px;
+          margin-top: 10px;
+        }
+        .demoMlsScreen .demoParsePreview h3 {
+          margin-bottom: 8px;
+        }
+        .demoMlsScreen .demoParsePreview ul {
+          gap: 5px;
+        }
+        .demoMlsScreen .demoParsePreview li {
+          font-size: 11px;
+          line-height: 1.25;
+        }
+        .demoMlsScreen .scanReportButton {
+          margin-top: 12px;
+          margin-bottom: 8px;
         }
 
         @media (max-width: 540px) {

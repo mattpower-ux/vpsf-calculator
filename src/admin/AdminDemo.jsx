@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import cognitionIcon from "../assets/cognition-icon.png";
 import {
   BarChart3,
   Building2,

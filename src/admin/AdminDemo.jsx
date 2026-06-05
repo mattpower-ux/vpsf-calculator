@@ -130,10 +130,14 @@ function Sidebar({ active, setActive }) {
 
   return (
     <aside className="adminSidebar">
-      <div className="adminLogo">
-        <div><Shield size={25} /></div>
-        <strong>VPSF</strong>
-        <span>ADMIN</span>
+      <div className="adminLogo cognitionAdminLogo">
+        <img
+          src={cognitionIcon}
+          alt="COGNITION"
+          className="adminLogoIcon"
+        />
+        <strong>COGNITION</strong>
+        <span>VPSF ADMIN</span>
       </div>
 
       <nav>
@@ -1127,6 +1131,27 @@ export default function AdminDemo() {
           display: flex;
           align-items: center;
           gap: 14px;
+        }
+
+
+        .cognitionAdminLogo {
+          grid-template-columns: 60px 1fr;
+        }
+        .cognitionAdminLogo .adminLogoIcon {
+          width: 54px;
+          height: 54px;
+          object-fit: contain;
+          grid-row: span 2;
+          filter: drop-shadow(0 8px 18px rgba(41,174,245,.24));
+        }
+        .cognitionAdminLogo strong {
+          font-size: 20px;
+          line-height: 1;
+          letter-spacing: .02em;
+        }
+        .cognitionAdminLogo span {
+          font-size: 11px;
+          letter-spacing: .23em;
         }
 
         @media (max-width: 1050px) {

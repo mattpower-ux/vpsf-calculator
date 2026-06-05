@@ -890,7 +890,7 @@ function TakeawayCard({ title, pillar, value, isBest }) {
 }
 
 
-function PillarDetailScreen({ result, selectedPillar, setScreen }) {
+function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar }) {
   const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
   const details = PILLAR_DETAILS[pillar.key];
   const Icon = pillar.icon;
@@ -931,8 +931,11 @@ function PillarDetailScreen({ result, selectedPillar, setScreen }) {
         </article>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(6)}>
-        View Recommendations <ArrowRight size={18} />
+      <button className="primaryButton" onClick={() => {
+        setActivePillar(selectedPillar);
+        setScreen(6);
+      }}>
+        View {pillar.label} Recommendations <ArrowRight size={18} />
       </button>
 
       <button className="secondaryButton" onClick={() => setScreen(5)}>
@@ -1007,7 +1010,38 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
 
 const demoRecommendationDetails = [
   {
+    id: "energy-hvac",
+    pillar: "energy",
+    icon: Zap,
+    eyebrow: "Energy Performance",
+    title: "Upgrade HVAC + Smart Controls",
+    gain: "+16 pts",
+    copy: "Improve heating and cooling efficiency with high-performance heat pumps, smart controls, and better load management.",
+    bullets: [
+      "Replace aging equipment with high-efficiency heat pump technology.",
+      "Use smart controls to reduce peak demand and operating costs.",
+      "Document equipment efficiency ratings for resale and appraisal support.",
+      "Pair HVAC upgrades with envelope improvements for stronger energy gains."
+    ]
+  },
+  {
+    id: "energy-water-heating",
+    pillar: "energy",
+    icon: Zap,
+    eyebrow: "Energy + Water",
+    title: "Install Heat Pump Water Heating",
+    gain: "+15 pts",
+    copy: "Heat pump water heaters can reduce water-heating energy demand and strengthen the home's operating-cost story.",
+    bullets: [
+      "Reduce electric resistance water-heating demand.",
+      "Improve annual utility-cost performance.",
+      "Support demand flexibility where utility programs are available.",
+      "Strengthen both Energy and Financial Risk scoring."
+    ]
+  },
+  {
     id: "water-fixtures",
+    pillar: "water",
     icon: Droplets,
     eyebrow: "Water Performance",
     title: "Install Low-Flow Fixtures + Smart Irrigation",
@@ -1021,7 +1055,53 @@ const demoRecommendationDetails = [
     ]
   },
   {
+    id: "water-leak-detection",
+    pillar: "water",
+    icon: Droplets,
+    eyebrow: "Water Risk",
+    title: "Add Whole-Home Leak Detection",
+    gain: "+8 pts",
+    copy: "Leak detection can reduce water losses, limit property damage risk, and support insurance conversations.",
+    bullets: [
+      "Install an automatic shutoff valve.",
+      "Monitor unusual water flow patterns.",
+      "Protect against hidden plumbing leaks.",
+      "Create a low-cost path to better water-risk performance."
+    ]
+  },
+  {
+    id: "health-ventilation",
+    pillar: "health",
+    icon: HeartPulse,
+    eyebrow: "Health + Air Quality",
+    title: "Add Balanced Fresh-Air Ventilation",
+    gain: "+14 pts",
+    copy: "A balanced ERV or HRV can improve fresh-air delivery, humidity control, and indoor environmental quality.",
+    bullets: [
+      "Improve controlled ventilation instead of relying on leakage.",
+      "Reduce humidity and stale-air complaints.",
+      "Support healthy-home marketing language.",
+      "Pair with filtration and low-emitting materials."
+    ]
+  },
+  {
+    id: "health-filtration",
+    pillar: "health",
+    icon: HeartPulse,
+    eyebrow: "Health Protection",
+    title: "Upgrade Filtration + Moisture Controls",
+    gain: "+10 pts",
+    copy: "Better filtration and moisture control improve health resilience in humid and high-allergen markets.",
+    bullets: [
+      "Upgrade HVAC filtration.",
+      "Reduce indoor particulate exposure.",
+      "Control moisture at bathrooms, kitchens, and mechanical rooms.",
+      "Improve documentation for health-oriented buyers."
+    ]
+  },
+  {
     id: "roof-risk",
+    pillar: "resilience",
     icon: Shield,
     eyebrow: "Resilience & Financial Risk",
     title: "Plan for Asphalt Roof Replacement",
@@ -1035,7 +1115,38 @@ const demoRecommendationDetails = [
     ]
   },
   {
+    id: "resilience-backup-power",
+    pillar: "resilience",
+    icon: Shield,
+    eyebrow: "Resilience",
+    title: "Add Backup Power Readiness",
+    gain: "+12 pts",
+    copy: "Battery, generator, or critical-load panel readiness can improve resilience where power failures are frequent.",
+    bullets: [
+      "Protect key circuits during outages.",
+      "Support medical, refrigeration, and communications needs.",
+      "Improve disaster readiness in storm-prone regions.",
+      "Pair with solar-ready infrastructure when possible."
+    ]
+  },
+  {
+    id: "carbon-materials",
+    pillar: "carbon",
+    icon: Leaf,
+    eyebrow: "Carbon & Materials",
+    title: "Document Lower-Carbon Materials",
+    gain: "+10 pts",
+    copy: "EPD-backed products and material disclosures make the carbon story easier to prove.",
+    bullets: [
+      "Collect EPDs for concrete, insulation, roofing, and finishes.",
+      "Prioritize lower-carbon materials during replacement cycles.",
+      "Document durable materials that reduce replacement frequency.",
+      "Create a credible carbon-performance narrative."
+    ]
+  },
+  {
     id: "tree-risk",
+    pillar: "community",
     icon: Leaf,
     eyebrow: "Site + Ownership Risk",
     title: "Manage Tree Cover and Storm Exposure",
@@ -1046,6 +1157,36 @@ const demoRecommendationDetails = [
       "Budget for pruning, limb removal, and storm-season maintenance.",
       "Preserve strategic shade while reducing branch-over-roof risk.",
       "Use tree management to balance HVAC savings with ownership-risk reduction."
+    ]
+  },
+  {
+    id: "community-connectivity",
+    pillar: "community",
+    icon: Home,
+    eyebrow: "Community Access",
+    title: "Improve Broadband + Service Access Documentation",
+    gain: "+6 pts",
+    copy: "Documenting broadband, transit, and nearby services strengthens the community value story.",
+    bullets: [
+      "Verify available internet speeds and providers.",
+      "Show proximity to health services, schools, and daily needs.",
+      "Document walkability, bike access, and transit options.",
+      "Flag access gaps that reduce marketability."
+    ]
+  },
+  {
+    id: "ownership-insurance",
+    pillar: "financial",
+    icon: Wallet,
+    eyebrow: "Financial Risk",
+    title: "Reduce Insurance and Maintenance Exposure",
+    gain: "+12 pts",
+    copy: "Roof condition, leak protection, storm readiness, and equipment age shape ownership risk and buyer confidence.",
+    bullets: [
+      "Document insurance-relevant upgrades.",
+      "Estimate major replacement timelines.",
+      "Identify near-term maintenance costs.",
+      "Prioritize upgrades that reduce surprise expenses."
     ]
   }
 ];
@@ -1128,14 +1269,169 @@ const demoMatchingProducts = {
       image: arboristThumb,
       note: "Reduces limb-over-roof exposure before severe weather."
     }
+  ],
+  "energy-hvac": [
+    {
+      id: "smart-thermostat",
+      name: "Smart Thermostat + Load Controls",
+      category: "Energy Controls",
+      impact: "+5 VPSF",
+      note: "Smart controls reduce energy waste and improve peak-load management."
+    },
+    {
+      id: "high-efficiency-heat-pump",
+      name: "High-Efficiency Heat Pump System",
+      category: "HVAC",
+      impact: "+11 VPSF",
+      note: "Modern heat pump systems can reduce heating and cooling energy demand."
+    }
+  ],
+  "energy-water-heating": [
+    {
+      id: "rheem-proterra-match",
+      name: "Rheem ProTerra Heat Pump Water Heater",
+      category: "Water Heating",
+      impact: "+15 VPSF",
+      note: "Heat-pump water heating reduces energy use and operating cost exposure."
+    }
+  ],
+  "water-leak-detection": [
+    {
+      id: "smart-leak-detection",
+      name: "Whole-Home Leak Detection + Auto Shutoff",
+      category: "Leak Protection",
+      impact: "+8 VPSF",
+      note: "Automatic shutoff reduces damage risk and improves water resilience."
+    },
+    {
+      id: "rachio-smart-irrigation-leak",
+      name: "Rachio Smart Irrigation Controller",
+      category: "Smart Irrigation",
+      impact: "+6 VPSF",
+      image: rachioThumb,
+      note: "Weather-based scheduling reduces outdoor irrigation waste."
+    }
+  ],
+  "health-ventilation": [
+    {
+      id: "renewaire-erv-match",
+      name: "RenewAire Energy Recovery Ventilator",
+      category: "Ventilation",
+      impact: "+10 VPSF",
+      note: "Energy recovery ventilation improves fresh-air delivery and humidity control."
+    }
+  ],
+  "health-filtration": [
+    {
+      id: "high-merv-filtration",
+      name: "High-MERV Filtration Upgrade",
+      category: "Filtration",
+      impact: "+6 VPSF",
+      note: "Better filtration can reduce indoor particulate exposure."
+    }
+  ],
+  "resilience-backup-power": [
+    {
+      id: "critical-load-panel",
+      name: "Critical-Load Backup Power Panel",
+      category: "Backup Power",
+      impact: "+7 VPSF",
+      note: "Critical-load readiness improves function during outages."
+    },
+    {
+      id: "home-battery",
+      name: "Home Battery Backup System",
+      category: "Energy Storage",
+      impact: "+12 VPSF",
+      note: "Battery backup improves resilience where power failures are frequent."
+    }
+  ],
+  "carbon-materials": [
+    {
+      id: "epd-material-package",
+      name: "EPD-Backed Product Package",
+      category: "Materials Documentation",
+      impact: "+8 VPSF",
+      note: "EPDs make lower-carbon material choices easier to verify."
+    }
+  ],
+  "community-connectivity": [
+    {
+      id: "broadband-verification",
+      name: "Broadband + Services Verification",
+      category: "Community Access",
+      impact: "+4 VPSF",
+      note: "Documenting broadband and nearby services strengthens community scoring."
+    }
+  ],
+  "ownership-insurance": [
+    {
+      id: "insurance-risk-package",
+      name: "Insurance Risk Reduction Package",
+      category: "Ownership Risk",
+      impact: "+10 VPSF",
+      note: "Roof, leak, and storm upgrades can improve ownership-risk confidence."
+    }
   ]
 };
 
-function Recommendations({ setScreen, setSelectedRecommendation }) {
+const pillarLabelMap = {
+  energy: "Energy",
+  water: "Water",
+  health: "Health",
+  resilience: "Resilience",
+  carbon: "Carbon & Materials",
+  community: "Community",
+  financial: "Financial Risk"
+};
+
+function productMatchesPillar(product, pillarKey) {
+  if (!pillarKey) return true;
+  const haystack = `${product.pillar || ""} ${product.category || ""} ${product.name || ""} ${product.description || ""} ${product.improvement || ""}`.toLowerCase();
+
+  const tests = {
+    energy: ["energy", "hvac", "heat pump", "water heater", "solar", "battery", "thermostat"],
+    water: ["water", "fixture", "faucet", "shower", "toilet", "irrigation", "rainwater", "leak"],
+    health: ["health", "air", "ventilation", "erv", "filtration", "iaq", "humidity"],
+    resilience: ["resilience", "roof", "shingle", "storm", "impact", "generator", "battery", "window", "hurricane"],
+    carbon: ["carbon", "material", "epd", "low-carbon", "concrete", "insulation"],
+    community: ["community", "mobility", "transit", "broadband", "walk", "bike", "tree"],
+    financial: ["financial", "insurance", "maintenance", "ownership", "cost", "risk"]
+  };
+
+  return (tests[pillarKey] || [pillarKey]).some((term) => haystack.includes(term));
+}
+
+function recommendationMatchesPillar(recommendation, pillarKey) {
+  if (!pillarKey) return true;
+  return recommendation.pillar === pillarKey;
+}
+
+
+
+function Recommendations({ setScreen, setSelectedRecommendation, activePillar, setActivePillar }) {
+  const filteredRecommendations = demoRecommendationDetails.filter((rec) =>
+    recommendationMatchesPillar(rec, activePillar)
+  );
+  const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
+  const totalGain = filteredRecommendations.reduce((sum, rec) => {
+    const numeric = Number(String(rec.gain).replace(/[^0-9]/g, ""));
+    return sum + (Number.isFinite(numeric) ? numeric : 0);
+  }, 0);
+
   return (
     <div className="screen recommendations withNav">
-      <header className="screenTop"><h2>Recommendations</h2></header>
-      {demoRecommendationDetails.map((rec) => {
+      <header className="screenTop"><h2>{activeLabel ? `${activeLabel} Recommendations` : "Recommendations"}</h2></header>
+
+      {activeLabel && (
+        <section className="contextBanner">
+          <strong>{activeLabel} Improvement Path</strong>
+          <span>Showing {filteredRecommendations.length} targeted recommendations · Potential gain +{totalGain} VPSF</span>
+          <button onClick={() => setActivePillar(null)}>Show All Recommendations</button>
+        </section>
+      )}
+
+      {filteredRecommendations.map((rec) => {
         const Icon = rec.icon;
         return (
           <article className="recommendationCard" key={rec.id}>
@@ -1150,7 +1446,9 @@ function Recommendations({ setScreen, setSelectedRecommendation }) {
         );
       })}
       <button className="primaryButton" onClick={() => setScreen(18)}>View Future Cost Exposure <ArrowRight size={18} /></button>
-      <button className="secondaryButton" onClick={() => setScreen(7)}>View Recommended Products</button>
+      <button className="secondaryButton" onClick={() => setScreen(7)}>
+        {activeLabel ? `View ${activeLabel} Products` : "View Recommended Products"}
+      </button>
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
   );
@@ -1288,12 +1586,24 @@ function MatchingProductDetail({ product, setScreen }) {
   );
 }
 
-function Products({ setScreen, setSelectedProduct }) {
+function Products({ setScreen, setSelectedProduct, activePillar, setActivePillar }) {
+  const filteredProducts = demoProducts.filter((product) => productMatchesPillar(product, activePillar));
+  const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
+
   return (
     <div className="screen products withNav">
-      <header className="screenTop"><h2>Recommended Products</h2><Filter size={18} /></header>
+      <header className="screenTop"><h2>{activeLabel ? `${activeLabel} Products` : "Recommended Products"}</h2><Filter size={18} /></header>
+
+      {activeLabel && (
+        <section className="contextBanner">
+          <strong>{activeLabel} Product Match</strong>
+          <span>Showing products matched to the selected pillar path.</span>
+          <button onClick={() => setActivePillar(null)}>Show All Products</button>
+        </section>
+      )}
+
       <div className="productList">
-        {demoProducts.map((product) => (
+        {filteredProducts.map((product) => (
           <article className="productCard" key={product.id}>
             <div className="productImage realProductImage">
               <img src={product.image} alt={product.name} />
@@ -1626,6 +1936,7 @@ export default function App() {
 
   const [screen, setScreen] = useState(0);
   const [selectedPillar, setSelectedPillar] = useState("energy");
+  const [activePillar, setActivePillar] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
   const [selectedMatchingProduct, setSelectedMatchingProduct] = useState(demoMatchingProducts["water-fixtures"][0]);
@@ -1646,11 +1957,11 @@ export default function App() {
         {screen === 3 && <ReviewScreen home={home} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
-        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} />}
-        {screen === 7 && <Products setScreen={setScreen} setSelectedProduct={setSelectedProduct} />}
+        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} activePillar={activePillar} setActivePillar={setActivePillar} />}
+        {screen === 7 && <Products setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
-        {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
+        {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} />}
@@ -3433,6 +3744,38 @@ export default function App() {
         }
         .inlineDetailsButton svg {
           stroke-width: 3;
+        }
+
+
+        .contextBanner {
+          border: 1px solid #d6e7f7;
+          background: #f1f8ff;
+          border-radius: 14px;
+          padding: 12px 14px;
+          margin: 10px 0 14px;
+          display: grid;
+          gap: 5px;
+        }
+        .contextBanner strong {
+          color: var(--ink);
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+        }
+        .contextBanner span {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.3;
+        }
+        .contextBanner button {
+          justify-self: start;
+          border: 0;
+          background: transparent;
+          color: var(--blue);
+          font-size: 12px;
+          font-weight: 900;
+          padding: 3px 0 0;
+          cursor: pointer;
         }
 
         @media (max-width: 540px) {

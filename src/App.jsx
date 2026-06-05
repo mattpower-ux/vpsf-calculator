@@ -1620,7 +1620,7 @@ function LabelScreen({ result, setScreen }) {
 }
 
 export default function App() {
-  if (window.location.pathname === "/admin") {
+  if (window.location.search.includes("admin=true")) {
     return <AdminDemo />;
   }
 

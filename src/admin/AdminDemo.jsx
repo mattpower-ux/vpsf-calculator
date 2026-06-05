@@ -1,0 +1,542 @@
+import React, { useMemo, useState } from "react";
+import {
+  BarChart3,
+  Building2,
+  ChevronDown,
+  Download,
+  Edit3,
+  FileText,
+  Gauge,
+  Home,
+  Layers,
+  LineChart,
+  Package,
+  Plus,
+  Search,
+  Settings,
+  Shield,
+  SlidersHorizontal,
+  Users,
+  Zap
+} from "lucide-react";
+
+const PILLARS = ["Energy", "Water", "Health", "Resilience", "Carbon", "Community", "Ownership"];
+
+const products = [
+  { brand: "ATAS", product: "Solar-Ready Metal Roofing", pillar: "Resilience", category: "Roofing", weight: "Priority" },
+  { brand: "CertainTeed", product: "Solaris Cool Roof Shingles", pillar: "Resilience", category: "Roofing", weight: "Priority" },
+  { brand: "Euroshield", product: "Recycled Rubber Roofing", pillar: "Resilience", category: "Roofing", weight: "Priority" },
+  { brand: "GAF", product: "Timberline HDZ Shingles", pillar: "Resilience", category: "Roofing", weight: "Downgrade" },
+  { brand: "Kohler", product: "WaterSense Bathroom Faucet", pillar: "Water", category: "Fixtures", weight: "Standard" },
+  { brand: "Moen", product: "Eco-Performance Showerhead", pillar: "Water", category: "Fixtures", weight: "Priority" },
+  { brand: "Niagara", product: "High-Efficiency Toilet", pillar: "Water", category: "Fixtures", weight: "Priority" },
+  { brand: "Rachio", product: "Smart Irrigation Controller", pillar: "Water", category: "Irrigation", weight: "Priority" },
+  { brand: "RenewAire", product: "Energy Recovery Ventilator", pillar: "Health", category: "Ventilation", weight: "Priority" },
+  { brand: "Rheem", product: "ProTerra Heat Pump Water Heater", pillar: "Energy", category: "Water Heating", weight: "Priority" }
+].sort((a, b) => a.brand.localeCompare(b.brand));
+
+const properties = [
+  { address: "1313 Cognition Drive", city: "Orlando", zip: "32101", score: 520, status: "Demo", lastRun: "Today" },
+  { address: "44 Harbor View Dr.", city: "Jacksonville", zip: "32202", score: 742, status: "Complete", lastRun: "Yesterday" },
+  { address: "17 Net Zero Lane", city: "Austin", zip: "78704", score: 875, status: "Complete", lastRun: "May 29" },
+  { address: "902 Palm Ridge Ct.", city: "Gainesville", zip: "32601", score: 488, status: "Needs Review", lastRun: "May 27" }
+];
+
+const users = [
+  {
+    user: "m.power@greenbuildermedia.com",
+    role: "Admin",
+    sessions: 18,
+    propertiesQueried: 42,
+    productsViewed: 31,
+    mostViewedProduct: "CertainTeed Solaris",
+    ip: "172.59.67.154",
+    zip: "32101",
+    lastSeen: "Today 11:42 AM"
+  },
+  {
+    user: "builder.demo@company.com",
+    role: "Manufacturer",
+    sessions: 7,
+    propertiesQueried: 13,
+    productsViewed: 24,
+    mostViewedProduct: "Rheem ProTerra",
+    ip: "172.68.12.50",
+    zip: "32801",
+    lastSeen: "Today 9:17 AM"
+  },
+  {
+    user: "realtor.demo@brokerage.com",
+    role: "Realtor",
+    sessions: 5,
+    propertiesQueried: 19,
+    productsViewed: 11,
+    mostViewedProduct: "Moen Showerhead",
+    ip: "104.28.78.12",
+    zip: "32202",
+    lastSeen: "Yesterday"
+  },
+  {
+    user: "anonymous-demo",
+    role: "Guest",
+    sessions: 2,
+    propertiesQueried: 4,
+    productsViewed: 7,
+    mostViewedProduct: "Rachio Controller",
+    ip: "172.70.174.88",
+    zip: "34498",
+    lastSeen: "May 30"
+  }
+];
+
+const reports = [
+  { name: "Manufacturer Lead Summary", period: "Last 30 days", metric: "82 leads", trend: "+18%" },
+  { name: "Top Viewed Products", period: "Last 30 days", metric: "416 views", trend: "+34%" },
+  { name: "Property Query Volume", period: "Last 30 days", metric: "129 homes", trend: "+22%" },
+  { name: "Water Upgrade Demand", period: "Last 30 days", metric: "47 matches", trend: "+41%" }
+];
+
+function Badge({ children, tone }) {
+  return <span className={`badge ${tone || ""}`}>{children}</span>;
+}
+
+function WeightSelect({ value }) {
+  return (
+    <button className={`weightSelect ${value.toLowerCase()}`}>
+      <span /> {value} <ChevronDown size={14} />
+    </button>
+  );
+}
+
+function Sidebar({ active, setActive }) {
+  const items = [
+    ["Dashboard", Gauge],
+    ["Properties", Home],
+    ["Recommendations", SlidersHorizontal],
+    ["Products", Package],
+    ["Brand Weighting", Layers],
+    ["Users", Users],
+    ["Reports", BarChart3],
+    ["Settings", Settings]
+  ];
+
+  return (
+    <aside className="adminSidebar">
+      <div className="adminLogo">
+        <div><Shield size={25} /></div>
+        <strong>VPSF</strong>
+        <span>ADMIN</span>
+      </div>
+
+      <nav>
+        {items.map(([label, Icon]) => (
+          <button
+            key={label}
+            className={active === label ? "active" : ""}
+            onClick={() => setActive(label)}
+          >
+            <Icon size={18} /> {label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="adminUser">
+        <div>AD</div>
+        <span>
+          <strong>Admin User</strong>
+          admin@vpsf.com
+        </span>
+      </div>
+    </aside>
+  );
+}
+
+function Header({ active }) {
+  return (
+    <header className="adminHeader">
+      <div>
+        <h1>{active === "Brand Weighting" ? "Product Recommendation Manager" : active}</h1>
+        <p>
+          {active === "Brand Weighting"
+            ? "Manage brand and product priority weighting across the seven VPSF pillars."
+            : "Demo admin workspace for monitoring prototype activity, product interest, and property scoring."}
+        </p>
+      </div>
+      <div className="headerActions">
+        <button><Download size={17} /> Export</button>
+        <button className="primary">Save Changes</button>
+      </div>
+    </header>
+  );
+}
+
+function Dashboard() {
+  return (
+    <div className="gridPage">
+      <Metric title="Properties Scored" value="129" note="+22% this month" icon={Home} />
+      <Metric title="Product Views" value="416" note="+34% this month" icon={Package} />
+      <Metric title="Lead Requests" value="82" note="+18% this month" icon={Users} />
+      <Metric title="Avg. VPSF Score" value="564" note="Existing homes only" icon={Gauge} />
+
+      <section className="panel wide">
+        <h2>Recent Admin Signals</h2>
+        <div className="activityList">
+          <p><strong>Water products</strong> are the highest-opportunity recommendation group this week.</p>
+          <p><strong>CertainTeed Solaris</strong> is receiving priority placement in roofing-related recommendations.</p>
+          <p><strong>Older Orlando homes</strong> are clustering in the 480–560 VPSF range.</p>
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2>Top Product Categories</h2>
+        <MiniBar label="Water Fixtures" value={86} />
+        <MiniBar label="Roofing" value={72} />
+        <MiniBar label="Ventilation" value={54} />
+        <MiniBar label="Water Heating" value={48} />
+      </section>
+    </div>
+  );
+}
+
+function Metric({ title, value, note, icon: Icon }) {
+  return (
+    <section className="metric">
+      <Icon size={20} />
+      <span>{title}</span>
+      <strong>{value}</strong>
+      <em>{note}</em>
+    </section>
+  );
+}
+
+function BrandWeighting() {
+  const [pillar, setPillar] = useState("All");
+  const filtered = useMemo(
+    () => pillar === "All" ? products : products.filter((item) => item.pillar === pillar),
+    [pillar]
+  );
+
+  return (
+    <div className="managerLayout">
+      <main>
+        <div className="toolbar">
+          <label><Search size={16} /><input placeholder="Search brand or product..." /></label>
+          <div className="pillarFilters">
+            {["All", ...PILLARS].map((item) => (
+              <button key={item} className={pillar === item ? "active" : ""} onClick={() => setPillar(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <section className="tablePanel">
+          <div className="tablePanelHeader">
+            <div>
+              <Building2 size={34} />
+              <span>
+                <h2>{pillar === "All" ? "All Recommendation Products" : `${pillar} Products`}</h2>
+                <p>Priority products appear first. Downgraded products appear last. Hidden products are excluded.</p>
+              </span>
+            </div>
+            <button><Plus size={16} /> Add Product</button>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Brand</th>
+                <th>Product</th>
+                <th>Pillar</th>
+                <th>Category</th>
+                <th>Weighting</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((item) => (
+                <tr key={`${item.brand}-${item.product}`}>
+                  <td><strong>{item.brand}</strong></td>
+                  <td>{item.product}</td>
+                  <td>{item.pillar}</td>
+                  <td>{item.category}</td>
+                  <td><WeightSelect value={item.weight} /></td>
+                  <td><button className="iconButton"><Edit3 size={16} /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      </main>
+
+      <aside className="rightRail">
+        <Panel title="Weighting Summary">
+          <SummaryLine tone="green" label="Priority Products" value="28" />
+          <SummaryLine tone="gray" label="Standard Products" value="134" />
+          <SummaryLine tone="red" label="Downgraded Products" value="12" />
+          <SummaryLine tone="dark" label="Hidden Products" value="6" />
+        </Panel>
+
+        <Panel title="Pillar Breakdown">
+          {PILLARS.map((item, index) => (
+            <SummaryLine key={item} tone="blue" label={item} value={[42, 38, 31, 27, 27, 33, 22][index]} />
+          ))}
+        </Panel>
+
+        <Panel title="Manufacturer Visibility Estimate">
+          <MiniBar label="CertainTeed" value={34} />
+          <MiniBar label="ATAS" value={18} />
+          <MiniBar label="Rheem" value={16} />
+          <MiniBar label="RenewAire" value={11} />
+          <MiniBar label="Moen" value={7} />
+          <p className="finePrint">Estimates reflect current weighting and product counts across all pillars.</p>
+        </Panel>
+      </aside>
+    </div>
+  );
+}
+
+function Properties() {
+  return (
+    <section className="tablePanel fullPanel">
+      <div className="tablePanelHeader">
+        <div><Home size={30} /><span><h2>Properties</h2><p>Recent property evaluations and demo score activity.</p></span></div>
+        <button><Plus size={16} /> Add Property</button>
+      </div>
+      <table>
+        <thead><tr><th>Address</th><th>Market</th><th>ZIP</th><th>VPSF Score</th><th>Status</th><th>Last Run</th></tr></thead>
+        <tbody>
+          {properties.map((item) => (
+            <tr key={item.address}>
+              <td><strong>{item.address}</strong></td>
+              <td>{item.city}</td>
+              <td>{item.zip}</td>
+              <td><Badge tone={item.score >= 700 ? "green" : item.score >= 500 ? "gold" : "red"}>{item.score}</Badge></td>
+              <td>{item.status}</td>
+              <td>{item.lastRun}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function UsersPage() {
+  return (
+    <section className="tablePanel fullPanel">
+      <div className="tablePanelHeader">
+        <div><Users size={30} /><span><h2>Users</h2><p>Demo traffic, property query behavior, product interest, IP address, and ZIP code.</p></span></div>
+        <button><Download size={16} /> Export CSV</button>
+      </div>
+      <table className="spreadsheetTable">
+        <thead>
+          <tr>
+            <th>User / Email</th>
+            <th>Role</th>
+            <th>Sessions</th>
+            <th>Properties Queried</th>
+            <th>Products Viewed</th>
+            <th>Top Product</th>
+            <th>IP Address</th>
+            <th>ZIP Code</th>
+            <th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((item) => (
+            <tr key={item.user}>
+              <td><strong>{item.user}</strong></td>
+              <td>{item.role}</td>
+              <td>{item.sessions}</td>
+              <td>{item.propertiesQueried}</td>
+              <td>{item.productsViewed}</td>
+              <td>{item.mostViewedProduct}</td>
+              <td>{item.ip}</td>
+              <td>{item.zip}</td>
+              <td>{item.lastSeen}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function Reports() {
+  return (
+    <div className="gridPage">
+      {reports.map((item) => (
+        <section className="reportCard" key={item.name}>
+          <FileText size={22} />
+          <h2>{item.name}</h2>
+          <p>{item.period}</p>
+          <strong>{item.metric}</strong>
+          <Badge tone="green">{item.trend}</Badge>
+        </section>
+      ))}
+
+      <section className="panel wide">
+        <h2>Report Preview</h2>
+        <MiniBar label="Water Products" value={86} />
+        <MiniBar label="Roofing Products" value={72} />
+        <MiniBar label="ERV / IAQ Products" value={54} />
+        <MiniBar label="Heat Pump Water Heaters" value={48} />
+      </section>
+    </div>
+  );
+}
+
+function GenericPage({ title }) {
+  return (
+    <section className="emptyPanel">
+      <Layers size={42} />
+      <h2>{title}</h2>
+      <p>This is a demo placeholder screen. The backend can populate this area with live administrative controls later.</p>
+    </section>
+  );
+}
+
+function Panel({ title, children }) {
+  return <section className="sidePanel"><h3>{title}</h3>{children}</section>;
+}
+
+function SummaryLine({ label, value, tone }) {
+  return <div className="summaryLine"><i className={tone} /><span>{label}</span><strong>{value}</strong></div>;
+}
+
+function MiniBar({ label, value }) {
+  return (
+    <div className="miniBar">
+      <span>{label}</span>
+      <div><i style={{ width: `${value}%` }} /></div>
+      <strong>{value}%</strong>
+    </div>
+  );
+}
+
+export default function AdminDemo() {
+  const [active, setActive] = useState("Brand Weighting");
+
+  const content = {
+    Dashboard: <Dashboard />,
+    Properties: <Properties />,
+    Recommendations: <GenericPage title="Recommendation Rules" />,
+    Products: <BrandWeighting />,
+    "Brand Weighting": <BrandWeighting />,
+    Users: <UsersPage />,
+    Reports: <Reports />,
+    Settings: <GenericPage title="Settings" />
+  }[active];
+
+  return (
+    <div className="adminApp">
+      <Sidebar active={active} setActive={setActive} />
+      <main className="adminMain">
+        <Header active={active} />
+        <div className="adminContent">{content}</div>
+      </main>
+
+      <style>{`
+        :root {
+          --navy: #071a2c;
+          --navy2: #0c2d4b;
+          --blue: #126fd2;
+          --bright: #29aef5;
+          --green: #219653;
+          --red: #d8262f;
+          --gold: #f2a51a;
+          --muted: #607089;
+          --line: #dfe7f0;
+          --soft: #f5f8fc;
+          --card: #ffffff;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--soft); color: #0a2340; }
+        button, input { font: inherit; }
+        .adminApp { min-height: 100vh; display: grid; grid-template-columns: 260px 1fr; background: #f6f9fd; }
+        .adminSidebar { background: linear-gradient(180deg, #071a2c, #0b2d4c); color: #fff; padding: 24px 12px; display: flex; flex-direction: column; gap: 24px; }
+        .adminLogo { display: grid; grid-template-columns: 50px 1fr; column-gap: 10px; align-items: center; padding: 0 8px 20px; }
+        .adminLogo div { width: 46px; height: 46px; border-radius: 12px; border: 2px solid #2f93ff; display: grid; place-items: center; color: #f2c94c; }
+        .adminLogo strong { font-size: 32px; line-height: .8; letter-spacing: .02em; }
+        .adminLogo span { grid-column: 2; font-size: 13px; letter-spacing: .42em; font-weight: 800; }
+        .adminSidebar nav { display: grid; gap: 6px; }
+        .adminSidebar nav button { border: 0; color: #d8e8f8; background: transparent; display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 10px; cursor: pointer; text-align: left; }
+        .adminSidebar nav button.active { background: linear-gradient(90deg, #126fd2, #0d84f2); color: #fff; font-weight: 800; }
+        .adminUser { margin-top: auto; border-top: 1px solid rgba(255,255,255,.18); padding: 18px 8px 0; display: flex; gap: 10px; align-items: center; }
+        .adminUser div { width: 40px; height: 40px; border-radius: 999px; background: var(--blue); display: grid; place-items: center; font-weight: 900; }
+        .adminUser span { display: grid; font-size: 12px; color: #c9d8e6; }
+        .adminUser strong { color: #fff; font-size: 14px; }
+        .adminMain { min-width: 0; }
+        .adminHeader { height: 112px; padding: 28px 32px; display: flex; align-items: start; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); background: #fff; }
+        .adminHeader h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -.03em; }
+        .adminHeader p { margin: 0; color: #40506a; }
+        .headerActions { display: flex; gap: 12px; }
+        .headerActions button, .tablePanelHeader button { height: 44px; border: 1px solid #cfe0f1; color: var(--blue); background: #fff; border-radius: 8px; padding: 0 18px; display: inline-flex; align-items: center; gap: 9px; font-weight: 800; cursor: pointer; }
+        .headerActions .primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+        .adminContent { padding: 26px 32px; }
+        .managerLayout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+        .toolbar label { width: 330px; height: 44px; border: 1px solid #ccd9e8; background: #fff; border-radius: 8px; display: flex; align-items: center; gap: 9px; padding: 0 12px; color: #68788e; }
+        .toolbar input { border: 0; outline: 0; width: 100%; }
+        .pillarFilters { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pillarFilters button { height: 40px; border: 1px solid #cfe0f1; background: #fff; color: #22344c; border-radius: 8px; padding: 0 14px; font-weight: 700; cursor: pointer; }
+        .pillarFilters button.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .tablePanel, .fullPanel, .sidePanel, .metric, .panel, .reportCard, .emptyPanel { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 28px rgba(9,33,59,.04); }
+        .tablePanelHeader { padding: 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 18px; align-items: center; }
+        .tablePanelHeader > div { display: flex; align-items: center; gap: 14px; color: var(--blue); }
+        .tablePanelHeader h2 { margin: 0 0 4px; font-size: 17px; color: #0a2340; text-transform: uppercase; letter-spacing: .03em; }
+        .tablePanelHeader p { margin: 0; color: #506179; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { color: #071a2c; font-size: 12px; text-align: left; padding: 14px 22px; background: #fbfdff; border-bottom: 1px solid var(--line); }
+        td { padding: 16px 22px; border-bottom: 1px solid var(--line); color: #102842; }
+        tr:last-child td { border-bottom: 0; }
+        .weightSelect { min-width: 160px; height: 38px; border: 1px solid #d4e0ec; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 0 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; }
+        .weightSelect span, .summaryLine i { width: 11px; height: 11px; border-radius: 999px; display: inline-block; }
+        .priority span, .green { background: var(--green); }
+        .standard span, .gray { background: #9ba8b9; }
+        .downgrade span, .red { background: var(--red); }
+        .dark { background: #263449; }
+        .blue { background: var(--blue); }
+        .iconButton { border: 0; color: var(--blue); background: transparent; cursor: pointer; }
+        .rightRail { display: grid; gap: 14px; align-content: start; }
+        .sidePanel { padding: 18px; }
+        .sidePanel h3 { margin: 0 0 16px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+        .summaryLine { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; font-size: 14px; color: #263449; }
+        .miniBar { display: grid; grid-template-columns: 92px 1fr 38px; gap: 9px; align-items: center; margin: 12px 0; font-size: 13px; }
+        .miniBar div { height: 8px; border-radius: 999px; background: #e8eef5; overflow: hidden; }
+        .miniBar i { height: 100%; display: block; border-radius: 999px; background: var(--blue); }
+        .miniBar strong { text-align: right; }
+        .finePrint { color: #708096; font-size: 12px; line-height: 1.4; }
+        .gridPage { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+        .metric { padding: 18px; display: grid; gap: 7px; }
+        .metric svg { color: var(--blue); }
+        .metric span { color: #596a80; font-size: 13px; }
+        .metric strong { font-size: 32px; }
+        .metric em { color: var(--green); font-style: normal; font-size: 12px; font-weight: 800; }
+        .panel { padding: 20px; }
+        .panel.wide { grid-column: span 2; }
+        .activityList p { border-bottom: 1px solid var(--line); padding: 10px 0; margin: 0; color: #40506a; }
+        .reportCard { padding: 18px; display: grid; gap: 8px; }
+        .reportCard svg { color: var(--blue); }
+        .reportCard h2 { margin: 0; font-size: 16px; }
+        .reportCard p { margin: 0; color: #617189; }
+        .reportCard strong { font-size: 24px; }
+        .badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 900; background: #eef4fb; color: var(--blue); }
+        .badge.green { background: #e7f7ee; color: var(--green); }
+        .badge.gold { background: #fff5de; color: #9a6400; }
+        .badge.red { background: #ffe9e9; color: var(--red); }
+        .emptyPanel { height: 460px; display: grid; place-items: center; text-align: center; padding: 40px; color: #52657a; }
+        .emptyPanel svg { color: var(--blue); }
+        .spreadsheetTable th, .spreadsheetTable td { white-space: nowrap; font-size: 13px; }
+        @media (max-width: 1050px) {
+          .adminApp { grid-template-columns: 1fr; }
+          .adminSidebar { position: relative; min-height: auto; }
+          .managerLayout { grid-template-columns: 1fr; }
+          .gridPage { grid-template-columns: repeat(2, 1fr); }
+          .tablePanel { overflow-x: auto; }
+        }
+      `}</style>
+    </div>
+  );
+}

@@ -467,8 +467,28 @@ function Reports({ products }) {
         ))}
       </div>
 
-      <section className="customReportGrid singleColumn">
-<article className="customReportCard">
+      <section className="customReportGrid">
+        <article className="customReportCard">
+          <h2>Create Custom Summary</h2>
+          <p>Select a brand/product currently in the recommendation database.</p>
+          <label>
+            <span>Brand / Product</span>
+            <select value={summaryProduct} onChange={(event) => setSummaryProduct(event.target.value)}>
+              {productNames.map((name) => <option key={name}>{name}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Report Format</span>
+            <select>
+              <option>.txt summary</option>
+              <option>.CSV spreadsheet</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <button className="primaryReportButton">Create Summary</button>
+        </article>
+
+        <article className="customReportCard">
           <h2>Create Custom Lead Report</h2>
           <p>Type a manufacturer name. Matching products will populate automatically.</p>
           <label>
@@ -543,8 +563,8 @@ function Reports({ products }) {
       <section className="prospectAnalysisPanel">
         <div className="prospectHeader">
           <div>
-            <h2>Prospect Analysis-Talking Points</h2>
-            <p>Context: Market indicators and buyer demand signals for CertainTeed Solaris roofing.</p>
+            <h2>Prospect Analysis</h2>
+            <p>AI-assisted lead context for CertainTeed Solaris roofing opportunities.</p>
           </div>
           <Badge tone="green">OpenAI Context Layer</Badge>
         </div>
@@ -552,12 +572,13 @@ function Reports({ products }) {
         <div className="prospectGrid">
           <article className="prospectCard">
             <span>Client Region</span>
-            <strong>Southeast U.S. + Lake City, Colorado</strong>
+            <strong>Florida / Southeast</strong>
             <div className="regionChips">
-              <em>Orlando / Jacksonville Region</em>
-              <em>Lake City, Colorado</em>
+              <em>Orlando</em>
+              <em>Jacksonville</em>
+              <em>Gainesville</em>
             </div>
-            <p>Lead activity is clustering in two primary regions: Southeast markets facing storm exposure and cooling-cost pressures, and Lake City, Colorado, where a planned 1,000-home development may create future roofing demand.</p>
+            <p>Lead activity is clustering in hot, humid markets with storm exposure and rising cooling-cost sensitivity.</p>
           </article>
 
           <article className="prospectCard">
@@ -593,12 +614,78 @@ function Reports({ products }) {
   );
 }
 
+
+function ScoringControlsPage() {
+  const pillars = [
+    ["Energy","Utility Cost Multiplier","Grid Reliability","Solar Opportunity"],
+    ["Water","Drought Severity","Water Rates","Flood Risk"],
+    ["Health","Air Quality Risk","Healthcare Access","Extreme Heat Exposure"],
+    ["Resilience","Hurricane Risk","Wildfire Risk","Power Failure Risk"],
+    ["Carbon","Grid Carbon Intensity","Transit Availability","EV Infrastructure"],
+    ["Community","Broadband Access","Walkability","Public Transportation"],
+    ["Ownership","Insurance Cost Pressure","Property Tax Burden","Maintenance Burden"]
+  ];
+
+  return (
+    <div className="scoringControlsPage">
+      <section className="weightingProfile">
+        <div>
+          <h2>Active Weighting Profile</h2>
+          <p>Select a regional scoring profile or create a custom model.</p>
+        </div>
+        <select>
+          <option>Florida Coastal 2026</option>
+          <option>Mountain West</option>
+          <option>Texas Heat Belt</option>
+          <option>Midwest Rural</option>
+          <option>California Wildfire</option>
+          <option>Custom</option>
+        </select>
+      </section>
+
+      <section className="impactPreview">
+        <h2>Weighting Impact Preview</h2>
+        <div className="impactGrid">
+          <div>Energy <strong>22%</strong></div>
+          <div>Water <strong>18%</strong></div>
+          <div>Health <strong>11%</strong></div>
+          <div>Resilience <strong>24%</strong></div>
+          <div>Carbon <strong>8%</strong></div>
+          <div>Community <strong>7%</strong></div>
+          <div>Ownership <strong>10%</strong></div>
+        </div>
+      </section>
+
+      <div className="pillarControlGrid">
+        {pillars.map(([pillar,a,b,c]) => (
+          <article className="pillarControlCard" key={pillar}>
+            <h3>{pillar}</h3>
+            <label>{a}<select><option>Low</option><option>Average</option><option>High</option><option>Extreme</option></select></label>
+            <label>{b}<select><option>Low</option><option>Average</option><option>High</option><option>Extreme</option></select></label>
+            <label>{c}<select><option>Low</option><option>Average</option><option>High</option><option>Extreme</option></select></label>
+          </article>
+        ))}
+      </div>
+
+      <section className="overridePanel">
+        <h2>Scoring Overrides</h2>
+        <label><input type="checkbox" defaultChecked /> Roof age over 15 years reduces Resilience score</label>
+        <label><input type="checkbox" defaultChecked /> Utility rates above national average increase Energy weighting</label>
+        <label><input type="checkbox" defaultChecked /> Flood Zone AE increases Water weighting</label>
+        <label><input type="checkbox" defaultChecked /> Broadband unavailable reduces Community score</label>
+        <label><input type="checkbox" defaultChecked /> Healthcare desert reduces Health score</label>
+        <label><input type="checkbox" /> HOA restrictions reduce upgrade flexibility</label>
+      </section>
+    </div>
+  );
+}
+
 function GenericPage({ title }) {
   return (
     <section className="emptyPanel">
       <Layers size={42} />
       <h2>{title}</h2>
-      <p>This is a demo placeholder screen. The backend can populate this area with live administrative controls later.</p>
+      <p>This is a demo placeholder screen.</p>
     </section>
   );
 }
@@ -628,7 +715,7 @@ export default function AdminDemo() {
   const content = {
     Dashboard: <Dashboard />,
     Properties: <Properties />,
-    Recommendations: <GenericPage title="Recommendation Rules" />,
+    Recommendations: <ScoringControlsPage />,
     Products: <BrandWeighting products={products} setProducts={setProducts} />,
     "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} />,
     Users: <UsersPage />,
@@ -1002,12 +1089,32 @@ export default function AdminDemo() {
         }
 
 
-        .customReportGrid.singleColumn {
-          display: block;
+        .scoringControlsPage { display:grid; gap:18px; }
+        .weightingProfile,.impactPreview,.overridePanel{
+          background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;
         }
-        .customReportGrid.singleColumn .customReportCard {
-          max-width: 760px;
+        .weightingProfile{
+          display:flex;justify-content:space-between;align-items:center;
         }
+        .weightingProfile select,.pillarControlCard select{
+          height:40px;border:1px solid #ccd9e8;border-radius:8px;padding:0 10px;
+        }
+        .impactGrid{
+          display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:12px;
+        }
+        .impactGrid div{
+          background:#f5f8fc;padding:12px;border-radius:8px;text-align:center;
+        }
+        .pillarControlGrid{
+          display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;
+        }
+        .pillarControlCard{
+          background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;
+          display:grid;gap:10px;
+        }
+        .pillarControlCard h3{margin:0;color:var(--blue);}
+        .pillarControlCard label{display:grid;gap:4px;font-size:13px;font-weight:700;}
+        .overridePanel label{display:block;padding:6px 0;}
 
         @media (max-width: 1050px) {
           .adminApp { grid-template-columns: 1fr; }

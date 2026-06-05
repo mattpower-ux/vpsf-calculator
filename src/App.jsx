@@ -672,6 +672,17 @@ function PropertyDetails({ home, update, setScreen }) {
         <Field wide label="Garage / Parking" value={home.garage} onChange={(v) => update("garage", v)} />
       </section>
 
+      <section className="formSection photoUploadSection">
+        <h3>Home Photos</h3>
+        <div className="fakeUpload homePhotoUpload">
+          <Upload size={22} />
+          <div>
+            <strong>Upload exterior, roof, mechanical room, or water-fixture photos</strong>
+            <em>Photos help verify roof age, HVAC, water systems, tree cover, and visible resilience features.</em>
+          </div>
+        </div>
+      </section>
+
       <button className="primaryButton stickyButton" onClick={() => setScreen(2)}>
         Next: Home Specs <ArrowRight size={18} />
       </button>
@@ -1174,7 +1185,7 @@ function RecommendationDetail({ recommendation, setScreen }) {
 }
 
 
-function MatchingProducts({ recommendation, setScreen }) {
+function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct }) {
   const products = demoMatchingProducts[recommendation.id] || demoMatchingProducts["water-fixtures"];
   const Icon = recommendation.icon;
 
@@ -1193,6 +1204,12 @@ function MatchingProducts({ recommendation, setScreen }) {
               <h3>{product.name}</h3>
               <p>{product.note}</p>
               <em>{product.impact}</em>
+              <button className="inlineDetailsButton" onClick={() => {
+                setSelectedMatchingProduct(product);
+                setScreen(20);
+              }}>
+                More Details <ArrowRight size={15} />
+              </button>
             </div>
           </article>
         ))}
@@ -1200,6 +1217,70 @@ function MatchingProducts({ recommendation, setScreen }) {
 
       <button className="primaryButton" onClick={() => setScreen(7)}>View General Product Recommendations</button>
       <button className="secondaryButton" onClick={() => setScreen(15)}>Return to Smart Summary</button>
+
+      <BottomNav active="Recommendations" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function MatchingProductDetail({ product, setScreen }) {
+  const [showLeadForm, setShowLeadForm] = useState(false);
+
+  return (
+    <div className="screen productDetailScreen withNav">
+      <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
+
+      <section className="productHeroCard">
+        {product.image && <img src={product.image} alt={product.name} />}
+        <div>
+          <span>{product.category}</span>
+          <h3>{product.name}</h3>
+          <em>{product.impact}</em>
+        </div>
+      </section>
+
+      {!showLeadForm && (
+        <>
+          <section className="copyCard">
+            <h3>Technical Overview</h3>
+            <p>{product.note}</p>
+          </section>
+
+          <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
+            Request Specs and Pricing <ArrowRight size={18} />
+          </button>
+
+          <button className="secondaryButton" onClick={() => setScreen(16)}>
+            Return to Matching Products
+          </button>
+        </>
+      )}
+
+      {showLeadForm && (
+        <section className="leadFormCard productLeadFormCard">
+          <h3>Request Specs and Pricing</h3>
+          <p className="leadFormIntro">
+            Send this request to the manufacturer or local supplier.
+          </p>
+          <label className="field fieldWide">
+            <span>Name</span>
+            <input placeholder="Your name" />
+          </label>
+          <label className="field fieldWide">
+            <span>Email</span>
+            <input placeholder="name@example.com" />
+          </label>
+
+          <div className="leadFormActions">
+            <button className="secondaryButton" onClick={() => setScreen(16)}>
+              Return to Matching Products
+            </button>
+            <button className="primaryButton" onClick={() => setScreen(9)}>
+              Create Score Card
+            </button>
+          </div>
+        </section>
+      )}
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
@@ -1253,20 +1334,29 @@ function ProductDetail({ product, setScreen }) {
         </div>
       </section>
 
-      <section className="copyCard">
-        <h3>Technical Overview</h3>
-        <p>{product.technicalWriteup}</p>
-      </section>
+      {!showLeadForm && (
+        <>
+          <section className="copyCard">
+            <h3>Technical Overview</h3>
+            <p>{product.technicalWriteup}</p>
+          </section>
 
-      
+          <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
+            Request Specs and Pricing <ArrowRight size={18} />
+          </button>
 
-      <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
-        Request Specs and Pricing <ArrowRight size={18} />
-      </button>
+          <button className="secondaryButton" onClick={() => setScreen(7)}>
+            Return to Products
+          </button>
+        </>
+      )}
 
       {showLeadForm && (
-        <section className="leadFormCard">
+        <section className="leadFormCard productLeadFormCard">
           <h3>Request Specs and Pricing</h3>
+          <p className="leadFormIntro">
+            Send this product request to the manufacturer or local supplier.
+          </p>
           <label className="field fieldWide">
             <span>Name</span>
             <input placeholder="Your name" />
@@ -1287,17 +1377,10 @@ function ProductDetail({ product, setScreen }) {
         </section>
       )}
 
-      {!showLeadForm && (
-        <button className="secondaryButton" onClick={() => setScreen(7)}>
-          Return to Products
-        </button>
-      )}
-
       <BottomNav active="More" setScreen={setScreen} />
     </div>
   );
 }
-
 
 
 function PathTo700Screen({ result, setScreen }) {
@@ -1540,6 +1623,7 @@ export default function App() {
   const [selectedPillar, setSelectedPillar] = useState("energy");
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
+  const [selectedMatchingProduct, setSelectedMatchingProduct] = useState(demoMatchingProducts["water-fixtures"][0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
@@ -1567,10 +1651,11 @@ export default function App() {
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} />}
-        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} />}
+        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} />}
         {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
         {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
         {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
+        {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -3296,6 +3381,53 @@ export default function App() {
         }
         .products .productCard {
           margin-top: 0;
+        }
+
+
+        .productLeadFormCard {
+          margin-top: 18px;
+        }
+        .leadFormIntro {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.35;
+          margin: -4px 0 12px;
+        }
+        .photoUploadSection {
+          grid-template-columns: 1fr;
+        }
+        .homePhotoUpload {
+          grid-template-columns: 28px 1fr;
+          min-height: 72px;
+          border-style: dashed;
+          background: #f7fbff;
+        }
+        .homePhotoUpload strong {
+          font-size: 12px;
+          line-height: 1.25;
+        }
+        .homePhotoUpload em {
+          font-size: 11px;
+          line-height: 1.3;
+        }
+
+
+        .inlineDetailsButton {
+          appearance: none;
+          border: 0;
+          background: transparent;
+          color: var(--blue);
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 7px 0 0;
+          margin: 0;
+          font-size: 12px;
+          font-weight: 950;
+          cursor: pointer;
+        }
+        .inlineDetailsButton svg {
+          stroke-width: 3;
         }
 
         @media (max-width: 540px) {

@@ -1117,6 +1117,18 @@ export default function AdminDemo() {
         .pillarControlCard label{display:grid;gap:4px;font-size:13px;font-weight:700;}
         .overridePanel label{display:block;padding:6px 0;}
 
+
+        .adminLogoIcon {
+          width: 64px;
+          height: 64px;
+          object-fit: contain;
+        }
+        .sidebarBrand {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
         @media (max-width: 1050px) {
           .adminApp { grid-template-columns: 1fr; }
           .adminSidebar { position: relative; min-height: auto; }
@@ -1131,15 +1143,3 @@ export default function AdminDemo() {
   );
 }
 
-
-/* Admin branding */
-.adminLogoIcon {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-}
-.sidebarBrand {
-  display:flex;
-  align-items:center;
-  gap:14px;
-}

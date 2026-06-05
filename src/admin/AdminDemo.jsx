@@ -543,7 +543,7 @@ function Reports({ products }) {
       <section className="prospectAnalysisPanel">
         <div className="prospectHeader">
           <div>
-            <h2>Prospect Analysis</h2>
+            <h2>Prospect Analysis-Talking Points</h2>
             <p>Context: Market indicators and buyer demand signals for CertainTeed Solaris roofing.</p>
           </div>
           <Badge tone="green">OpenAI Context Layer</Badge>
@@ -552,13 +552,12 @@ function Reports({ products }) {
         <div className="prospectGrid">
           <article className="prospectCard">
             <span>Client Region</span>
-            <strong>Florida / Southeast</strong>
+            <strong>Southeast U.S. + Lake City, Colorado</strong>
             <div className="regionChips">
-              <em>Orlando</em>
-              <em>Jacksonville</em>
-              <em>Gainesville</em>
+              <em>Orlando / Jacksonville Region</em>
+              <em>Lake City, Colorado</em>
             </div>
-            <p>Lead activity is clustering in hot, humid markets with storm exposure and rising cooling-cost sensitivity.</p>
+            <p>Lead activity is clustering in two primary regions: Southeast markets facing storm exposure and cooling-cost pressures, and Lake City, Colorado, where a planned 1,000-home development may create future roofing demand.</p>
           </article>
 
           <article className="prospectCard">

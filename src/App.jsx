@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import AdminDemo from "./admin/AdminDemo";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -1619,6 +1620,10 @@ function LabelScreen({ result, setScreen }) {
 }
 
 export default function App() {
+  if (window.location.pathname === "/admin") {
+    return <AdminDemo />;
+  }
+
   const [screen, setScreen] = useState(0);
   const [selectedPillar, setSelectedPillar] = useState("energy");
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);

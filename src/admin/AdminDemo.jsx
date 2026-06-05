@@ -22,7 +22,7 @@ import {
 
 const PILLARS = ["Energy", "Water", "Health", "Resilience", "Carbon", "Community", "Ownership"];
 
-const products = [
+const initialProducts = [
   { brand: "ATAS", product: "Solar-Ready Metal Roofing", pillar: "Resilience", category: "Roofing", weight: "Priority" },
   { brand: "CertainTeed", product: "Solaris Cool Roof Shingles", pillar: "Resilience", category: "Roofing", weight: "Priority" },
   { brand: "Euroshield", product: "Recycled Rubber Roofing", pillar: "Resilience", category: "Roofing", weight: "Priority" },
@@ -100,11 +100,18 @@ function Badge({ children, tone }) {
   return <span className={`badge ${tone || ""}`}>{children}</span>;
 }
 
-function WeightSelect({ value }) {
+function WeightSelect({ value, onChange }) {
   return (
-    <button className={`weightSelect ${value.toLowerCase()}`}>
-      <span /> {value} <ChevronDown size={14} />
-    </button>
+    <select
+      className={`weightSelect ${value.toLowerCase()}`}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      <option>Priority</option>
+      <option>Standard</option>
+      <option>Downgrade</option>
+      <option>Hidden</option>
+    </select>
   );
 }
 
@@ -209,11 +216,36 @@ function Metric({ title, value, note, icon: Icon }) {
   );
 }
 
-function BrandWeighting() {
+function BrandWeighting({ products, setProducts }) {
   const [pillar, setPillar] = useState("All");
+
   const filtered = useMemo(
     () => pillar === "All" ? products : products.filter((item) => item.pillar === pillar),
-    [pillar]
+    [pillar, products]
+  );
+
+  const updateWeight = (target, weight) => {
+    setProducts((current) =>
+      current.map((item) =>
+        item.brand === target.brand && item.product === target.product
+          ? { ...item, weight }
+          : item
+      )
+    );
+  };
+
+  const deleteProduct = (target) => {
+    setProducts((current) =>
+      current.filter((item) => !(item.brand === target.brand && item.product === target.product))
+    );
+  };
+
+  const counts = products.reduce(
+    (acc, item) => {
+      acc[item.weight] = (acc[item.weight] || 0) + 1;
+      return acc;
+    },
+    { Priority: 0, Standard: 0, Downgrade: 0, Hidden: 0 }
   );
 
   return (
@@ -250,18 +282,18 @@ function BrandWeighting() {
                 <th>Pillar</th>
                 <th>Category</th>
                 <th>Weighting</th>
-                <th>Action</th>
+                <th>Delete</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
-                <tr key={`${item.brand}-${item.product}`}>
+                <tr key={`${item.brand}-${item.product}`} className={item.weight === "Hidden" ? "mutedRow" : ""}>
                   <td><strong>{item.brand}</strong></td>
                   <td>{item.product}</td>
                   <td>{item.pillar}</td>
                   <td>{item.category}</td>
-                  <td><WeightSelect value={item.weight} /></td>
-                  <td><button className="iconButton"><Edit3 size={16} /></button></td>
+                  <td><WeightSelect value={item.weight} onChange={(weight) => updateWeight(item, weight)} /></td>
+                  <td><button className="deleteButton" onClick={() => deleteProduct(item)}>Delete</button></td>
                 </tr>
               ))}
             </tbody>
@@ -271,15 +303,15 @@ function BrandWeighting() {
 
       <aside className="rightRail">
         <Panel title="Weighting Summary">
-          <SummaryLine tone="green" label="Priority Products" value="28" />
-          <SummaryLine tone="gray" label="Standard Products" value="134" />
-          <SummaryLine tone="red" label="Downgraded Products" value="12" />
-          <SummaryLine tone="dark" label="Hidden Products" value="6" />
+          <SummaryLine tone="green" label="Priority Products" value={counts.Priority} />
+          <SummaryLine tone="gray" label="Standard Products" value={counts.Standard} />
+          <SummaryLine tone="red" label="Downgraded Products" value={counts.Downgrade} />
+          <SummaryLine tone="dark" label="Hidden Products" value={counts.Hidden} />
         </Panel>
 
         <Panel title="Pillar Breakdown">
-          {PILLARS.map((item, index) => (
-            <SummaryLine key={item} tone="blue" label={item} value={[42, 38, 31, 27, 27, 33, 22][index]} />
+          {PILLARS.map((item) => (
+            <SummaryLine key={item} tone="blue" label={item} value={products.filter((p) => p.pillar === item).length} />
           ))}
         </Panel>
 
@@ -363,18 +395,170 @@ function UsersPage() {
   );
 }
 
-function Reports() {
+
+const certainTeedLeads = [
+  {
+    user: "realtor.demo@brokerage.com",
+    role: "Realtor",
+    product: "CertainTeed Solaris Cool Roof Shingles",
+    property: "1313 Cognition Drive",
+    zip: "32101",
+    vpsfScore: 520,
+    ip: "104.28.78.12",
+    action: "Requested specs",
+    date: "Today 10:42 AM"
+  },
+  {
+    user: "builder.demo@company.com",
+    role: "Builder",
+    product: "CertainTeed Solaris Cool Roof Shingles",
+    property: "902 Palm Ridge Ct.",
+    zip: "32601",
+    vpsfScore: 488,
+    ip: "172.68.12.50",
+    action: "Viewed matching product",
+    date: "Yesterday"
+  },
+  {
+    user: "m.power@greenbuildermedia.com",
+    role: "Admin Demo",
+    product: "CertainTeed Solaris Cool Roof Shingles",
+    property: "44 Harbor View Dr.",
+    zip: "32202",
+    vpsfScore: 742,
+    ip: "172.59.67.154",
+    action: "Created score card",
+    date: "May 30"
+  }
+];
+
+function Reports({ products }) {
+  const [summaryProduct, setSummaryProduct] = useState("CertainTeed Solaris Cool Roof Shingles");
+  const [manufacturer, setManufacturer] = useState("CertainTeed");
+  const [reportType, setReportType] = useState("CSV spreadsheet");
+  const [isAssembling, setIsAssembling] = useState(false);
+  const [showLeadPreview, setShowLeadPreview] = useState(false);
+
+  const productNames = products.map((item) => `${item.brand} ${item.product}`);
+  const matchedProducts = products.filter((item) =>
+    `${item.brand} ${item.product}`.toLowerCase().includes(manufacturer.toLowerCase())
+  );
+
+  const runLeadReport = () => {
+    setShowLeadPreview(false);
+    setIsAssembling(true);
+    window.setTimeout(() => {
+      setIsAssembling(false);
+      setShowLeadPreview(true);
+    }, 3000);
+  };
+
   return (
-    <div className="gridPage">
-      {reports.map((item) => (
-        <section className="reportCard" key={item.name}>
-          <FileText size={22} />
-          <h2>{item.name}</h2>
-          <p>{item.period}</p>
-          <strong>{item.metric}</strong>
-          <Badge tone="green">{item.trend}</Badge>
+    <div className="reportsPage">
+      <div className="gridPage">
+        {reports.map((item) => (
+          <section className="reportCard" key={item.name}>
+            <FileText size={22} />
+            <h2>{item.name}</h2>
+            <p>{item.period}</p>
+            <strong>{item.metric}</strong>
+            <Badge tone="green">{item.trend}</Badge>
+          </section>
+        ))}
+      </div>
+
+      <section className="customReportGrid">
+        <article className="customReportCard">
+          <h2>Create Custom Summary</h2>
+          <p>Select a brand/product currently in the recommendation database.</p>
+          <label>
+            <span>Brand / Product</span>
+            <select value={summaryProduct} onChange={(event) => setSummaryProduct(event.target.value)}>
+              {productNames.map((name) => <option key={name}>{name}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Report Format</span>
+            <select>
+              <option>.txt summary</option>
+              <option>.CSV spreadsheet</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <button className="primaryReportButton">Create Summary</button>
+        </article>
+
+        <article className="customReportCard">
+          <h2>Create Custom Lead Report</h2>
+          <p>Type a manufacturer name. Matching products will populate automatically.</p>
+          <label>
+            <span>Manufacturer</span>
+            <input value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} />
+          </label>
+          <div className="matchedProductBox">
+            <strong>Matched Products</strong>
+            {matchedProducts.length ? matchedProducts.map((item) => (
+              <span key={`${item.brand}-${item.product}`}>{item.product}</span>
+            )) : <em>No products found</em>}
+          </div>
+          <label>
+            <span>Report Format</span>
+            <select value={reportType} onChange={(event) => setReportType(event.target.value)}>
+              <option>.CSV spreadsheet</option>
+              <option>.txt file</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <button className="primaryReportButton" onClick={runLeadReport}>Generate Lead Report</button>
+        </article>
+      </section>
+
+      {isAssembling && (
+        <section className="assemblingReport">
+          <div className="reportSpinner" />
+          <h2>Assembling custom lead report</h2>
+          <p>{manufacturer} · {reportType}</p>
         </section>
-      ))}
+      )}
+
+      {showLeadPreview && (
+        <section className="tablePanel fullPanel leadPreviewPanel">
+          <div className="tablePanelHeader">
+            <div><FileText size={30} /><span><h2>CertainTeed Lead Report Preview</h2><p>Demo export preview for CertainTeed Solaris Cool Roof Shingles.</p></span></div>
+            <button><Download size={16} /> Download CSV</button>
+          </div>
+          <table className="spreadsheetTable">
+            <thead>
+              <tr>
+                <th>User / Email</th>
+                <th>Role</th>
+                <th>Product</th>
+                <th>Property</th>
+                <th>ZIP</th>
+                <th>VPSF Score</th>
+                <th>IP Address</th>
+                <th>Action</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {certainTeedLeads.map((item) => (
+                <tr key={`${item.user}-${item.date}`}>
+                  <td><strong>{item.user}</strong></td>
+                  <td>{item.role}</td>
+                  <td>{item.product}</td>
+                  <td>{item.property}</td>
+                  <td>{item.zip}</td>
+                  <td>{item.vpsfScore}</td>
+                  <td>{item.ip}</td>
+                  <td>{item.action}</td>
+                  <td>{item.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <section className="panel wide">
         <h2>Report Preview</h2>
@@ -417,15 +601,16 @@ function MiniBar({ label, value }) {
 
 export default function AdminDemo() {
   const [active, setActive] = useState("Brand Weighting");
+  const [products, setProducts] = useState(initialProducts);
 
   const content = {
     Dashboard: <Dashboard />,
     Properties: <Properties />,
     Recommendations: <GenericPage title="Recommendation Rules" />,
-    Products: <BrandWeighting />,
-    "Brand Weighting": <BrandWeighting />,
+    Products: <BrandWeighting products={products} setProducts={setProducts} />,
+    "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} />,
     Users: <UsersPage />,
-    Reports: <Reports />,
+    Reports: <Reports products={products} />,
     Settings: <GenericPage title="Settings" />
   }[active];
 
@@ -491,7 +676,7 @@ export default function AdminDemo() {
         th { color: #071a2c; font-size: 12px; text-align: left; padding: 14px 22px; background: #fbfdff; border-bottom: 1px solid var(--line); }
         td { padding: 16px 22px; border-bottom: 1px solid var(--line); color: #102842; }
         tr:last-child td { border-bottom: 0; }
-        .weightSelect { min-width: 160px; height: 38px; border: 1px solid #d4e0ec; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 0 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; }
+        .weightSelect { min-width: 160px; height: 38px; border: 1px solid #d4e0ec; background: #fff; border-radius: 8px; padding: 0 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; }
         .weightSelect span, .summaryLine i { width: 11px; height: 11px; border-radius: 999px; display: inline-block; }
         .priority span, .green { background: var(--green); }
         .standard span, .gray { background: #9ba8b9; }
@@ -529,11 +714,147 @@ export default function AdminDemo() {
         .emptyPanel { height: 460px; display: grid; place-items: center; text-align: center; padding: 40px; color: #52657a; }
         .emptyPanel svg { color: var(--blue); }
         .spreadsheetTable th, .spreadsheetTable td { white-space: nowrap; font-size: 13px; }
+
+        .deleteButton {
+          border: 1px solid #ffd4d4;
+          background: #fff2f2;
+          color: var(--red);
+          border-radius: 8px;
+          padding: 8px 10px;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+        .mutedRow {
+          opacity: .55;
+        }
+        .reportsPage {
+          display: grid;
+          gap: 22px;
+        }
+        .customReportGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 18px;
+        }
+        .customReportCard {
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          box-shadow: 0 10px 28px rgba(9,33,59,.04);
+          padding: 22px;
+        }
+        .customReportCard h2 {
+          margin: 0 0 6px;
+          font-size: 18px;
+        }
+        .customReportCard p {
+          color: #607089;
+          margin: 0 0 16px;
+          line-height: 1.4;
+        }
+        .customReportCard label {
+          display: grid;
+          gap: 6px;
+          margin-top: 13px;
+          color: #263449;
+          font-size: 13px;
+          font-weight: 800;
+        }
+        .customReportCard input,
+        .customReportCard select {
+          width: 100%;
+          height: 42px;
+          border: 1px solid #ccd9e8;
+          border-radius: 8px;
+          padding: 0 12px;
+          background: #fbfdff;
+          color: #102842;
+          font-weight: 650;
+        }
+        .primaryReportButton {
+          height: 44px;
+          margin-top: 16px;
+          border: 0;
+          background: var(--blue);
+          color: white;
+          border-radius: 8px;
+          padding: 0 18px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+        .matchedProductBox {
+          border: 1px solid #dfe7f0;
+          background: #f8fbfe;
+          border-radius: 10px;
+          padding: 12px;
+          margin-top: 13px;
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+        .matchedProductBox strong {
+          width: 100%;
+          font-size: 12px;
+          color: #263449;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+        }
+        .matchedProductBox span {
+          background: #eef7ff;
+          color: var(--blue);
+          border: 1px solid #d0e6fb;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-size: 12px;
+          font-weight: 850;
+        }
+        .matchedProductBox em {
+          color: #607089;
+          font-style: normal;
+          font-size: 13px;
+        }
+        .assemblingReport {
+          min-height: 210px;
+          display: grid;
+          place-items: center;
+          text-align: center;
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          box-shadow: 0 10px 28px rgba(9,33,59,.04);
+          padding: 28px;
+        }
+        .assemblingReport h2 {
+          margin: 14px 0 4px;
+          color: #071a2c;
+        }
+        .assemblingReport p {
+          margin: 0;
+          color: #607089;
+        }
+        .reportSpinner {
+          width: 58px;
+          height: 58px;
+          border-radius: 999px;
+          border: 5px solid #dcecfb;
+          border-top-color: var(--blue);
+          animation: adminSpin 1s linear infinite;
+        }
+        .leadPreviewPanel {
+          overflow-x: auto;
+        }
+        @keyframes adminSpin {
+          to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 1050px) {
           .adminApp { grid-template-columns: 1fr; }
           .adminSidebar { position: relative; min-height: auto; }
           .managerLayout { grid-template-columns: 1fr; }
           .gridPage { grid-template-columns: repeat(2, 1fr); }
+          .customReportGrid { grid-template-columns: 1fr; }
           .tablePanel { overflow-x: auto; }
         }
       `}</style>

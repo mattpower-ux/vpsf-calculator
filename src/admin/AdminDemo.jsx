@@ -1129,3 +1129,16 @@ export default function AdminDemo() {
     </div>
   );
 }
+
+
+/* Admin branding */
+.adminLogoIcon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.sidebarBrand {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}

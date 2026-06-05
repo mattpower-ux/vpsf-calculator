@@ -467,28 +467,8 @@ function Reports({ products }) {
         ))}
       </div>
 
-      <section className="customReportGrid">
-        <article className="customReportCard">
-          <h2>Create Custom Summary</h2>
-          <p>Select a brand/product currently in the recommendation database.</p>
-          <label>
-            <span>Brand / Product</span>
-            <select value={summaryProduct} onChange={(event) => setSummaryProduct(event.target.value)}>
-              {productNames.map((name) => <option key={name}>{name}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Report Format</span>
-            <select>
-              <option>.txt summary</option>
-              <option>.CSV spreadsheet</option>
-              <option>Other</option>
-            </select>
-          </label>
-          <button className="primaryReportButton">Create Summary</button>
-        </article>
-
-        <article className="customReportCard">
+      <section className="customReportGrid singleColumn">
+<article className="customReportCard">
           <h2>Create Custom Lead Report</h2>
           <p>Type a manufacturer name. Matching products will populate automatically.</p>
           <label>
@@ -564,7 +544,7 @@ function Reports({ products }) {
         <div className="prospectHeader">
           <div>
             <h2>Prospect Analysis</h2>
-            <p>AI-assisted lead context for CertainTeed Solaris roofing opportunities.</p>
+            <p>Context: Market indicators and buyer demand signals for CertainTeed Solaris roofing.</p>
           </div>
           <Badge tone="green">OpenAI Context Layer</Badge>
         </div>
@@ -1020,6 +1000,14 @@ export default function AdminDemo() {
         }
         .smartContextCard li {
           margin-bottom: 8px;
+        }
+
+
+        .customReportGrid.singleColumn {
+          display: block;
+        }
+        .customReportGrid.singleColumn .customReportCard {
+          max-width: 760px;
         }
 
         @media (max-width: 1050px) {

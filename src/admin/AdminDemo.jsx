@@ -522,7 +522,7 @@ function Reports({ products }) {
       )}
 
       {showLeadPreview && (
-        <section className="tablePanel fullPanel leadPreviewPanel">
+        <section className="tablePanel fullPanel leadPreviewPanel fullWidthLeadPreview">
           <div className="tablePanelHeader">
             <div><FileText size={30} /><span><h2>CertainTeed Lead Report Preview</h2><p>Demo export preview for CertainTeed Solaris Cool Roof Shingles.</p></span></div>
             <button><Download size={16} /> Download CSV</button>
@@ -560,12 +560,55 @@ function Reports({ products }) {
         </section>
       )}
 
-      <section className="panel wide">
-        <h2>Report Preview</h2>
-        <MiniBar label="Water Products" value={86} />
-        <MiniBar label="Roofing Products" value={72} />
-        <MiniBar label="ERV / IAQ Products" value={54} />
-        <MiniBar label="Heat Pump Water Heaters" value={48} />
+      <section className="prospectAnalysisPanel">
+        <div className="prospectHeader">
+          <div>
+            <h2>Prospect Analysis</h2>
+            <p>AI-assisted lead context for CertainTeed Solaris roofing opportunities.</p>
+          </div>
+          <Badge tone="green">OpenAI Context Layer</Badge>
+        </div>
+
+        <div className="prospectGrid">
+          <article className="prospectCard">
+            <span>Client Region</span>
+            <strong>Florida / Southeast</strong>
+            <div className="regionChips">
+              <em>Orlando</em>
+              <em>Jacksonville</em>
+              <em>Gainesville</em>
+            </div>
+            <p>Lead activity is clustering in hot, humid markets with storm exposure and rising cooling-cost sensitivity.</p>
+          </article>
+
+          <article className="prospectCard">
+            <span>Age of Current Roof / Product</span>
+            <strong>12–17 years</strong>
+            <div className="roofAgeMeter">
+              <i style={{ width: "76%" }} />
+            </div>
+            <p>Many queried homes are near or past the typical replacement planning window for asphalt shingles.</p>
+          </article>
+
+          <article className="prospectCard">
+            <span>Lead Temperature</span>
+            <div className="leadTempWrap">
+              <div className="leadTempGauge"><b>74%</b></div>
+              <strong>Warm / Ready Soon</strong>
+            </div>
+            <p>Signals suggest strong near-term interest: multiple product views, older roof age, and repeated roofing recommendation clicks.</p>
+          </article>
+
+          <article className="prospectCard smartContextCard">
+            <span>Smart Context</span>
+            <strong>3 lead clusters detected</strong>
+            <ul>
+              <li><b>Storm Recovery:</b> regions with severe hurricane damage and insurance pressure.</li>
+              <li><b>Heat Failure:</b> markets where high heat may accelerate roof aging.</li>
+              <li><b>HOA Constraint:</b> communities requiring asphalt-style appearance.</li>
+            </ul>
+          </article>
+        </div>
       </section>
     </div>
   );
@@ -849,12 +892,143 @@ export default function AdminDemo() {
           to { transform: rotate(360deg); }
         }
 
+        
+        .fullWidthLeadPreview {
+          width: 100%;
+          grid-column: 1 / -1;
+          max-width: 100%;
+        }
+        .fullWidthLeadPreview table {
+          width: 100%;
+          min-width: 1200px;
+        }
+
+
+        .prospectAnalysisPanel {
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: 12px;
+          box-shadow: 0 10px 28px rgba(9,33,59,.04);
+          padding: 22px;
+          width: 100%;
+          grid-column: 1 / -1;
+        }
+        .prospectHeader {
+          display: flex;
+          justify-content: space-between;
+          gap: 18px;
+          align-items: start;
+          margin-bottom: 18px;
+        }
+        .prospectHeader h2 {
+          margin: 0 0 5px;
+          font-size: 20px;
+        }
+        .prospectHeader p {
+          margin: 0;
+          color: #607089;
+        }
+        .prospectGrid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .prospectCard {
+          border: 1px solid #dfe7f0;
+          background: #fbfdff;
+          border-radius: 12px;
+          padding: 16px;
+          min-height: 210px;
+        }
+        .prospectCard span {
+          display: block;
+          color: var(--blue);
+          text-transform: uppercase;
+          letter-spacing: .06em;
+          font-size: 11px;
+          font-weight: 950;
+          margin-bottom: 9px;
+        }
+        .prospectCard strong {
+          display: block;
+          color: #071a2c;
+          font-size: 20px;
+          line-height: 1.15;
+          margin-bottom: 12px;
+        }
+        .prospectCard p {
+          color: #607089;
+          font-size: 13px;
+          line-height: 1.4;
+          margin: 12px 0 0;
+        }
+        .regionChips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .regionChips em {
+          font-style: normal;
+          color: #0a2340;
+          background: #eef7ff;
+          border: 1px solid #d0e6fb;
+          border-radius: 999px;
+          padding: 6px 9px;
+          font-size: 12px;
+          font-weight: 850;
+        }
+        .roofAgeMeter {
+          height: 14px;
+          border-radius: 999px;
+          background: #e8eef5;
+          overflow: hidden;
+          margin: 8px 0 10px;
+        }
+        .roofAgeMeter i {
+          display: block;
+          height: 100%;
+          border-radius: 999px;
+          background: linear-gradient(90deg, var(--green), var(--gold), var(--red));
+        }
+        .leadTempWrap {
+          display: grid;
+          grid-template-columns: 94px 1fr;
+          align-items: center;
+          gap: 12px;
+        }
+        .leadTempGauge {
+          width: 94px;
+          height: 94px;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at center, #fff 0 56%, transparent 57%),
+            conic-gradient(var(--red) 0 18%, var(--gold) 18% 48%, var(--green) 48% 74%, #e8eef5 74% 100%);
+          box-shadow: inset 0 0 0 1px #dfe7f0;
+        }
+        .leadTempGauge b {
+          color: #071a2c;
+          font-size: 22px;
+        }
+        .smartContextCard ul {
+          margin: 0;
+          padding-left: 18px;
+          color: #40506a;
+          font-size: 13px;
+          line-height: 1.42;
+        }
+        .smartContextCard li {
+          margin-bottom: 8px;
+        }
+
         @media (max-width: 1050px) {
           .adminApp { grid-template-columns: 1fr; }
           .adminSidebar { position: relative; min-height: auto; }
           .managerLayout { grid-template-columns: 1fr; }
           .gridPage { grid-template-columns: repeat(2, 1fr); }
           .customReportGrid { grid-template-columns: 1fr; }
+          .prospectGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .tablePanel { overflow-x: auto; }
         }
       `}</style>

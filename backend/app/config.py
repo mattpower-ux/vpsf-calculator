@@ -9,6 +9,7 @@ class Settings:
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
+    rentcast_api_key = os.getenv("RENTCAST_API_KEY", "")
     openai_api_key = os.getenv("OPENAI_API_KEY", "")
     ocr_provider = os.getenv("OCR_PROVIDER", "mistral")
     mistral_api_key = os.getenv("MISTRAL_API_KEY", "")
@@ -34,6 +35,7 @@ class Settings:
         return {
             "mapbox": bool(self.mapbox_access_token),
             "attom": bool(self.attom_api_key),
+            "rentcast": bool(self.rentcast_api_key),
             "openai": bool(self.openai_api_key),
             "mistral": bool(self.mistral_api_key),
             "googleDocumentAi": bool(

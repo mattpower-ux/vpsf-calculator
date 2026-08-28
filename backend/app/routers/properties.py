@@ -6,6 +6,7 @@ from app.adapters import get_listing_adapter
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.integrations.mapbox import MapboxClient
+from app.integrations.rentcast import RentCastClient
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document
 from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput
@@ -65,6 +66,63 @@ async def geocode_property(
         raise HTTPException(status_code=502, detail="Mapbox geocoding request failed") from error
 
     return geocode_response_from_mapbox(request.address, data)
+
+
+def first_value(record: dict, *keys: str) -> str:
+    for key in keys:
+        value = record.get(key)
+        if value is not None and value != "":
+            return str(value)
+    return ""
+
+
+def acres_from_square_feet(value: object) -> str:
+    if value is None or value == "":
+        return ""
+    try:
+        acres = float(value) / 43560
+    except (TypeError, ValueError):
+        return str(value)
+    return f"{acres:.2f} acres"
+
+
+def property_input_from_rentcast(record: dict) -> PropertyInput:
+    lot_size = first_value(record, "lotSize")
+    property_input = PropertyInput(
+        address=first_value(record, "addressLine1", "formattedAddress"),
+        city=first_value(record, "city"),
+        state=first_value(record, "state"),
+        zip=first_value(record, "zipCode", "zipcode"),
+        squareFeet=first_value(record, "squareFootage", "livingArea"),
+        yearBuilt=first_value(record, "yearBuilt"),
+        homeType=first_value(record, "propertyType") or "Unknown",
+        bedrooms=first_value(record, "bedrooms"),
+        bathrooms=first_value(record, "bathrooms"),
+        lotSize=acres_from_square_feet(lot_size) if lot_size else "",
+        occupancy="Owner Occupied",
+        sourceNote="RentCast returned public property facts. Energy, resilience, water, health, and upgrade details still need documents, photos, or homeowner confirmation.",
+    )
+    return property_input
+
+
+@router.post("/rentcast", response_model=PropertyInput)
+async def enrich_property_with_rentcast(
+    request: GeocodeRequest,
+    settings: Settings = Depends(get_settings),
+) -> PropertyInput:
+    client = RentCastClient(settings.rentcast_api_key)
+    if not client.is_configured:
+        raise HTTPException(status_code=503, detail="RENTCAST_API_KEY is not configured")
+
+    try:
+        records = await client.property_by_address(request.address)
+    except HTTPError as error:
+        raise HTTPException(status_code=502, detail="RentCast property request failed") from error
+
+    if not records:
+        raise HTTPException(status_code=404, detail="No RentCast property record found")
+
+    return property_input_from_rentcast(records[0])
 
 
 @router.post("/manual", response_model=PropertyInput)

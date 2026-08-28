@@ -3,7 +3,7 @@
 This guide gets the four MVP integrations configured locally:
 
 1. Mapbox for geocoding and address normalization.
-2. ATTOM for property records, public facts, tax, sales, permits, and AVM-style enrichment.
+2. RentCast or ATTOM for property records, public facts, tax, sales, permits, and AVM-style enrichment.
 3. OpenAI for structured extraction and scoring explanations.
 4. OCR through Mistral first, with Google Document AI as the heavier backup option.
 
@@ -35,7 +35,30 @@ After signup:
 python scripts/check_mapbox.py "1600 Pennsylvania Ave NW, Washington, DC"
 ```
 
-## 3. ATTOM
+## 3. RentCast
+
+Use RentCast first when you want lower-cost, self-serve property records and valuation data.
+
+- Sign up: https://app.rentcast.io/
+- API/docs: https://developers.rentcast.io/
+- Pricing: https://www.rentcast.io/api
+- Env key: `RENTCAST_API_KEY`
+
+After signup:
+
+1. Create a RentCast account.
+2. Pick an API plan. The free developer plan is enough for testing.
+3. Create an API key in the RentCast dashboard.
+4. Paste it into `backend/.env`.
+5. Test it:
+
+```powershell
+python scripts/check_rentcast.py "5500 Grand Lake Dr, San Antonio, TX 78244"
+```
+
+For depth testing, run 5-10 known addresses in different regions and compare the returned year built, square footage, beds, baths, lot size, tax, sale history, and valuation fields against known records.
+
+## 4. ATTOM
 
 Use ATTOM for property records, owner/tax data where licensed, sales history, property characteristics, valuation signals, and building permit data where available.
 
@@ -56,7 +79,7 @@ After signup:
 python scripts/check_attom.py "1600 Pennsylvania Ave NW" "Washington, DC"
 ```
 
-## 4. OpenAI
+## 5. OpenAI
 
 Use OpenAI to turn messy listing text, OCR output, and uploaded document text into structured VPSF facts and concise score explanations.
 
@@ -77,7 +100,7 @@ After signup:
 python scripts/check_openai.py
 ```
 
-## 5. OCR Option A: Mistral
+## 6. OCR Option A: Mistral
 
 Mistral is the recommended first OCR path because setup is lighter than Google Cloud.
 
@@ -97,7 +120,7 @@ After signup:
 python scripts/check_ocr.py
 ```
 
-## 6. OCR Option B: Google Document AI
+## 7. OCR Option B: Google Document AI
 
 Use Google Document AI if the project needs a more enterprise document-processing stack.
 
@@ -119,7 +142,7 @@ python scripts/check_ocr.py
 
 The current Google smoke test verifies local configuration only. Add a live processor request once the Google client library is added.
 
-## 7. Check Backend Status
+## 8. Check Backend Status
 
 Start the backend:
 

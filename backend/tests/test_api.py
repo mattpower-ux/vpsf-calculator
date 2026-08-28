@@ -61,3 +61,10 @@ def test_geocode_requires_mapbox_key():
 
     assert response.status_code == 503
     assert "MAPBOX_ACCESS_TOKEN" in response.json()["detail"]
+
+
+def test_rentcast_requires_api_key():
+    response = client.post("/api/properties/rentcast", json={"address": "5500 Grand Lake Dr, San Antonio, TX 78244"})
+
+    assert response.status_code == 503
+    assert "RENTCAST_API_KEY" in response.json()["detail"]

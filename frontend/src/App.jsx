@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { geocodeProperty, getProductRecommendations, scoreProperty, submitLead } from "./api/client";
+import { enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -487,7 +487,18 @@ const uploadCaptureOptions = [
   ["Upgrade invoice", "Photo"]
 ];
 
-function homeFromExistingScan(enteredAddress, geocode) {
+function homeFromExistingScan(enteredAddress, geocode, rentcastProperty) {
+  if (rentcastProperty) {
+    return {
+      ...defaultHome,
+      ...rentcastProperty,
+      address: rentcastProperty.address || geocode?.address || enteredAddress,
+      city: rentcastProperty.city || geocode?.city || "",
+      state: rentcastProperty.state || geocode?.state || "",
+      zip: rentcastProperty.zip || geocode?.zip || "",
+    };
+  }
+
   const resolvedAddress = geocode?.normalizedAddress || enteredAddress;
   const [addressLine, city = "Orlando", stateZip = "FL 32101"] = resolvedAddress.split(",").map((part) => part.trim());
   const [state = "FL", zip = "32101"] = stateZip.split(/\s+/);
@@ -526,7 +537,7 @@ function homeFromExistingScan(enteredAddress, geocode) {
     insurance: "None / Unknown",
     maintenance: "None",
     sourceNote: geocode
-      ? "Mapbox verified the address only. Property facts still need ATTOM, documents, photos, or manual confirmation."
+      ? "Mapbox verified the address only. Property facts still need RentCast, documents, photos, or manual confirmation."
       : "Address lookup was unavailable. Property facts still need documents, photos, or manual confirmation."
   };
 }
@@ -543,8 +554,15 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
     setSelectedProperty(existingHome);
     try {
       const geocode = await geocodeProperty(address);
-      setHome(homeFromExistingScan(address, geocode));
-      setScanNote("Address normalized with Mapbox.");
+      const normalizedAddress = geocode.normalizedAddress || address;
+      let rentcastProperty = null;
+      try {
+        rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
+      } catch (rentcastError) {
+        console.warn("RentCast enrichment unavailable.", rentcastError);
+      }
+      setHome(homeFromExistingScan(address, geocode, rentcastProperty));
+      setScanNote(rentcastProperty ? "Address and public property facts loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
     } catch (error) {
       setHome(homeFromExistingScan(address));
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");

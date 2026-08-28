@@ -30,6 +30,13 @@ export async function geocodeProperty(address) {
   });
 }
 
+export async function enrichPropertyWithRentCast(address) {
+  return request("/api/properties/rentcast", {
+    method: "POST",
+    body: JSON.stringify({ address })
+  });
+}
+
 export async function getProductRecommendations() {
   const products = await request("/api/products/recommendations");
   return products.map((product) => ({

@@ -487,31 +487,31 @@ const uploadCaptureOptions = [
   ["Upgrade invoice", "Photo"]
 ];
 
-function homeFromExistingScan(property, enteredAddress, geocode) {
+function homeFromExistingScan(enteredAddress, geocode) {
   const resolvedAddress = geocode?.normalizedAddress || enteredAddress;
   const [addressLine, city = "Orlando", stateZip = "FL 32101"] = resolvedAddress.split(",").map((part) => part.trim());
   const [state = "FL", zip = "32101"] = stateZip.split(/\s+/);
 
   return {
     ...defaultHome,
-    address: geocode?.address || addressLine || property.name,
+    address: geocode?.address || addressLine || enteredAddress,
     city: geocode?.city || city,
     state: geocode?.state || state,
     zip: geocode?.zip || zip,
-    squareFeet: String(property.squareFeet),
-    yearBuilt: String(property.yearBuilt),
-    homeType: "Single Family Detached",
-    stories: "2",
-    bedrooms: String(property.beds),
-    bathrooms: String(property.baths),
-    garage: "2 Car Garage",
-    lotSize: `${property.lotSizeAcres} acres`,
-    climateZone: "2A – Hot Humid",
+    squareFeet: "Unknown",
+    yearBuilt: "Unknown",
+    homeType: "Unknown",
+    stories: "Unknown",
+    bedrooms: "Unknown",
+    bathrooms: "Unknown",
+    garage: "Unknown",
+    lotSize: "Unknown",
+    climateZone: "Unknown",
     occupancy: "Owner Occupied",
-    hvac: "Heat Pump (Electric)",
-    waterHeater: "Tank Electric",
-    roof: property.roofType,
-    windows: "Double Pane",
+    hvac: "Unknown",
+    waterHeater: "Unknown",
+    roof: "Unknown",
+    windows: "Unknown",
     insulation: "Unknown",
     solar: "None",
     hers: "Code-Minimum",
@@ -524,7 +524,10 @@ function homeFromExistingScan(property, enteredAddress, geocode) {
     waterStandard: "Code-Minimum",
     leak: "None",
     insurance: "None / Unknown",
-    maintenance: "Basic Maintenance Guidance"
+    maintenance: "None",
+    sourceNote: geocode
+      ? "Mapbox verified the address only. Property facts still need ATTOM, documents, photos, or manual confirmation."
+      : "Address lookup was unavailable. Property facts still need documents, photos, or manual confirmation."
   };
 }
 
@@ -540,13 +543,13 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
     setSelectedProperty(existingHome);
     try {
       const geocode = await geocodeProperty(address);
-      setHome(homeFromExistingScan(existingHome, address, geocode));
+      setHome(homeFromExistingScan(address, geocode));
       setScanNote("Address normalized with Mapbox.");
     } catch (error) {
-      setHome(homeFromExistingScan(existingHome, address));
-      setScanNote("Using local demo enrichment until address lookup is available.");
+      setHome(homeFromExistingScan(address));
+      setScanNote("Address lookup is unavailable. Continue with manual confirmation.");
     } finally {
-      setResultMode("demo");
+      setResultMode("manual");
       setIsScanningAddress(false);
       setScreen(3);
     }
@@ -756,13 +759,13 @@ function DemoAnalyzingScreen({ setScreen }) {
 
         <h2>ANALYZING ...</h2>
         <p>
-          COGNITION Smart Parse is scanning the demo MLS listing, identifying home specs,
-          and calculating the seven VPSF pillars.
+          COGNITION Smart Parse is checking available inputs, identifying confirmed and missing specs,
+          and preparing the seven VPSF pillars.
         </p>
 
         <div className="analysisSteps">
-          <span>Reading listing data</span>
-          <span>Matching building features</span>
+          <span>Reviewing address data</span>
+          <span>Checking confirmed home features</span>
           <span>Generating VPSF report</span>
         </div>
       </div>
@@ -896,6 +899,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
       <ProgressDots step={3} />
       <h2>Review & Confirm</h2>
       <p className="subhead">Review your information before generating your score.</p>
+      {home.sourceNote && <p className="sourceNote">{home.sourceNote}</p>}
 
       <section className="summaryCard">
         <div className="summaryHeader"><h3>Property Summary</h3><button onClick={() => setScreen(1)}>Edit</button></div>
@@ -2275,6 +2279,16 @@ export default function App() {
         h2 { font-size: 18px; letter-spacing: -0.03em; text-align: center; margin-bottom: 8px; }
         h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink); }
         .centerCopy, .subhead { color: #40556c; line-height: 1.45; font-size: 14px; text-align: center; }
+        .sourceNote {
+          border: 1px solid #d9e7f3;
+          background: #f7fbff;
+          border-radius: 10px;
+          color: #40556c;
+          font-size: 12px;
+          line-height: 1.4;
+          padding: 10px 12px;
+          margin: 12px 0 0;
+        }
 
         .startScreen { padding-top: 28px; }
         .startScreen h1 { text-align: center; font-size: 24px; }

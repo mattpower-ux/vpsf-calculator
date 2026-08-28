@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
+import { getProductRecommendations, scoreProperty, submitLead } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -466,6 +467,13 @@ function MiniScore({ pillar, value }) {
   );
 }
 
+const listingSources = [
+  ["MLS", Home, "Import MLS Listing", "Use a listing number, address, URL, or listing sheet."],
+  ["Zillow", FileSearch, "Import Zillow Listing", "Connect through a licensed API when available."],
+  ["Realtor.com", FileSearch, "Import Realtor.com Listing", "Connect through a licensed API when available."],
+  ["Redfin", FileSearch, "Import Redfin Listing", "Connect through a licensed API when available."]
+];
+
 function StartScreen({ setScreen }) {
   return (
     <div className="screen startScreen">
@@ -474,10 +482,12 @@ function StartScreen({ setScreen }) {
       <p className="centerCopy">Choose how you’d like to provide information about the home.</p>
 
       <div className="startActions">
-        <button onClick={() => setScreen(11)}>
-          <span className="actionIcon"><Home size={28} /></span>
-          <div><strong>Import MLS Listing</strong><em>Demo import using MLS number, address, listing URL, or scan.</em></div>
-        </button>
+        {listingSources.map(([source, Icon, title, description]) => (
+          <button key={source} onClick={() => setScreen(11)}>
+            <span className="actionIcon"><Icon size={28} /></span>
+            <div><strong>{title}</strong><em>{description}</em></div>
+          </button>
+        ))}
         <button onClick={() => setScreen(1)}>
           <span className="actionIcon"><Upload size={28} /></span>
           <div><strong>Upload Specs / Photos</strong><em>Upload documents or photos. We’ll extract details.</em></div>
@@ -752,7 +762,7 @@ function HomeSpecsMore({ home, update, setScreen }) {
   );
 }
 
-function ReviewScreen({ home, setResultMode, setScreen }) {
+function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
   const propertyRows = [
     [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
     [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
@@ -795,11 +805,8 @@ function ReviewScreen({ home, setResultMode, setScreen }) {
         <button className="textLink">View all specs (18)</button>
       </section>
 
-      <button className="primaryButton stickyButton" onClick={() => {
-        setResultMode("manual");
-        setScreen(4);
-      }}>
-        Generate VPSF Score <ArrowRight size={18} />
+      <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>
+        {isScoring ? "Generating VPSF Score..." : "Generate VPSF Score"} <ArrowRight size={18} />
       </button>
       <p className="privacy small">Your data is secure and private.</p>
     </div>
@@ -1522,8 +1529,10 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
   );
 }
 
-function MatchingProductDetail({ product, setScreen }) {
+function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
 
   return (
     <div className="screen productDetailScreen withNav">
@@ -1563,18 +1572,21 @@ function MatchingProductDetail({ product, setScreen }) {
           </p>
           <label className="field fieldWide">
             <span>Name</span>
-            <input placeholder="Your name" />
+            <input placeholder="Your name" value={leadName} onChange={(event) => setLeadName(event.target.value)} />
           </label>
           <label className="field fieldWide">
             <span>Email</span>
-            <input placeholder="name@example.com" />
+            <input placeholder="name@example.com" value={leadEmail} onChange={(event) => setLeadEmail(event.target.value)} />
           </label>
 
           <div className="leadFormActions">
             <button className="secondaryButton" onClick={() => setScreen(16)}>
               Return to Matching Products
             </button>
-            <button className="primaryButton" onClick={() => setScreen(9)}>
+            <button className="primaryButton" onClick={() => {
+              onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });
+              setScreen(9);
+            }}>
               Create Score Card
             </button>
           </div>
@@ -1586,8 +1598,8 @@ function MatchingProductDetail({ product, setScreen }) {
   );
 }
 
-function Products({ setScreen, setSelectedProduct, activePillar, setActivePillar }) {
-  const filteredProducts = demoProducts.filter((product) => productMatchesPillar(product, activePillar));
+function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar }) {
+  const filteredProducts = products.filter((product) => productMatchesPillar(product, activePillar));
   const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
   return (
@@ -1629,8 +1641,10 @@ function Products({ setScreen, setSelectedProduct, activePillar, setActivePillar
   );
 }
 
-function ProductDetail({ product, setScreen }) {
+function ProductDetail({ product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
 
   return (
     <div className="screen productDetailScreen withNav">
@@ -1670,18 +1684,21 @@ function ProductDetail({ product, setScreen }) {
           </p>
           <label className="field fieldWide">
             <span>Name</span>
-            <input placeholder="Your name" />
+            <input placeholder="Your name" value={leadName} onChange={(event) => setLeadName(event.target.value)} />
           </label>
           <label className="field fieldWide">
             <span>Email</span>
-            <input placeholder="name@example.com" />
+            <input placeholder="name@example.com" value={leadEmail} onChange={(event) => setLeadEmail(event.target.value)} />
           </label>
 
           <div className="leadFormActions">
             <button className="secondaryButton" onClick={() => setScreen(7)}>
               Return to Products
             </button>
-            <button className="primaryButton" onClick={() => setScreen(9)}>
+            <button className="primaryButton" onClick={() => {
+              onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });
+              setScreen(9);
+            }}>
               Create Score Card
             </button>
           </div>
@@ -1943,10 +1960,53 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
+  const [apiResult, setApiResult] = useState(null);
+  const [isScoring, setIsScoring] = useState(false);
+  const [products, setProducts] = useState(demoProducts);
   const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
-  const result = resultMode === "demo" ? demoResult : manualResult;
+  const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
   const update = (key, value) => setHome((current) => ({ ...current, [key]: value }));
+
+  const handleGenerateScore = async () => {
+    setResultMode("manual");
+    setIsScoring(true);
+    try {
+      const score = await scoreProperty(home);
+      setApiResult(score);
+    } catch (error) {
+      setApiResult(manualResult);
+    } finally {
+      setIsScoring(false);
+      setScreen(4);
+    }
+  };
+
+  const handleSubmitLead = async (lead) => {
+    try {
+      await submitLead({ ...lead, propertyAddress: home.address, zip: home.zip });
+    } catch (error) {
+      console.warn("Lead submission fell back to local-only flow.", error);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    getProductRecommendations()
+      .then((apiProducts) => {
+        if (!isMounted || !apiProducts.length) return;
+        setProducts(apiProducts.map((product, index) => ({
+          ...product,
+          image: product.image || demoProducts[index % demoProducts.length].image
+        })));
+      })
+      .catch(() => {
+        if (isMounted) setProducts(demoProducts);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <main className="app">
@@ -1954,24 +2014,24 @@ export default function App() {
         {screen === 0 && <StartScreen setScreen={setScreen} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
-        {screen === 3 && <ReviewScreen home={home} setResultMode={setResultMode} setScreen={setScreen} />}
+        {screen === 3 && <ReviewScreen home={home} setScreen={setScreen} onGenerateScore={handleGenerateScore} isScoring={isScoring} />}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} activePillar={activePillar} setActivePillar={setActivePillar} />}
-        {screen === 7 && <Products setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} />}
+        {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
-        {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} />}
+        {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} />}
         {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
         {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
         {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
-        {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} />}
+        {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
       </AppChrome>
 
       <style>{`
@@ -1992,7 +2052,7 @@ export default function App() {
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; background: var(--soft); }
+        body { margin: 0; background: var(--navy); }
         button, input, select { font: inherit; }
         button { cursor: pointer; }
 
@@ -2003,8 +2063,8 @@ export default function App() {
           justify-content: center;
           padding: 28px;
           background:
-            radial-gradient(circle at top, rgba(15, 87, 160, 0.08), transparent 34%),
-            linear-gradient(180deg, #fbfcfe 0%, #f4f7fa 100%);
+            radial-gradient(circle at top, rgba(41, 174, 245, 0.16), transparent 34%),
+            linear-gradient(180deg, #071a2c 0%, #0b2d4c 100%);
           color: var(--ink);
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         }

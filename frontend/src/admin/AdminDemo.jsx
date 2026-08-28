@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { getAdminProducts, updateProductWeighting } from "../api/client";
 import cognitionIcon from "../assets/cognition-icon.png";
 import {
   BarChart3,
@@ -237,6 +238,11 @@ function BrandWeighting({ products, setProducts }) {
           : item
       )
     );
+    if (target.id) {
+      updateProductWeighting(target.id, weight).catch((error) => {
+        console.warn("Product weighting update stayed local because the API was unavailable.", error);
+      });
+    }
   };
 
   const deleteProduct = (target) => {
@@ -716,6 +722,28 @@ function MiniBar({ label, value }) {
 export default function AdminDemo() {
   const [active, setActive] = useState("Brand Weighting");
   const [products, setProducts] = useState(initialProducts);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getAdminProducts()
+      .then((apiProducts) => {
+        if (!isMounted || !apiProducts.length) return;
+        setProducts(apiProducts.map((item) => ({
+          id: item.id,
+          brand: item.brand,
+          product: item.product,
+          pillar: item.pillar,
+          category: item.category,
+          weight: item.weight
+        })));
+      })
+      .catch((error) => {
+        console.warn("Admin products stayed on demo data because the API was unavailable.", error);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const content = {
     Dashboard: <Dashboard />,

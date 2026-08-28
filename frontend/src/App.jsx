@@ -474,39 +474,96 @@ const listingSources = [
   ["Redfin", FileSearch, "Import Redfin Listing", "Connect through a licensed API when available."]
 ];
 
-function StartScreen({ setScreen }) {
+const quickScanSources = [
+  ["Public records", "Year built, size, parcel, tax, and sales signals"],
+  ["Permits", "Roof, HVAC, solar, window, water heater, and remodel history"],
+  ["Risk layers", "Flood, wind, climate, utility, and location context"]
+];
+
+const uploadCaptureOptions = [
+  ["Inspection report", "PDF"],
+  ["Utility bill", "PDF"],
+  ["Equipment label", "Photo"],
+  ["Upgrade invoice", "Photo"]
+];
+
+function StartScreen({ setScreen, setSelectedProperty, setResultMode }) {
+  const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
+
+  const startExistingHomeScan = () => {
+    setSelectedProperty(demoProperties[0]);
+    setResultMode("demo");
+    setScreen(12);
+  };
+
   return (
     <div className="screen startScreen">
 
-      <h1>Let’s get started</h1>
-      <p className="centerCopy">Choose how you’d like to provide information about the home.</p>
+      <h1>Analyze an existing home</h1>
+      <p className="centerCopy">Start with an address. VPSF will prefill public records, permits, risk layers, and likely missing specs.</p>
 
-      <div className="startActions">
-        {listingSources.map(([source, Icon, title, description]) => (
-          <button key={source} onClick={() => setScreen(11)}>
-            <span className="actionIcon"><Icon size={28} /></span>
-            <div><strong>{title}</strong><em>{description}</em></div>
-          </button>
-        ))}
+      <section className="existingHomeCard">
+        <div className="addressLookup">
+          <MapPin size={18} />
+          <input
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+            aria-label="Property address"
+            placeholder="Enter home address"
+          />
+        </div>
+        <button className="primaryButton quickScanButton" onClick={startExistingHomeScan}>
+          Start Existing Home Scan <ArrowRight size={18} />
+        </button>
+        <div className="quickScanGrid">
+          {quickScanSources.map(([title, description]) => (
+            <div key={title}>
+              <CheckCircle2 size={15} />
+              <strong>{title}</strong>
+              <span>{description}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="startActions modernStartActions">
         <button onClick={() => setScreen(1)}>
-          <span className="actionIcon"><Upload size={28} /></span>
-          <div><strong>Upload Specs / Photos</strong><em>Upload documents or photos. We’ll extract details.</em></div>
+          <span className="actionIcon"><Upload size={26} /></span>
+          <div><strong>Upload Documents / Photos</strong><em>Inspection report, invoices, energy bills, permits, or equipment labels.</em></div>
         </button>
         <button onClick={() => setScreen(1)}>
-          <span className="actionIcon"><ClipboardList size={28} /></span>
-          <div><strong>Enter Specs Myself</strong><em>Manually enter the home information and specs.</em></div>
+          <span className="actionIcon"><ClipboardList size={26} /></span>
+          <div><strong>Guided Home Walk</strong><em>Capture roof, HVAC, panel, water heater, windows, solar, and water fixtures.</em></div>
         </button>
       </div>
 
-      <aside className="smartParse">
+      <section className="captureStrip">
+        {uploadCaptureOptions.map(([label, type]) => (
+          <span key={label}><strong>{type}</strong>{label}</span>
+        ))}
+      </section>
+
+      <details className="listingImportPanel">
+        <summary>Import an active listing instead</summary>
+        <div className="listingImportGrid">
+          {listingSources.map(([source, Icon, title]) => (
+            <button key={source} onClick={() => setScreen(11)}>
+              <Icon size={17} />
+              <span>{title}</span>
+            </button>
+          ))}
+        </div>
+      </details>
+
+      <aside className="smartParse existingSmartParse">
         <Sparkles size={16} />
-        <strong>COGNITION Smart Parse Enabled</strong>
-        <p>Our COGNITION Insight engine will extract specs and pre-fill as much information as possible.</p>
-        <ul>
-          <li><Check size={14} /> HVAC, windows, insulation, roof</li>
-          <li><Check size={14} /> Solar, batteries, EV charger</li>
-          <li><Check size={14} /> Flood zone, wind zone, and more</li>
-        </ul>
+        <strong>Ask only for the gaps</strong>
+        <p>Each field is tracked as public-record, document-extracted, photo-inferred, or homeowner-confirmed before scoring.</p>
+        <div className="confidenceLegend">
+          <span><i className="sourcePublic" /> Found</span>
+          <span><i className="sourceInferred" /> Inferred</span>
+          <span><i className="sourceMissing" /> Missing</span>
+        </div>
       </aside>
 
       <p className="privacy">Your data is secure and private.</p>
@@ -2011,7 +2068,7 @@ export default function App() {
   return (
     <main className="app">
       <AppChrome screen={screen} setScreen={setScreen}>
-        {screen === 0 && <StartScreen setScreen={setScreen} />}
+        {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
         {screen === 3 && <ReviewScreen home={home} setScreen={setScreen} onGenerateScore={handleGenerateScore} isScoring={isScoring} />}
@@ -2157,7 +2214,58 @@ export default function App() {
 
         .startScreen { padding-top: 28px; }
         .startScreen h1 { text-align: center; font-size: 24px; }
+        .existingHomeCard {
+          border: 1px solid #cfe0f1;
+          background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+          border-radius: 14px;
+          padding: 14px;
+          margin-top: 18px;
+          box-shadow: 0 14px 30px rgba(9, 33, 59, 0.08);
+        }
+        .addressLookup {
+          height: 48px;
+          display: grid;
+          grid-template-columns: 22px 1fr;
+          gap: 9px;
+          align-items: center;
+          border: 1px solid #cfe0f1;
+          background: #fff;
+          border-radius: 10px;
+          padding: 0 12px;
+          color: var(--blue);
+        }
+        .addressLookup input {
+          width: 100%;
+          min-width: 0;
+          border: 0;
+          outline: 0;
+          color: var(--ink);
+          font-size: 13px;
+          font-weight: 750;
+          background: transparent;
+        }
+        .quickScanButton { margin-top: 12px; }
+        .quickScanGrid {
+          display: grid;
+          gap: 8px;
+          margin-top: 12px;
+        }
+        .quickScanGrid div {
+          display: grid;
+          grid-template-columns: 18px 82px 1fr;
+          gap: 7px;
+          align-items: center;
+          color: #37506a;
+          font-size: 11px;
+          line-height: 1.25;
+        }
+        .quickScanGrid svg { color: var(--green); }
+        .quickScanGrid strong {
+          color: var(--ink);
+          font-size: 11px;
+        }
         .startActions { display: grid; gap: 12px; margin: 22px 0; }
+        .modernStartActions { margin-bottom: 12px; }
         .startActions button {
           display: grid;
           grid-template-columns: 50px 1fr;
@@ -2183,6 +2291,66 @@ export default function App() {
         }
         .startActions strong { display: block; font-size: 14px; }
         .startActions em { display: block; margin-top: 4px; color: #52657a; font-style: normal; font-size: 12px; line-height: 1.35; }
+        .captureStrip {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin: 0 0 13px;
+        }
+        .captureStrip span {
+          min-height: 42px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          border: 1px solid #d9e7f3;
+          background: #fbfdff;
+          border-radius: 10px;
+          padding: 8px 10px;
+          color: #52657a;
+          font-size: 11px;
+          line-height: 1.15;
+        }
+        .captureStrip strong {
+          color: var(--blue);
+          font-size: 9px;
+          text-transform: uppercase;
+          margin-bottom: 3px;
+        }
+        .listingImportPanel {
+          border: 1px solid var(--line);
+          background: #fff;
+          border-radius: 12px;
+          padding: 12px 14px;
+          margin-top: 12px;
+        }
+        .listingImportPanel summary {
+          color: var(--ink);
+          font-size: 12px;
+          font-weight: 850;
+          cursor: pointer;
+        }
+        .listingImportGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-top: 12px;
+        }
+        .listingImportGrid button {
+          min-height: 38px;
+          display: grid;
+          grid-template-columns: 20px 1fr;
+          gap: 6px;
+          align-items: center;
+          border: 1px solid #d9e7f3;
+          background: #f7fbff;
+          border-radius: 9px;
+          padding: 8px;
+          color: var(--ink);
+          text-align: left;
+          font-size: 10px;
+          font-weight: 800;
+        }
+        .listingImportGrid svg { color: var(--blue); }
 
         .smartParse {
           border: 1px solid #cfe6c9;
@@ -2196,6 +2364,33 @@ export default function App() {
         .smartParse p { margin: 8px 0 10px; color: #3f5b48; line-height: 1.4; font-size: 13px; }
         .smartParse ul, .checkList { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
         .smartParse li, .checkList li { display: flex; align-items: center; gap: 8px; color: #244633; font-size: 12px; padding: 2px 0; line-height: 1.1; }
+        .existingSmartParse { margin-top: 13px; }
+        .confidenceLegend {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+        }
+        .confidenceLegend span {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          height: 28px;
+          border-radius: 8px;
+          background: rgba(255,255,255,.72);
+          color: #244633;
+          font-size: 10px;
+          font-weight: 850;
+        }
+        .confidenceLegend i {
+          width: 8px;
+          height: 8px;
+          border-radius: 99px;
+          display: block;
+        }
+        .sourcePublic { background: var(--green); }
+        .sourceInferred { background: var(--gold); }
+        .sourceMissing { background: #9ba8b9; }
         .privacy { margin: 28px 0 0; text-align: center; color: #7a8795; font-size: 11px; }
         .privacy.small { margin-top: 14px; }
 

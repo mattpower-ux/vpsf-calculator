@@ -23,6 +23,13 @@ export async function scoreProperty(propertyInput) {
   });
 }
 
+export async function geocodeProperty(address) {
+  return request("/api/properties/geocode", {
+    method: "POST",
+    body: JSON.stringify({ address })
+  });
+}
+
 export async function getProductRecommendations() {
   const products = await request("/api/products/recommendations");
   return products.map((product) => ({

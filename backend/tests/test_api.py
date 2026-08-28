@@ -54,3 +54,10 @@ def test_products_and_leads_endpoints():
     )
     assert lead_response.status_code == 200
     assert lead_response.json()["status"] == "accepted"
+
+
+def test_geocode_requires_mapbox_key():
+    response = client.post("/api/properties/geocode", json={"address": "1313 Cognition Drive, Orlando, FL"})
+
+    assert response.status_code == 503
+    assert "MAPBOX_ACCESS_TOKEN" in response.json()["detail"]

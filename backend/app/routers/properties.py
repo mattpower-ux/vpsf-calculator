@@ -1,13 +1,70 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from httpx import HTTPError
 from sqlalchemy.orm import Session
 
 from app.adapters import get_listing_adapter
+from app.config import Settings, get_settings
 from app.db import get_db
+from app.integrations.mapbox import MapboxClient
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document
-from app.schemas import ListingImportRequest, PropertyInput
+from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput
 
 router = APIRouter(prefix="/api/properties", tags=["properties"])
+
+
+def mapbox_context_value(context: dict, key: str) -> str:
+    value = context.get(key)
+    if isinstance(value, dict):
+        return value.get("name") or value.get("mapbox_id") or ""
+    return ""
+
+
+def geocode_response_from_mapbox(query: str, data: dict) -> GeocodeResponse:
+    features = data.get("features", [])
+    if not features:
+        raise HTTPException(status_code=404, detail="No address match found")
+
+    feature = features[0]
+    properties = feature.get("properties", {})
+    context = properties.get("context", {})
+    coordinates = properties.get("coordinates", {})
+    geometry_coordinates = feature.get("geometry", {}).get("coordinates", [])
+
+    longitude = coordinates.get("longitude")
+    latitude = coordinates.get("latitude")
+    if (longitude is None or latitude is None) and len(geometry_coordinates) >= 2:
+        longitude = geometry_coordinates[0]
+        latitude = geometry_coordinates[1]
+
+    return GeocodeResponse(
+        query=query,
+        normalizedAddress=properties.get("full_address") or properties.get("name") or query,
+        address=properties.get("address") or properties.get("name") or "",
+        city=mapbox_context_value(context, "place"),
+        state=mapbox_context_value(context, "region"),
+        zip=mapbox_context_value(context, "postcode"),
+        latitude=latitude,
+        longitude=longitude,
+        confidence=properties.get("match_code", {}).get("confidence"),
+    )
+
+
+@router.post("/geocode", response_model=GeocodeResponse)
+async def geocode_property(
+    request: GeocodeRequest,
+    settings: Settings = Depends(get_settings),
+) -> GeocodeResponse:
+    client = MapboxClient(settings.mapbox_access_token)
+    if not client.is_configured:
+        raise HTTPException(status_code=503, detail="MAPBOX_ACCESS_TOKEN is not configured")
+
+    try:
+        data = await client.geocode(request.address)
+    except HTTPError as error:
+        raise HTTPException(status_code=502, detail="Mapbox geocoding request failed") from error
+
+    return geocode_response_from_mapbox(request.address, data)
 
 
 @router.post("/manual", response_model=PropertyInput)

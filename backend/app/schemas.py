@@ -59,6 +59,23 @@ class ListingImportRequest(BaseModel):
     url: str | None = None
 
 
+class GeocodeRequest(BaseModel):
+    address: str
+
+
+class GeocodeResponse(BaseModel):
+    query: str
+    normalizedAddress: str
+    address: str = ""
+    city: str = ""
+    state: str = ""
+    zip: str = ""
+    latitude: float | None = None
+    longitude: float | None = None
+    confidence: str | None = None
+    source: str = "mapbox"
+
+
 class ScoreResponse(BaseModel):
     scores: dict[str, int]
     total: int

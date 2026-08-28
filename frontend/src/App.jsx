@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { getProductRecommendations, scoreProperty, submitLead } from "./api/client";
+import { geocodeProperty, getProductRecommendations, scoreProperty, submitLead } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -487,16 +487,17 @@ const uploadCaptureOptions = [
   ["Upgrade invoice", "Photo"]
 ];
 
-function homeFromExistingScan(property, enteredAddress) {
-  const [addressLine, city = "Orlando", stateZip = "FL 32101"] = enteredAddress.split(",").map((part) => part.trim());
+function homeFromExistingScan(property, enteredAddress, geocode) {
+  const resolvedAddress = geocode?.normalizedAddress || enteredAddress;
+  const [addressLine, city = "Orlando", stateZip = "FL 32101"] = resolvedAddress.split(",").map((part) => part.trim());
   const [state = "FL", zip = "32101"] = stateZip.split(/\s+/);
 
   return {
     ...defaultHome,
-    address: addressLine || property.name,
-    city,
-    state,
-    zip,
+    address: geocode?.address || addressLine || property.name,
+    city: geocode?.city || city,
+    state: geocode?.state || state,
+    zip: geocode?.zip || zip,
     squareFeet: String(property.squareFeet),
     yearBuilt: String(property.yearBuilt),
     homeType: "Single Family Detached",
@@ -529,13 +530,26 @@ function homeFromExistingScan(property, enteredAddress) {
 
 function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome }) {
   const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
+  const [isScanningAddress, setIsScanningAddress] = useState(false);
+  const [scanNote, setScanNote] = useState("");
 
-  const startExistingHomeScan = () => {
+  const startExistingHomeScan = async () => {
     const existingHome = demoProperties[0];
+    setIsScanningAddress(true);
+    setScanNote("");
     setSelectedProperty(existingHome);
-    setHome(homeFromExistingScan(existingHome, address));
-    setResultMode("demo");
-    setScreen(3);
+    try {
+      const geocode = await geocodeProperty(address);
+      setHome(homeFromExistingScan(existingHome, address, geocode));
+      setScanNote("Address normalized with Mapbox.");
+    } catch (error) {
+      setHome(homeFromExistingScan(existingHome, address));
+      setScanNote("Using local demo enrichment until address lookup is available.");
+    } finally {
+      setResultMode("demo");
+      setIsScanningAddress(false);
+      setScreen(3);
+    }
   };
 
   return (
@@ -554,9 +568,10 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
             placeholder="Enter home address"
           />
         </div>
-        <button className="primaryButton quickScanButton" onClick={startExistingHomeScan}>
-          Start Existing Home Scan <ArrowRight size={18} />
+        <button className="primaryButton quickScanButton" onClick={startExistingHomeScan} disabled={isScanningAddress}>
+          {isScanningAddress ? "Checking Address..." : "Start Existing Home Scan"} <ArrowRight size={18} />
         </button>
+        {scanNote && <p className="addressScanNote">{scanNote}</p>}
         <div className="quickScanGrid">
           {quickScanSources.map(([title, description]) => (
             <div key={title}>
@@ -2294,6 +2309,17 @@ export default function App() {
           background: transparent;
         }
         .quickScanButton { margin-top: 12px; }
+        .quickScanButton:disabled {
+          opacity: .78;
+          cursor: wait;
+        }
+        .addressScanNote {
+          margin: 8px 0 0;
+          color: #52657a;
+          font-size: 11px;
+          line-height: 1.35;
+          text-align: center;
+        }
         .quickScanGrid {
           display: grid;
           gap: 8px;

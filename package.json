@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && node scripts/copy-frontend-dist.mjs"
+  }
+}

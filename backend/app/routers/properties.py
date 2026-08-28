@@ -87,7 +87,11 @@ def acres_from_square_feet(value: object) -> str:
 
 
 def property_input_from_rentcast(record: dict) -> PropertyInput:
+    features = record.get("features") or {}
     lot_size = first_value(record, "lotSize")
+    garage_spaces = first_value(features, "garageSpaces")
+    heating_type = first_value(features, "heatingType")
+    cooling_type = first_value(features, "coolingType")
     property_input = PropertyInput(
         address=first_value(record, "addressLine1", "formattedAddress"),
         city=first_value(record, "city"),
@@ -96,10 +100,14 @@ def property_input_from_rentcast(record: dict) -> PropertyInput:
         squareFeet=first_value(record, "squareFootage", "livingArea"),
         yearBuilt=first_value(record, "yearBuilt"),
         homeType=first_value(record, "propertyType") or "Unknown",
+        stories=first_value(features, "floorCount") or "Unknown",
         bedrooms=first_value(record, "bedrooms"),
         bathrooms=first_value(record, "bathrooms"),
+        garage=f"{garage_spaces} Car Garage" if garage_spaces else first_value(features, "garageType"),
         lotSize=acres_from_square_feet(lot_size) if lot_size else "",
         occupancy="Owner Occupied",
+        hvac=heating_type or cooling_type or "Unknown",
+        roof=first_value(features, "roofType") or "Unknown",
         sourceNote="RentCast returned public property facts. Energy, resilience, water, health, and upgrade details still need documents, photos, or homeowner confirmation.",
     )
     return property_input

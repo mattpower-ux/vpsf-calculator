@@ -131,7 +131,10 @@ async def enrich_property_with_rentcast(
             detail=f"RentCast property request failed with status {error.response.status_code}: {detail}",
         ) from error
     except HTTPError as error:
-        raise HTTPException(status_code=502, detail="RentCast property request failed") from error
+        raise HTTPException(
+            status_code=502,
+            detail=f"RentCast property request failed before a response was received: {type(error).__name__}",
+        ) from error
 
     if not records:
         raise HTTPException(status_code=404, detail="No RentCast property record found")

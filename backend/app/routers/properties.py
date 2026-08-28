@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from httpx import HTTPError
+from httpx import HTTPError, HTTPStatusError
 from sqlalchemy.orm import Session
 
 from app.adapters import get_listing_adapter
@@ -124,6 +124,12 @@ async def enrich_property_with_rentcast(
 
     try:
         records = await client.property_by_address(request.address)
+    except HTTPStatusError as error:
+        detail = error.response.text[:300] if error.response is not None else ""
+        raise HTTPException(
+            status_code=502,
+            detail=f"RentCast property request failed with status {error.response.status_code}: {detail}",
+        ) from error
     except HTTPError as error:
         raise HTTPException(status_code=502, detail="RentCast property request failed") from error
 

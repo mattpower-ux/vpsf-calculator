@@ -487,13 +487,55 @@ const uploadCaptureOptions = [
   ["Upgrade invoice", "Photo"]
 ];
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode }) {
+function homeFromExistingScan(property, enteredAddress) {
+  const [addressLine, city = "Orlando", stateZip = "FL 32101"] = enteredAddress.split(",").map((part) => part.trim());
+  const [state = "FL", zip = "32101"] = stateZip.split(/\s+/);
+
+  return {
+    ...defaultHome,
+    address: addressLine || property.name,
+    city,
+    state,
+    zip,
+    squareFeet: String(property.squareFeet),
+    yearBuilt: String(property.yearBuilt),
+    homeType: "Single Family Detached",
+    stories: "2",
+    bedrooms: String(property.beds),
+    bathrooms: String(property.baths),
+    garage: "2 Car Garage",
+    lotSize: `${property.lotSizeAcres} acres`,
+    climateZone: "2A – Hot Humid",
+    occupancy: "Owner Occupied",
+    hvac: "Heat Pump (Electric)",
+    waterHeater: "Tank Electric",
+    roof: property.roofType,
+    windows: "Double Pane",
+    insulation: "Unknown",
+    solar: "None",
+    hers: "Code-Minimum",
+    evReady: "None",
+    fortified: "None",
+    flood: "Unknown",
+    ventilation: "Exhaust Only",
+    healthCert: "None",
+    carbonStrategy: "No Accounting",
+    waterStandard: "Code-Minimum",
+    leak: "None",
+    insurance: "None / Unknown",
+    maintenance: "Basic Maintenance Guidance"
+  };
+}
+
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome }) {
   const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
 
   const startExistingHomeScan = () => {
-    setSelectedProperty(demoProperties[0]);
+    const existingHome = demoProperties[0];
+    setSelectedProperty(existingHome);
+    setHome(homeFromExistingScan(existingHome, address));
     setResultMode("demo");
-    setScreen(12);
+    setScreen(3);
   };
 
   return (
@@ -2068,10 +2110,17 @@ export default function App() {
   return (
     <main className="app">
       <AppChrome screen={screen} setScreen={setScreen}>
-        {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} />}
+        {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
-        {screen === 3 && <ReviewScreen home={home} setScreen={setScreen} onGenerateScore={handleGenerateScore} isScoring={isScoring} />}
+        {screen === 3 && (
+          <ReviewScreen
+            home={home}
+            setScreen={setScreen}
+            onGenerateScore={resultMode === "demo" ? () => setScreen(12) : handleGenerateScore}
+            isScoring={isScoring}
+          />
+        )}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} activePillar={activePillar} setActivePillar={setActivePillar} />}

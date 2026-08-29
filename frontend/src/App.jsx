@@ -487,6 +487,91 @@ const uploadCaptureOptions = [
   ["Upgrade invoice", "Photo"]
 ];
 
+const stateNameToCode = {
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY"
+};
+
+function normalizeState(value) {
+  const trimmed = (value || "").trim();
+  if (trimmed.length === 2) return trimmed.toUpperCase();
+  return stateNameToCode[trimmed.toLowerCase()] || trimmed;
+}
+
+function parseAddressParts(rawAddress) {
+  const value = (rawAddress || "").replace(/\s+/g, " ").trim();
+  const commaParts = value.split(",").map((part) => part.trim()).filter(Boolean);
+  if (commaParts.length >= 3) {
+    const stateZip = commaParts[2].replace(/United States/i, "").trim().split(/\s+/);
+    return {
+      address: commaParts[0],
+      city: commaParts[1],
+      state: normalizeState(stateZip[0] || ""),
+      zip: stateZip.find((part) => /^\d{5}/.test(part)) || ""
+    };
+  }
+
+  const looseMatch = value.match(/^(.*?)([A-Za-z][A-Za-z .'-]+?)\s+([A-Z]{2}|[A-Za-z ]+)\s+(\d{5}(?:-\d{4})?)$/);
+  if (looseMatch) {
+    return {
+      address: looseMatch[1].trim().replace(/[,\s]+$/, ""),
+      city: looseMatch[2].trim().replace(/[,\s]+$/, ""),
+      state: normalizeState(looseMatch[3]),
+      zip: looseMatch[4]
+    };
+  }
+
+  return { address: value, city: "", state: "", zip: "" };
+}
+
 function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, riskEnrichment) {
   if (rentcastProperty) {
     return {
@@ -494,7 +579,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, riskEnr
       ...rentcastProperty,
       address: rentcastProperty.address || geocode?.address || enteredAddress,
       city: rentcastProperty.city || geocode?.city || "",
-      state: rentcastProperty.state || geocode?.state || "",
+      state: normalizeState(rentcastProperty.state || geocode?.state || ""),
       zip: rentcastProperty.zip || geocode?.zip || "",
       climateZone: riskEnrichment?.climateZone || rentcastProperty.climateZone || "Unknown",
       flood: riskEnrichment?.flood || rentcastProperty.flood || "Unknown",
@@ -503,15 +588,14 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, riskEnr
   }
 
   const resolvedAddress = geocode?.normalizedAddress || enteredAddress;
-  const [addressLine, city = "Orlando", stateZip = "FL 32101"] = resolvedAddress.split(",").map((part) => part.trim());
-  const [state = "FL", zip = "32101"] = stateZip.split(/\s+/);
+  const parsedAddress = parseAddressParts(resolvedAddress);
 
   return {
     ...defaultHome,
-    address: geocode?.address || addressLine || enteredAddress,
-    city: geocode?.city || city,
-    state: geocode?.state || state,
-    zip: geocode?.zip || zip,
+    address: geocode?.address || parsedAddress.address || enteredAddress,
+    city: geocode?.city || parsedAddress.city,
+    state: normalizeState(geocode?.state || parsedAddress.state),
+    zip: geocode?.zip || parsedAddress.zip,
     squareFeet: "Unknown",
     yearBuilt: "Unknown",
     homeType: "Unknown",

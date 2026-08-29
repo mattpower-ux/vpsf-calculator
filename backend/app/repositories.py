@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import ApiUsageRecord, LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
+from app.models import ApiUsageRecord, LeadRecord, ProductClickRecord, ProductRecord, PropertyQueryRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
 from app.products.catalog import SEED_PRODUCTS
-from app.schemas import LeadRequest, ProductRecommendation, PropertyInput
+from app.schemas import LeadRequest, ProductClickCreate, ProductRecommendation, PropertyInput, PropertyQueryCreate, PropertyQueryProgress
 
 
 def create_property(
@@ -172,3 +172,111 @@ def reserve_api_call(db: Session, provider: str, monthly_limit: int) -> ApiUsage
     db.commit()
     db.refresh(record)
     return record
+
+
+def serialize_property_query(record: PropertyQueryRecord) -> dict:
+    return {
+        "id": record.id,
+        "sessionId": record.session_id,
+        "address": record.address,
+        "city": record.city,
+        "state": record.state,
+        "zip": record.zip,
+        "source": record.source,
+        "maxScreen": record.max_screen,
+        "maxScreenLabel": record.max_screen_label,
+        "productClicks": record.product_clicks,
+        "vpsfScore": record.vpsf_score,
+        "scoreLabel": record.score_label,
+        "scoreRunId": record.score_run_id,
+        "leadName": record.lead_name,
+        "leadEmail": record.lead_email,
+        "leadProductId": record.lead_product_id,
+        "leadAction": record.lead_action,
+        "latestSnapshot": record.latest_snapshot or {},
+        "createdAt": record.created_at.isoformat(),
+        "updatedAt": record.updated_at.isoformat(),
+    }
+
+
+def create_property_query(db: Session, payload: PropertyQueryCreate) -> PropertyQueryRecord:
+    record = PropertyQueryRecord(
+        session_id=payload.sessionId,
+        address=payload.address,
+        city=payload.city,
+        state=payload.state,
+        zip=payload.zip,
+        source=payload.source,
+        latest_snapshot=payload.snapshot,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def record_query_progress(db: Session, payload: PropertyQueryProgress) -> PropertyQueryRecord | None:
+    record = db.get(PropertyQueryRecord, payload.queryId) if payload.queryId else None
+    if not record:
+        return None
+
+    if payload.screen >= record.max_screen:
+        record.max_screen = payload.screen
+        record.max_screen_label = payload.screenLabel
+    if payload.snapshot:
+        record.latest_snapshot = payload.snapshot
+    if payload.vpsfScore is not None:
+        record.vpsf_score = payload.vpsfScore
+    if payload.scoreLabel:
+        record.score_label = payload.scoreLabel
+    if payload.scoreRunId is not None:
+        record.score_run_id = payload.scoreRunId
+    if payload.leadName or payload.leadEmail:
+        record.lead_name = payload.leadName
+        record.lead_email = payload.leadEmail
+        record.lead_product_id = payload.leadProductId
+        record.lead_action = payload.leadAction
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def record_product_click(db: Session, payload: ProductClickCreate) -> ProductClickRecord:
+    record = ProductClickRecord(
+        query_id=payload.queryId,
+        session_id=payload.sessionId,
+        product_id=payload.productId,
+        product_name=payload.productName,
+        pillar=payload.pillar,
+        click_context=payload.context,
+    )
+    db.add(record)
+    if payload.queryId:
+        query = db.get(PropertyQueryRecord, payload.queryId)
+        if query:
+            query.product_clicks += 1
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def list_property_queries(db: Session, limit: int = 250) -> list[dict]:
+    records = db.scalars(select(PropertyQueryRecord).order_by(PropertyQueryRecord.updated_at.desc()).limit(limit)).all()
+    return [serialize_property_query(record) for record in records]
+
+
+def list_product_clicks(db: Session, limit: int = 250) -> list[dict]:
+    records = db.scalars(select(ProductClickRecord).order_by(ProductClickRecord.created_at.desc()).limit(limit)).all()
+    return [
+        {
+            "id": record.id,
+            "queryId": record.query_id,
+            "sessionId": record.session_id,
+            "productId": record.product_id,
+            "productName": record.product_name,
+            "pillar": record.pillar,
+            "context": record.click_context,
+            "createdAt": record.created_at.isoformat(),
+        }
+        for record in records
+    ]

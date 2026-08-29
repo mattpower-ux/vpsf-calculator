@@ -77,3 +77,52 @@ def test_risk_endpoint_estimates_climate_without_coordinates():
     body = response.json()
     assert body["climateZone"] == "2A - Hot Humid"
     assert body["flood"] == "Unknown"
+
+
+def test_tracking_records_score_and_lead_for_admin_table():
+    query_response = client.post(
+        "/api/tracking/property-query",
+        json={
+            "sessionId": "test-session-admin-row",
+            "address": "310 Gray Rd",
+            "city": "Falmouth",
+            "state": "ME",
+            "zip": "04105",
+            "source": "rentcast",
+            "snapshot": {"address": "310 Gray Rd"},
+        },
+    )
+
+    assert query_response.status_code == 200
+    query_id = query_response.json()["id"]
+
+    progress_response = client.post(
+        "/api/tracking/progress",
+        json={
+            "sessionId": "test-session-admin-row",
+            "queryId": query_id,
+            "screen": 4,
+            "screenLabel": "Score Dashboard",
+            "snapshot": {"address": "310 Gray Rd"},
+            "vpsfScore": 512,
+            "scoreLabel": "Needs Upgrade",
+            "scoreRunId": 22,
+            "leadName": "Demo Buyer",
+            "leadEmail": "demo@example.com",
+            "leadProductId": "moen-eco-showerhead",
+            "leadAction": "Requested specs and pricing",
+        },
+    )
+
+    assert progress_response.status_code == 200
+
+    unauthorized_admin = client.get("/api/admin/property-queries")
+    assert unauthorized_admin.status_code == 401
+
+    admin_response = client.get("/api/admin/property-queries", headers={"X-Admin-Passcode": "2027"})
+    assert admin_response.status_code == 200
+    row = next(item for item in admin_response.json() if item["id"] == query_id)
+    assert row["vpsfScore"] == 512
+    assert row["scoreLabel"] == "Needs Upgrade"
+    assert row["leadName"] == "Demo Buyer"
+    assert row["leadEmail"] == "demo@example.com"

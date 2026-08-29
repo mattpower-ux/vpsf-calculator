@@ -2,10 +2,16 @@ import os
 from functools import lru_cache
 
 
+def default_database_url() -> str:
+    if os.getenv("RENDER"):
+        return "sqlite:////var/data/vpsf.db"
+    return "sqlite:///./vpsf.db"
+
+
 class Settings:
     app_name = "VPSF Calculator API"
     model_version = "vpsf-0.1.0"
-    raw_database_url = os.getenv("DATABASE_URL", "sqlite:///./vpsf.db")
+    raw_database_url = os.getenv("DATABASE_URL", default_database_url())
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")

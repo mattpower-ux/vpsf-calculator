@@ -134,3 +134,60 @@ class AdminSummary(BaseModel):
     scoreRuns: int
     products: int
     leads: int
+
+
+class PropertyQueryCreate(BaseModel):
+    sessionId: str
+    address: str = ""
+    city: str = ""
+    state: str = ""
+    zip: str = ""
+    source: str = "address_scan"
+    snapshot: dict = Field(default_factory=dict)
+
+
+class PropertyQueryProgress(BaseModel):
+    sessionId: str
+    queryId: int | None = None
+    screen: int
+    screenLabel: str
+    snapshot: dict = Field(default_factory=dict)
+    vpsfScore: int | None = None
+    scoreLabel: str | None = None
+    scoreRunId: int | None = None
+    leadName: str | None = None
+    leadEmail: str | None = None
+    leadProductId: str | None = None
+    leadAction: str | None = None
+
+
+class ProductClickCreate(BaseModel):
+    sessionId: str
+    queryId: int | None = None
+    productId: str = ""
+    productName: str = ""
+    pillar: str = ""
+    context: str = "product_listing"
+
+
+class PropertyQueryResponse(BaseModel):
+    id: int
+    sessionId: str
+    address: str
+    city: str
+    state: str
+    zip: str
+    source: str
+    maxScreen: int
+    maxScreenLabel: str
+    productClicks: int
+    vpsfScore: int | None = None
+    scoreLabel: str | None = None
+    scoreRunId: int | None = None
+    leadName: str | None = None
+    leadEmail: str | None = None
+    leadProductId: str | None = None
+    leadAction: str | None = None
+    latestSnapshot: dict
+    createdAt: str
+    updatedAt: str

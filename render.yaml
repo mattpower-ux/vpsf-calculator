@@ -5,26 +5,23 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: vpsf-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.13
       - key: DATABASE_URL
-        fromDatabase:
-          name: vpsf-db
-          property: connectionString
+        value: sqlite:////var/data/vpsf.db
       - key: FRONTEND_ORIGIN
-        value: https://vpsf-frontend.onrender.com
+        value: https://vpsf-calculator.onrender.com,https://vpsf-frontend.onrender.com
 
   - type: static
-    name: vpsf-frontend
+    name: vpsf-calculator
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
         value: https://vpsf-api.onrender.com
-
-databases:
-  - name: vpsf-db
-    databaseName: vpsf
-    user: vpsf

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { getAdminProducts, updateProductWeighting } from "../api/client";
+import React, { useEffect, useMemo, useState } from "react";
+import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, updateProductWeighting } from "../api/client";
 import cognitionIcon from "../assets/cognition-icon.png";
 import {
   BarChart3,
@@ -222,7 +222,29 @@ function Metric({ title, value, note, icon: Icon }) {
   );
 }
 
-function BrandWeighting({ products, setProducts }) {
+function formatDate(value) {
+  if (!value) return "Never";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function scoreTone(score) {
+  if (!score) return "gray";
+  if (score >= 700) return "green";
+  if (score >= 500) return "gold";
+  return "red";
+}
+
+function contactSummary(query) {
+  if (!query.leadName && !query.leadEmail) return "None";
+  return [query.leadName, query.leadEmail].filter(Boolean).join(" / ");
+}
+
+function BrandWeighting({ products, setProducts, passcode }) {
   const [pillar, setPillar] = useState("All");
 
   const filtered = useMemo(
@@ -239,7 +261,7 @@ function BrandWeighting({ products, setProducts }) {
       )
     );
     if (target.id) {
-      updateProductWeighting(target.id, weight).catch((error) => {
+      updateProductWeighting(target.id, weight, passcode).catch((error) => {
         console.warn("Product weighting update stayed local because the API was unavailable.", error);
       });
     }
@@ -339,28 +361,74 @@ function BrandWeighting({ products, setProducts }) {
   );
 }
 
-function Properties() {
+function Properties({ queries, productClicks, isLoading }) {
+  if (isLoading) {
+    return <section className="emptyPanel">Loading property query data...</section>;
+  }
+
   return (
     <section className="tablePanel fullPanel">
       <div className="tablePanelHeader">
-        <div><Home size={30} /><span><h2>Properties</h2><p>Recent property evaluations and demo score activity.</p></span></div>
-        <button><Plus size={16} /> Add Property</button>
+        <div><Home size={30} /><span><h2>Property Queries</h2><p>Live searches, funnel depth, scores, product clicks, and product-info requests.</p></span></div>
+        <button><Download size={16} /> Export CSV</button>
       </div>
-      <table>
-        <thead><tr><th>Address</th><th>Market</th><th>ZIP</th><th>VPSF Score</th><th>Status</th><th>Last Run</th></tr></thead>
+      <table className="spreadsheetTable">
+        <thead>
+          <tr>
+            <th>Address</th>
+            <th>Market</th>
+            <th>ZIP</th>
+            <th>VPSF Score</th>
+            <th>Furthest Screen</th>
+            <th>Product Clicks</th>
+            <th>Product Info Lead</th>
+            <th>Lead Product</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
         <tbody>
-          {properties.map((item) => (
-            <tr key={item.address}>
-              <td><strong>{item.address}</strong></td>
-              <td>{item.city}</td>
-              <td>{item.zip}</td>
-              <td><Badge tone={item.score >= 700 ? "green" : item.score >= 500 ? "gold" : "red"}>{item.score}</Badge></td>
-              <td>{item.status}</td>
-              <td>{item.lastRun}</td>
+          {queries.map((item) => (
+            <tr key={item.id}>
+              <td><strong>{item.address || "Unknown"}</strong><small>{item.source}</small></td>
+              <td>{[item.city, item.state].filter(Boolean).join(", ") || "Unknown"}</td>
+              <td>{item.zip || "Unknown"}</td>
+              <td><Badge tone={scoreTone(item.vpsfScore)}>{item.vpsfScore || "Not scored"}</Badge></td>
+              <td>{item.maxScreenLabel} <small>Screen {item.maxScreen}</small></td>
+              <td>{item.productClicks}</td>
+              <td>{contactSummary(item)}</td>
+              <td>{item.leadProductId || "None"}</td>
+              <td>{formatDate(item.updatedAt)}</td>
             </tr>
           ))}
+          {!queries.length && (
+            <tr>
+              <td colSpan="9">No property queries have been stored yet.</td>
+            </tr>
+          )}
         </tbody>
       </table>
+      <div className="subTable">
+        <h3>Recent Product Clicks</h3>
+        <table className="spreadsheetTable">
+          <thead><tr><th>Product</th><th>Pillar</th><th>Context</th><th>Query ID</th><th>Clicked</th></tr></thead>
+          <tbody>
+            {productClicks.slice(0, 12).map((item) => (
+              <tr key={item.id}>
+                <td><strong>{item.productName || item.productId}</strong></td>
+                <td>{item.pillar || "Unknown"}</td>
+                <td>{item.context}</td>
+                <td>{item.queryId || "None"}</td>
+                <td>{formatDate(item.createdAt)}</td>
+              </tr>
+            ))}
+            {!productClicks.length && (
+              <tr>
+                <td colSpan="5">No product clicks recorded yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -720,41 +788,105 @@ function MiniBar({ label, value }) {
 }
 
 export default function AdminDemo() {
-  const [active, setActive] = useState("Brand Weighting");
+  const savedPasscode = window.sessionStorage.getItem("vpsf_admin_passcode") || "";
+  const [passcode, setPasscode] = useState(savedPasscode);
+  const [isUnlocked, setIsUnlocked] = useState(savedPasscode === "2027");
+  const [passcodeError, setPasscodeError] = useState("");
+  const [active, setActive] = useState("Properties");
   const [products, setProducts] = useState(initialProducts);
+  const [queries, setQueries] = useState([]);
+  const [productClicks, setProductClicks] = useState([]);
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!isUnlocked) return;
     let isMounted = true;
-    getAdminProducts()
-      .then((apiProducts) => {
-        if (!isMounted || !apiProducts.length) return;
-        setProducts(apiProducts.map((item) => ({
-          id: item.id,
-          brand: item.brand,
-          product: item.product,
-          pillar: item.pillar,
-          category: item.category,
-          weight: item.weight
-        })));
+    setIsLoadingAdmin(true);
+    Promise.all([
+      getAdminProducts(passcode),
+      getAdminPropertyQueries(passcode),
+      getAdminProductClicks(passcode)
+    ])
+      .then(([apiProducts, apiQueries, apiClicks]) => {
+        if (!isMounted) return;
+        if (apiProducts.length) {
+          setProducts(apiProducts.map((item) => ({
+            id: item.id,
+            brand: item.brand,
+            product: item.product,
+            pillar: item.pillar,
+            category: item.category,
+            weight: item.weight
+          })));
+        }
+        setQueries(apiQueries || []);
+        setProductClicks(apiClicks || []);
       })
       .catch((error) => {
-        console.warn("Admin products stayed on demo data because the API was unavailable.", error);
+        console.warn("Admin data stayed on demo data because the API was unavailable.", error);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingAdmin(false);
       });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isUnlocked, passcode]);
+
+  const unlockAdmin = (event) => {
+    event.preventDefault();
+    if (passcode !== "2027") {
+      setPasscodeError("Invalid passcode.");
+      return;
+    }
+    window.sessionStorage.setItem("vpsf_admin_passcode", passcode);
+    setPasscodeError("");
+    setIsUnlocked(true);
+  };
 
   const content = {
     Dashboard: <Dashboard />,
-    Properties: <Properties />,
+    Properties: <Properties queries={queries} productClicks={productClicks} isLoading={isLoadingAdmin} />,
     Recommendations: <ScoringControlsPage />,
-    Products: <BrandWeighting products={products} setProducts={setProducts} />,
-    "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} />,
+    Products: <BrandWeighting products={products} setProducts={setProducts} passcode={passcode} />,
+    "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={passcode} />,
     Users: <UsersPage />,
     Reports: <Reports products={products} />,
     Settings: <GenericPage title="Settings" />
   }[active];
+
+  if (!isUnlocked) {
+    return (
+      <div className="adminLogin">
+        <form onSubmit={unlockAdmin}>
+          <img src={cognitionIcon} alt="COGNITION" />
+          <h1>VPSF Admin</h1>
+          <p>Enter the admin passcode to view property query data.</p>
+          <input
+            type="password"
+            value={passcode}
+            onChange={(event) => setPasscode(event.target.value)}
+            placeholder="Passcode"
+            autoFocus
+          />
+          {passcodeError && <span>{passcodeError}</span>}
+          <button className="primary">Unlock Admin</button>
+        </form>
+        <style>{`
+          * { box-sizing: border-box; }
+          body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #071a2c; color: #0a2340; }
+          .adminLogin { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #071a2c; }
+          .adminLogin form { width: min(420px, 100%); display: grid; gap: 14px; padding: 30px; background: #fff; border: 1px solid #dfe7f0; border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.22); }
+          .adminLogin img { width: 52px; height: 52px; }
+          .adminLogin h1 { margin: 0; font-size: 30px; }
+          .adminLogin p { margin: 0 0 8px; color: #506179; }
+          .adminLogin input { height: 46px; border: 1px solid #ccd9e8; border-radius: 8px; padding: 0 12px; font: inherit; }
+          .adminLogin span { color: #d8262f; font-size: 13px; font-weight: 800; }
+          .adminLogin button { height: 46px; border: 0; border-radius: 8px; background: #126fd2; color: #fff; font-weight: 900; cursor: pointer; }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="adminApp">
@@ -817,7 +949,10 @@ export default function AdminDemo() {
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th { color: #071a2c; font-size: 12px; text-align: left; padding: 14px 22px; background: #fbfdff; border-bottom: 1px solid var(--line); }
         td { padding: 16px 22px; border-bottom: 1px solid var(--line); color: #102842; }
+        td small { display: block; margin-top: 4px; color: #607089; font-size: 12px; }
         tr:last-child td { border-bottom: 0; }
+        .subTable { border-top: 1px solid var(--line); padding-top: 18px; }
+        .subTable h3 { margin: 0; padding: 0 22px 14px; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
         .weightSelect { min-width: 160px; height: 38px; border: 1px solid #d4e0ec; background: #fff; border-radius: 8px; padding: 0 12px; font-size: 13px; font-weight: 900; text-transform: uppercase; }
         .weightSelect span, .summaryLine i { width: 11px; height: 11px; border-radius: 999px; display: inline-block; }
         .priority span, .green { background: var(--green); }

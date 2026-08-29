@@ -28,6 +28,25 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+function adminOptions(passcode, options = {}) {
+  return {
+    ...options,
+    headers: {
+      "X-Admin-Passcode": passcode,
+      ...(options.headers || {})
+    }
+  };
+}
+
+async function optionalRequest(path, options = {}) {
+  try {
+    return await request(path, options);
+  } catch (error) {
+    console.warn(`Optional API request failed: ${path}`, error);
+    return null;
+  }
+}
+
 export async function scoreProperty(propertyInput) {
   return request("/api/score", {
     method: "POST",
@@ -79,12 +98,41 @@ export async function submitLead(lead) {
   });
 }
 
-export async function getAdminProducts() {
-  return request("/api/admin/products");
+export async function trackPropertyQuery(payload) {
+  return optionalRequest("/api/tracking/property-query", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
 }
 
-export async function updateProductWeighting(productId, weight) {
-  return request(`/api/admin/products/${productId}/weighting?weight=${encodeURIComponent(weight)}`, {
-    method: "PATCH"
+export async function trackProgress(payload) {
+  return optionalRequest("/api/tracking/progress", {
+    method: "POST",
+    body: JSON.stringify(payload)
   });
+}
+
+export async function trackProductClick(payload) {
+  return optionalRequest("/api/tracking/product-click", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function getAdminProducts(passcode) {
+  return request("/api/admin/products", adminOptions(passcode));
+}
+
+export async function getAdminPropertyQueries(passcode) {
+  return request("/api/admin/property-queries", adminOptions(passcode));
+}
+
+export async function getAdminProductClicks(passcode) {
+  return request("/api/admin/product-clicks", adminOptions(passcode));
+}
+
+export async function updateProductWeighting(productId, weight, passcode) {
+  return request(`/api/admin/products/${productId}/weighting?weight=${encodeURIComponent(weight)}`, adminOptions(passcode, {
+    method: "PATCH"
+  }));
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { enrichPropertyRisk, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead } from "./api/client";
+import { enrichPropertyRisk, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -45,6 +45,39 @@ import {
 } from "lucide-react";
 
 const VPSF_BANNER = vpsfBanner;
+
+const SCREEN_LABELS = {
+  0: "Existing Home Intake",
+  1: "Property Details",
+  2: "Home Specs",
+  3: "Review & Confirm",
+  4: "Score Dashboard",
+  5: "Pillar Breakdown",
+  6: "Recommendations",
+  7: "Products",
+  8: "Marketing Studio",
+  9: "Score Card",
+  10: "Pillar Detail",
+  11: "Listing Import",
+  12: "Analyzing",
+  13: "Product Detail",
+  14: "All Home Specs",
+  15: "Recommendation Detail",
+  16: "Matching Products",
+  17: "Path to 700",
+  18: "Future Cost",
+  19: "Comparison",
+  20: "Matching Product Detail"
+};
+
+function getOrCreateSessionId() {
+  const key = "vpsf_session_id";
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+  const value = window.crypto?.randomUUID?.() || `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.localStorage.setItem(key, value);
+  return value;
+}
 
 function demoMlsFromProperty(property) {
   return {
@@ -629,7 +662,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, riskEnr
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome }) {
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted }) {
   const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
@@ -661,11 +694,15 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
       } catch (riskError) {
         console.warn("Risk enrichment unavailable.", riskError);
       }
-      setHome(homeFromExistingScan(address, geocode, rentcastProperty, riskEnrichment));
+      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, riskEnrichment);
+      setHome(scannedHome);
       setScanNote(rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
+      await onQueryStarted(scannedHome, rentcastProperty ? "rentcast" : "mapbox");
     } catch (error) {
-      setHome(homeFromExistingScan(address));
+      const fallbackHome = homeFromExistingScan(address);
+      setHome(fallbackHome);
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");
+      await onQueryStarted(fallbackHome, "manual_fallback");
     } finally {
       setResultMode("manual");
       setIsScanningAddress(false);
@@ -1733,7 +1770,7 @@ function RecommendationDetail({ recommendation, setScreen }) {
 }
 
 
-function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct }) {
+function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct, onProductClick }) {
   const products = demoMatchingProducts[recommendation.id] || demoMatchingProducts["water-fixtures"];
   const Icon = recommendation.icon;
 
@@ -1753,6 +1790,7 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
               <p>{product.note}</p>
               <em>{product.impact}</em>
               <button className="inlineDetailsButton" onClick={() => {
+                onProductClick(product, "matching_products");
                 setSelectedMatchingProduct(product);
                 setScreen(20);
               }}>
@@ -1840,7 +1878,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
   );
 }
 
-function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar }) {
+function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar, onProductClick }) {
   const filteredProducts = products.filter((product) => productMatchesPillar(product, activePillar));
   const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
@@ -1868,6 +1906,7 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
               <p>{product.description}</p>
               <em>{product.improvement}</em>
               <button onClick={() => {
+                onProductClick(product, "product_listing");
                 setSelectedProduct(product);
                 setScreen(13);
               }}>
@@ -2205,20 +2244,51 @@ export default function App() {
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
   const [products, setProducts] = useState(demoProducts);
+  const sessionId = useMemo(() => getOrCreateSessionId(), []);
+  const [queryId, setQueryId] = useState(null);
   const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
   const update = (key, value) => setHome((current) => ({ ...current, [key]: value }));
 
+  const handleQueryStarted = async (property, source) => {
+    const record = await trackPropertyQuery({
+      sessionId,
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      zip: property.zip,
+      source,
+      snapshot: property
+    });
+    if (record?.id) {
+      setQueryId(record.id);
+    }
+  };
+
   const handleGenerateScore = async () => {
     setResultMode("manual");
     setIsScoring(true);
+    let finalScore = manualResult;
     try {
       const score = await scoreProperty(home);
+      finalScore = score;
       setApiResult(score);
     } catch (error) {
       setApiResult(manualResult);
     } finally {
+      if (queryId) {
+        await trackProgress({
+          sessionId,
+          queryId,
+          screen: 4,
+          screenLabel: SCREEN_LABELS[4],
+          snapshot: home,
+          vpsfScore: finalScore.total,
+          scoreLabel: finalScore.label,
+          scoreRunId: finalScore.scoreRunId
+        });
+      }
       setIsScoring(false);
       setScreen(4);
     }
@@ -2230,7 +2300,43 @@ export default function App() {
     } catch (error) {
       console.warn("Lead submission fell back to local-only flow.", error);
     }
+    if (queryId) {
+      await trackProgress({
+        sessionId,
+        queryId,
+        screen,
+        screenLabel: SCREEN_LABELS[screen] || "Product Lead",
+        snapshot: home,
+        leadName: lead.name,
+        leadEmail: lead.email,
+        leadProductId: lead.productId,
+        leadAction: lead.action
+      });
+    }
   };
+
+  const handleProductClick = async (product, context) => {
+    if (!queryId) return;
+    await trackProductClick({
+      sessionId,
+      queryId,
+      productId: product.id,
+      productName: product.name || `${product.brand || ""} ${product.product || ""}`.trim(),
+      pillar: product.pillar || "",
+      context
+    });
+  };
+
+  useEffect(() => {
+    if (!queryId) return;
+    trackProgress({
+      sessionId,
+      queryId,
+      screen,
+      screenLabel: SCREEN_LABELS[screen] || "Unknown",
+      snapshot: home
+    });
+  }, [home, queryId, screen, sessionId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2253,7 +2359,7 @@ export default function App() {
   return (
     <main className="app">
       <AppChrome screen={screen} setScreen={setScreen}>
-        {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} />}
+        {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
         {screen === 3 && (
@@ -2267,7 +2373,7 @@ export default function App() {
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} activePillar={activePillar} setActivePillar={setActivePillar} />}
-        {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} />}
+        {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} setActivePillar={setActivePillar} />}
@@ -2276,7 +2382,7 @@ export default function App() {
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} />}
-        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} />}
+        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
         {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
         {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
         {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}

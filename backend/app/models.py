@@ -111,3 +111,45 @@ class ApiUsageRecord(Base):
     period: Mapped[str] = mapped_column(String(7), index=True)
     count: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class PropertyQueryRecord(Base):
+    __tablename__ = "property_queries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[str] = mapped_column(String(120), index=True)
+    address: Mapped[str] = mapped_column(String(255), default="")
+    city: Mapped[str] = mapped_column(String(120), default="")
+    state: Mapped[str] = mapped_column(String(40), default="")
+    zip: Mapped[str] = mapped_column(String(20), default="")
+    source: Mapped[str] = mapped_column(String(80), default="address_scan")
+    max_screen: Mapped[int] = mapped_column(Integer, default=0)
+    max_screen_label: Mapped[str] = mapped_column(String(120), default="Start")
+    product_clicks: Mapped[int] = mapped_column(Integer, default=0)
+    vpsf_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    score_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    score_run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    lead_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    lead_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    lead_product_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    lead_action: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    latest_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    product_events: Mapped[list["ProductClickRecord"]] = relationship(back_populates="query", cascade="all, delete-orphan")
+
+
+class ProductClickRecord(Base):
+    __tablename__ = "product_clicks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    query_id: Mapped[int | None] = mapped_column(ForeignKey("property_queries.id"), nullable=True)
+    session_id: Mapped[str] = mapped_column(String(120), index=True)
+    product_id: Mapped[str] = mapped_column(String(120), default="")
+    product_name: Mapped[str] = mapped_column(String(255), default="")
+    pillar: Mapped[str] = mapped_column(String(80), default="")
+    click_context: Mapped[str] = mapped_column(String(80), default="product_listing")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    query: Mapped[PropertyQueryRecord | None] = relationship(back_populates="product_events")

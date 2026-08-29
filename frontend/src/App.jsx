@@ -1044,7 +1044,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
             <span>{b}</span>
           </div>
         ))}
-        <button className="textLink">View all specs (18)</button>
+        <button className="textLink" onClick={() => setScreen(2)}>View all specs (18)</button>
       </section>
 
       <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>

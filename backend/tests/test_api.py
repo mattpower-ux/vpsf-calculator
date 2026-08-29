@@ -68,3 +68,12 @@ def test_rentcast_requires_api_key():
 
     assert response.status_code == 503
     assert "RENTCAST_API_KEY" in response.json()["detail"]
+
+
+def test_risk_endpoint_estimates_climate_without_coordinates():
+    response = client.post("/api/properties/risk", json={"state": "FL", "zip": "32101"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["climateZone"] == "2A - Hot Humid"
+    assert body["flood"] == "Unknown"

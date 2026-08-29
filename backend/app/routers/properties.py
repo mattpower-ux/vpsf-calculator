@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 from app.adapters import get_listing_adapter
 from app.config import Settings, get_settings
 from app.db import get_db
+from app.integrations.climate import estimate_climate_zone
+from app.integrations.fema import FemaFloodClient, flood_label
 from app.integrations.mapbox import MapboxClient
 from app.integrations.rentcast import RentCastClient
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document
-from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput
+from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput, RiskEnrichmentRequest, RiskEnrichmentResponse
 
 router = APIRouter(prefix="/api/properties", tags=["properties"])
 
@@ -140,6 +142,27 @@ async def enrich_property_with_rentcast(
         raise HTTPException(status_code=404, detail="No RentCast property record found")
 
     return property_input_from_rentcast(records[0])
+
+
+@router.post("/risk", response_model=RiskEnrichmentResponse)
+async def enrich_property_risk(request: RiskEnrichmentRequest) -> RiskEnrichmentResponse:
+    climate_zone = estimate_climate_zone(request.state, request.zip)
+    fema_attributes = None
+    flood = "Unknown"
+
+    if request.latitude is not None and request.longitude is not None:
+        try:
+            fema_attributes = await FemaFloodClient().flood_zone_for_point(request.latitude, request.longitude)
+            flood = flood_label(fema_attributes)
+        except HTTPError:
+            flood = "FEMA lookup unavailable"
+
+    return RiskEnrichmentResponse(
+        climateZone=climate_zone,
+        flood=flood,
+        fema=fema_attributes,
+        sourceNote="Climate zone is estimated from location. FEMA flood lookup is based on mapped public flood-hazard layers when coordinates are available.",
+    )
 
 
 @router.post("/manual", response_model=PropertyInput)

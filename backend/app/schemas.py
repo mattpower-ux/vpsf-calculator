@@ -76,6 +76,20 @@ class GeocodeResponse(BaseModel):
     source: str = "mapbox"
 
 
+class RiskEnrichmentRequest(BaseModel):
+    latitude: float | None = None
+    longitude: float | None = None
+    state: str = ""
+    zip: str = ""
+
+
+class RiskEnrichmentResponse(BaseModel):
+    climateZone: str = "Unknown"
+    flood: str = "Unknown"
+    fema: dict | None = None
+    sourceNote: str = ""
+
+
 class ScoreResponse(BaseModel):
     scores: dict[str, int]
     total: int

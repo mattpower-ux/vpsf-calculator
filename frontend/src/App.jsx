@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead } from "./api/client";
+import { enrichPropertyRisk, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -487,7 +487,7 @@ const uploadCaptureOptions = [
   ["Upgrade invoice", "Photo"]
 ];
 
-function homeFromExistingScan(enteredAddress, geocode, rentcastProperty) {
+function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, riskEnrichment) {
   if (rentcastProperty) {
     return {
       ...defaultHome,
@@ -496,6 +496,9 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty) {
       city: rentcastProperty.city || geocode?.city || "",
       state: rentcastProperty.state || geocode?.state || "",
       zip: rentcastProperty.zip || geocode?.zip || "",
+      climateZone: riskEnrichment?.climateZone || rentcastProperty.climateZone || "Unknown",
+      flood: riskEnrichment?.flood || rentcastProperty.flood || "Unknown",
+      sourceNote: `${rentcastProperty.sourceNote || "RentCast returned public property facts."} ${riskEnrichment?.sourceNote || ""}`.trim(),
     };
   }
 
@@ -517,7 +520,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty) {
     bathrooms: "Unknown",
     garage: "Unknown",
     lotSize: "Unknown",
-    climateZone: "Unknown",
+    climateZone: riskEnrichment?.climateZone || "Unknown",
     occupancy: "Owner Occupied",
     hvac: "Unknown",
     waterHeater: "Unknown",
@@ -528,7 +531,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty) {
     hers: "Code-Minimum",
     evReady: "None",
     fortified: "None",
-    flood: "Unknown",
+    flood: riskEnrichment?.flood || "Unknown",
     ventilation: "Exhaust Only",
     healthCert: "None",
     carbonStrategy: "No Accounting",
@@ -537,7 +540,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty) {
     insurance: "None / Unknown",
     maintenance: "None",
     sourceNote: geocode
-      ? "Mapbox verified the address only. Property facts still need RentCast, documents, photos, or manual confirmation."
+      ? `Mapbox verified the address only. ${riskEnrichment?.sourceNote || "Property facts still need RentCast, documents, photos, or manual confirmation."}`
       : "Address lookup was unavailable. Property facts still need documents, photos, or manual confirmation."
   };
 }
@@ -556,13 +559,24 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
       const geocode = await geocodeProperty(address);
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;
+      let riskEnrichment = null;
       try {
         rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
       } catch (rentcastError) {
         console.warn("RentCast enrichment unavailable.", rentcastError);
       }
-      setHome(homeFromExistingScan(address, geocode, rentcastProperty));
-      setScanNote(rentcastProperty ? "Address and public property facts loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
+      try {
+        riskEnrichment = await enrichPropertyRisk({
+          latitude: geocode.latitude,
+          longitude: geocode.longitude,
+          state: rentcastProperty?.state || geocode.state,
+          zip: rentcastProperty?.zip || geocode.zip,
+        });
+      } catch (riskError) {
+        console.warn("Risk enrichment unavailable.", riskError);
+      }
+      setHome(homeFromExistingScan(address, geocode, rentcastProperty, riskEnrichment));
+      setScanNote(rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
     } catch (error) {
       setHome(homeFromExistingScan(address));
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");

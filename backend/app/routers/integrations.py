@@ -30,6 +30,14 @@ async def integration_status(settings: Settings = Depends(get_settings)) -> dict
             "configured": settings.configured_integrations["rentcast"],
             "missing": [] if settings.configured_integrations["rentcast"] else ["RENTCAST_API_KEY"],
         },
+        "climateZone": {
+            "configured": True,
+            "missing": [],
+        },
+        "femaFlood": {
+            "configured": True,
+            "missing": [],
+        },
         "openai": {
             "configured": settings.configured_integrations["openai"],
             "missing": [] if settings.configured_integrations["openai"] else ["OPENAI_API_KEY"],

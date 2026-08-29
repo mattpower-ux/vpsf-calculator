@@ -7,6 +7,8 @@ This guide gets the four MVP integrations configured locally:
 3. OpenAI for structured extraction and scoring explanations.
 4. OCR through Mistral first, with Google Document AI as the heavier backup option.
 
+The app also includes no-key enrichment for climate-zone estimation and FEMA flood-zone lookup.
+
 Do not commit real API keys. Copy `backend/.env.example` to `backend/.env`, then paste secrets into `backend/.env`.
 
 ## 1. Create Local Env File
@@ -157,3 +159,5 @@ http://localhost:8000/api/integrations/status
 ```
 
 Each integration should show `configured: true` once its required keys are present.
+
+Climate-zone and FEMA flood enrichment do not require API keys.

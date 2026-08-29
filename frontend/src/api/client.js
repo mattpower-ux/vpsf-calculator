@@ -37,6 +37,13 @@ export async function enrichPropertyWithRentCast(address) {
   });
 }
 
+export async function enrichPropertyRisk({ latitude, longitude, state, zip }) {
+  return request("/api/properties/risk", {
+    method: "POST",
+    body: JSON.stringify({ latitude, longitude, state, zip })
+  });
+}
+
 export async function getProductRecommendations() {
   const products = await request("/api/products/recommendations");
   return products.map((product) => ({

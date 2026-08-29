@@ -1,7 +1,9 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
+from app.models import ApiUsageRecord, LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
 from app.products.catalog import SEED_PRODUCTS
 from app.schemas import LeadRequest, ProductRecommendation, PropertyInput
 
@@ -134,6 +136,39 @@ def create_lead(db: Session, lead: LeadRequest) -> LeadRecord:
         action=lead.action,
     )
     db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def current_usage_period() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m")
+
+
+def get_api_usage(db: Session, provider: str, period: str | None = None) -> ApiUsageRecord:
+    usage_period = period or current_usage_period()
+    record = db.scalar(
+        select(ApiUsageRecord).where(
+            ApiUsageRecord.provider == provider,
+            ApiUsageRecord.period == usage_period,
+        )
+    )
+    if record:
+        return record
+
+    record = ApiUsageRecord(provider=provider, period=usage_period, count=0)
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def reserve_api_call(db: Session, provider: str, monthly_limit: int) -> ApiUsageRecord:
+    record = get_api_usage(db, provider)
+    if record.count >= monthly_limit:
+        return record
+
+    record.count += 1
     db.commit()
     db.refresh(record)
     return record

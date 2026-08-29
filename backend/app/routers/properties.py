@@ -10,7 +10,7 @@ from app.integrations.fema import FemaFloodClient, flood_label
 from app.integrations.mapbox import MapboxClient
 from app.integrations.rentcast import RentCastClient
 from app.ocr import extract_property_from_upload
-from app.repositories import create_property, create_source_document
+from app.repositories import create_property, create_source_document, get_api_usage, reserve_api_call
 from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput, RiskEnrichmentRequest, RiskEnrichmentResponse
 
 router = APIRouter(prefix="/api/properties", tags=["properties"])
@@ -123,10 +123,20 @@ def property_input_from_rentcast(record: dict) -> PropertyInput:
 async def enrich_property_with_rentcast(
     request: GeocodeRequest,
     settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
 ) -> PropertyInput:
     client = RentCastClient(settings.rentcast_api_key)
     if not client.is_configured:
         raise HTTPException(status_code=503, detail="RENTCAST_API_KEY is not configured")
+
+    usage = get_api_usage(db, "rentcast")
+    if usage.count >= settings.rentcast_monthly_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"RentCast monthly pull limit reached: {usage.count}/{settings.rentcast_monthly_limit}",
+        )
+
+    reserve_api_call(db, "rentcast", settings.rentcast_monthly_limit)
 
     try:
         records = await client.property_by_address(request.address)

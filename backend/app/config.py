@@ -10,6 +10,7 @@ class Settings:
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
     rentcast_api_key = os.getenv("RENTCAST_API_KEY", "")
+    rentcast_monthly_limit = int(os.getenv("RENTCAST_MONTHLY_LIMIT", "100"))
     openai_api_key = os.getenv("OPENAI_API_KEY", "")
     ocr_provider = os.getenv("OCR_PROVIDER", "mistral")
     mistral_api_key = os.getenv("MISTRAL_API_KEY", "")

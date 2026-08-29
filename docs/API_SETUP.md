@@ -44,7 +44,7 @@ Use RentCast first when you want lower-cost, self-serve property records and val
 - Sign up: https://app.rentcast.io/
 - API/docs: https://developers.rentcast.io/
 - Pricing: https://www.rentcast.io/api
-- Env key: `RENTCAST_API_KEY`
+- Env keys: `RENTCAST_API_KEY`, `RENTCAST_MONTHLY_LIMIT`
 
 After signup:
 
@@ -52,7 +52,8 @@ After signup:
 2. Pick an API plan. The free developer plan is enough for testing.
 3. Create an API key in the RentCast dashboard.
 4. Paste it into `backend/.env`.
-5. Test it:
+5. Keep `RENTCAST_MONTHLY_LIMIT=100` while testing.
+6. Test it:
 
 ```powershell
 python scripts/check_rentcast.py "5500 Grand Lake Dr, San Antonio, TX 78244"
@@ -161,3 +162,5 @@ http://localhost:8000/api/integrations/status
 Each integration should show `configured: true` once its required keys are present.
 
 Climate-zone and FEMA flood enrichment do not require API keys.
+
+RentCast status also reports the current monthly usage period, pulls used this month, and monthly pull limit.

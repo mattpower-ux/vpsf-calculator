@@ -635,6 +635,8 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
   const [scanNote, setScanNote] = useState("");
 
   const startExistingHomeScan = async () => {
+    if (isScanningAddress) return;
+
     const existingHome = demoProperties[0];
     setIsScanningAddress(true);
     setScanNote("");
@@ -683,6 +685,12 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome })
           <input
             value={address}
             onChange={(event) => setAddress(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                startExistingHomeScan();
+              }
+            }}
             aria-label="Property address"
             placeholder="Enter home address"
           />

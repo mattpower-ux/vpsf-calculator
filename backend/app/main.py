@@ -8,6 +8,12 @@ from app.db import init_db
 from app.routers import admin, integrations, leads, products, properties, scoring
 
 settings = get_settings()
+default_cors_origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "https://vpsf-calculator.onrender.com",
+    "https://vpsf-frontend.onrender.com",
+]
 
 
 @asynccontextmanager
@@ -20,7 +26,7 @@ app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[*settings.cors_origins, "http://127.0.0.1:5173"],
+    allow_origins=list(dict.fromkeys([*settings.cors_origins, *default_cors_origins])),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

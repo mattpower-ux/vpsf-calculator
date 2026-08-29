@@ -78,6 +78,10 @@ def first_value(record: dict, *keys: str) -> str:
     return ""
 
 
+def known_or_unknown(value: str) -> str:
+    return value or "Unknown"
+
+
 def acres_from_square_feet(value: object) -> str:
     if value is None or value == "":
         return ""
@@ -99,14 +103,14 @@ def property_input_from_rentcast(record: dict) -> PropertyInput:
         city=first_value(record, "city"),
         state=first_value(record, "state"),
         zip=first_value(record, "zipCode", "zipcode"),
-        squareFeet=first_value(record, "squareFootage", "livingArea"),
-        yearBuilt=first_value(record, "yearBuilt"),
+        squareFeet=known_or_unknown(first_value(record, "squareFootage", "livingArea")),
+        yearBuilt=known_or_unknown(first_value(record, "yearBuilt")),
         homeType=first_value(record, "propertyType") or "Unknown",
         stories=first_value(features, "floorCount") or "Unknown",
-        bedrooms=first_value(record, "bedrooms"),
-        bathrooms=first_value(record, "bathrooms"),
-        garage=f"{garage_spaces} Car Garage" if garage_spaces else first_value(features, "garageType"),
-        lotSize=acres_from_square_feet(lot_size) if lot_size else "",
+        bedrooms=known_or_unknown(first_value(record, "bedrooms")),
+        bathrooms=known_or_unknown(first_value(record, "bathrooms")),
+        garage=f"{garage_spaces} Car Garage" if garage_spaces else known_or_unknown(first_value(features, "garageType")),
+        lotSize=acres_from_square_feet(lot_size) if lot_size else "Unknown",
         occupancy="Owner Occupied",
         hvac=heating_type or cooling_type or "Unknown",
         roof=first_value(features, "roofType") or "Unknown",

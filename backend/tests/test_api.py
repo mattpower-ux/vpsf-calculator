@@ -70,6 +70,13 @@ def test_rentcast_requires_api_key():
     assert "RENTCAST_API_KEY" in response.json()["detail"]
 
 
+def test_attom_requires_api_key():
+    response = client.post("/api/properties/attom", json={"address": "5500 Grand Lake Dr, San Antonio, TX 78244"})
+
+    assert response.status_code == 503
+    assert "ATTOM_API_KEY" in response.json()["detail"]
+
+
 def test_risk_endpoint_estimates_climate_without_coordinates():
     response = client.post("/api/properties/risk", json={"state": "FL", "zip": "32101"})
 

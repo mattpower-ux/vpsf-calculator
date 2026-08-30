@@ -68,6 +68,13 @@ export async function enrichPropertyWithRentCast(address) {
   });
 }
 
+export async function enrichPropertyWithAttom(address) {
+  return request("/api/properties/attom", {
+    method: "POST",
+    body: JSON.stringify({ address })
+  });
+}
+
 export async function enrichPropertyRisk({ latitude, longitude, state, zip }) {
   return request("/api/properties/risk", {
     method: "POST",

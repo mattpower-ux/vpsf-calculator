@@ -25,3 +25,16 @@ class AttomClient:
             )
             response.raise_for_status()
             return response.json()
+
+    async def property_detail(self, address1: str, address2: str) -> dict[str, Any]:
+        if not self.is_configured:
+            raise RuntimeError("ATTOM_API_KEY is not configured")
+
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.get(
+                f"{self.base_url}/property/detail",
+                headers={"apikey": self.api_key, "accept": "application/json"},
+                params={"address1": address1, "address2": address2},
+            )
+            response.raise_for_status()
+            return response.json()

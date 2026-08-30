@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { enrichPropertyRisk, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -605,18 +605,38 @@ function parseAddressParts(rawAddress) {
   return { address: value, city: "", state: "", zip: "" };
 }
 
-function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, riskEnrichment) {
-  if (rentcastProperty) {
+function hasUsableValue(value) {
+  return value !== undefined && value !== null && value !== "" && value !== "Unknown" && value !== "None / Unknown";
+}
+
+function mergePropertyFacts(primary, fallback) {
+  if (!primary) return fallback;
+  if (!fallback) return primary;
+
+  const merged = { ...primary };
+  Object.entries(fallback).forEach(([key, value]) => {
+    if (!hasUsableValue(merged[key]) && hasUsableValue(value)) {
+      merged[key] = value;
+    }
+  });
+  merged.sourceNote = [primary.sourceNote, fallback.sourceNote].filter(Boolean).join(" ");
+  return merged;
+}
+
+function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
+  const publicRecordProperty = mergePropertyFacts(rentcastProperty, attomProperty);
+
+  if (publicRecordProperty) {
     return {
       ...defaultHome,
-      ...rentcastProperty,
-      address: rentcastProperty.address || geocode?.address || enteredAddress,
-      city: rentcastProperty.city || geocode?.city || "",
-      state: normalizeState(rentcastProperty.state || geocode?.state || ""),
-      zip: rentcastProperty.zip || geocode?.zip || "",
-      climateZone: riskEnrichment?.climateZone || rentcastProperty.climateZone || "Unknown",
-      flood: riskEnrichment?.flood || rentcastProperty.flood || "Unknown",
-      sourceNote: `${rentcastProperty.sourceNote || "RentCast returned public property facts."} ${riskEnrichment?.sourceNote || ""}`.trim(),
+      ...publicRecordProperty,
+      address: publicRecordProperty.address || geocode?.address || enteredAddress,
+      city: publicRecordProperty.city || geocode?.city || "",
+      state: normalizeState(publicRecordProperty.state || geocode?.state || ""),
+      zip: publicRecordProperty.zip || geocode?.zip || "",
+      climateZone: riskEnrichment?.climateZone || publicRecordProperty.climateZone || "Unknown",
+      flood: riskEnrichment?.flood || publicRecordProperty.flood || "Unknown",
+      sourceNote: `${publicRecordProperty.sourceNote || "Public property facts returned."} ${riskEnrichment?.sourceNote || ""}`.trim(),
     };
   }
 
@@ -678,6 +698,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       const geocode = await geocodeProperty(address);
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;
+      let attomProperty = null;
       let riskEnrichment = null;
       try {
         rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
@@ -685,19 +706,24 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         console.warn("RentCast enrichment unavailable.", rentcastError);
       }
       try {
+        attomProperty = await enrichPropertyWithAttom(normalizedAddress);
+      } catch (attomError) {
+        console.warn("ATTOM enrichment unavailable.", attomError);
+      }
+      try {
         riskEnrichment = await enrichPropertyRisk({
           latitude: geocode.latitude,
           longitude: geocode.longitude,
-          state: rentcastProperty?.state || geocode.state,
-          zip: rentcastProperty?.zip || geocode.zip,
+          state: rentcastProperty?.state || attomProperty?.state || geocode.state,
+          zip: rentcastProperty?.zip || attomProperty?.zip || geocode.zip,
         });
       } catch (riskError) {
         console.warn("Risk enrichment unavailable.", riskError);
       }
-      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, riskEnrichment);
+      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, attomProperty, riskEnrichment);
       setHome(scannedHome);
-      setScanNote(rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
-      await onQueryStarted(scannedHome, rentcastProperty ? "rentcast" : "mapbox");
+      setScanNote(rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
+      await onQueryStarted(scannedHome, rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
     } catch (error) {
       const fallbackHome = homeFromExistingScan(address);
       setHome(fallbackHome);

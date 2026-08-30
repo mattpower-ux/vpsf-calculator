@@ -15,6 +15,7 @@ class Settings:
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
+    attom_monthly_limit = int(os.getenv("ATTOM_MONTHLY_LIMIT", "100"))
     rentcast_api_key = os.getenv("RENTCAST_API_KEY", "")
     rentcast_monthly_limit = int(os.getenv("RENTCAST_MONTHLY_LIMIT", "100"))
     openai_api_key = os.getenv("OPENAI_API_KEY", "")

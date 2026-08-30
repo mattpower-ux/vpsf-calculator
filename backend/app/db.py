@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -36,6 +36,31 @@ def init_db() -> None:
     from app import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    ensure_runtime_schema()
+
+
+def ensure_runtime_schema() -> None:
+    if not settings.database_url.startswith("sqlite"):
+        return
+
+    inspector = inspect(engine)
+    if "property_queries" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("property_queries")}
+    required_columns = {
+        "vpsf_score": "INTEGER",
+        "score_label": "VARCHAR(80)",
+        "score_run_id": "INTEGER",
+        "lead_name": "VARCHAR(255)",
+        "lead_email": "VARCHAR(255)",
+        "lead_product_id": "VARCHAR(120)",
+        "lead_action": "VARCHAR(120)",
+    }
+    with engine.begin() as connection:
+        for name, column_type in required_columns.items():
+            if name not in existing_columns:
+                connection.execute(text(f"ALTER TABLE property_queries ADD COLUMN {name} {column_type}"))
 
 
 def get_db() -> Generator[Session, None, None]:

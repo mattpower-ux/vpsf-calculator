@@ -14,6 +14,8 @@ services:
         value: 3.12.13
       - key: DATABASE_URL
         value: sqlite:////var/data/vpsf.db
+      - key: ATTOM_MONTHLY_LIMIT
+        value: "100"
       - key: FRONTEND_ORIGIN
         value: https://vpsf-calculator.onrender.com,https://vpsf-frontend.onrender.com
 

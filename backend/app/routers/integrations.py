@@ -21,6 +21,7 @@ async def integration_status(settings: Settings = Depends(get_settings), db: Ses
     )
 
     rentcast_usage = get_api_usage(db, "rentcast")
+    attom_usage = get_api_usage(db, "attom")
 
     return {
         "mapbox": {
@@ -30,6 +31,9 @@ async def integration_status(settings: Settings = Depends(get_settings), db: Ses
         "attom": {
             "configured": settings.configured_integrations["attom"],
             "missing": [] if settings.configured_integrations["attom"] else ["ATTOM_API_KEY"],
+            "usedThisMonth": attom_usage.count,
+            "monthlyLimit": settings.attom_monthly_limit,
+            "period": attom_usage.period,
         },
         "rentcast": {
             "configured": settings.configured_integrations["rentcast"],

@@ -8,6 +8,7 @@ from app.db import get_db
 from app.integrations.climate import estimate_climate_zone
 from app.integrations.fema import FemaFloodClient, flood_label
 from app.integrations.mapbox import MapboxClient
+from app.integrations.attom import AttomClient
 from app.integrations.rentcast import RentCastClient
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, reserve_api_call
@@ -117,6 +118,143 @@ def property_input_from_rentcast(record: dict) -> PropertyInput:
         sourceNote="RentCast returned public property facts. Energy, resilience, water, health, and upgrade details still need documents, photos, or homeowner confirmation.",
     )
     return property_input
+
+
+def nested_value(record: dict, *path: str) -> object:
+    current: object = record
+    for key in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+def first_nested_value(record: dict, *paths: tuple[str, ...]) -> str:
+    for path in paths:
+        value = nested_value(record, *path)
+        if value is not None and value != "":
+            return str(value)
+    return ""
+
+
+def split_address_for_attom(address: str) -> tuple[str, str]:
+    parts = [part.strip() for part in address.split(",") if part.strip()]
+    if len(parts) >= 3:
+        return parts[0], f"{parts[1]}, {parts[2]}"
+    if len(parts) == 2:
+        return parts[0], parts[1]
+    return address.strip(), ""
+
+
+def property_input_from_attom(record: dict) -> PropertyInput:
+    address = record.get("address") or {}
+    summary = record.get("summary") or {}
+    building = record.get("building") or {}
+    size = building.get("size") or {}
+    rooms = building.get("rooms") or {}
+    lot = record.get("lot") or {}
+    assessment = record.get("assessment") or {}
+    tax = assessment.get("tax") or {}
+    assessed = assessment.get("assessed") or {}
+    sale = record.get("sale") or {}
+    amount = sale.get("amount") or {}
+
+    lot_acres = first_value(lot, "lotsize1", "lotSize1")
+    lot_square_feet = first_value(lot, "lotsize2", "lotSize2")
+    lot_size = f"{lot_acres} acres" if lot_acres else acres_from_square_feet(lot_square_feet)
+    heating = first_nested_value(
+        record,
+        ("utilities", "heatingType"),
+        ("utilities", "heatingtype"),
+        ("building", "interior", "heatingtype"),
+    )
+    cooling = first_nested_value(
+        record,
+        ("utilities", "coolingType"),
+        ("utilities", "coolingtype"),
+        ("building", "interior", "coolingtype"),
+    )
+    roof = first_nested_value(
+        record,
+        ("building", "construction", "roofCover"),
+        ("building", "construction", "roofcover"),
+        ("building", "construction", "roofType"),
+        ("building", "construction", "rooftype"),
+    )
+    garage_spaces = first_nested_value(record, ("building", "parking", "prkgSpaces"), ("building", "parking", "prkgSize"))
+
+    note_parts = ["ATTOM returned public property records."]
+    if assessed or tax:
+        note_parts.append("Assessment/tax data was available.")
+    if amount:
+        note_parts.append("Sale/valuation context was available.")
+
+    return PropertyInput(
+        address=first_value(address, "line1", "oneLine"),
+        city=first_value(address, "locality"),
+        state=normalize_attom_state(first_value(address, "countrySubd")),
+        zip=first_value(address, "postal1", "postalCode"),
+        squareFeet=known_or_unknown(first_value(size, "universalsize", "livingSize", "livingsize", "bldgsize", "grossSize")),
+        yearBuilt=known_or_unknown(first_value(summary, "yearbuilt", "yearBuilt")),
+        homeType=first_value(summary, "proptype", "propertyType", "propsubtype") or "Unknown",
+        stories=first_value(building, "summarylevels", "levels") or "Unknown",
+        bedrooms=known_or_unknown(first_value(rooms, "beds", "bedrooms")),
+        bathrooms=known_or_unknown(first_value(rooms, "bathstotal", "bathsTotal", "bathrooms")),
+        garage=f"{garage_spaces} Car Garage" if garage_spaces else "Unknown",
+        lotSize=lot_size or "Unknown",
+        occupancy="Owner Occupied",
+        hvac=heating or cooling or "Unknown",
+        roof=roof or "Unknown",
+        sourceNote=" ".join(note_parts),
+    )
+
+
+def normalize_attom_state(value: str) -> str:
+    return value.upper() if len(value) == 2 else value
+
+
+def attom_record_from_response(data: dict) -> dict:
+    records = data.get("property") or []
+    if not records:
+        raise HTTPException(status_code=404, detail="No ATTOM property record found")
+    return records[0]
+
+
+@router.post("/attom", response_model=PropertyInput)
+async def enrich_property_with_attom(
+    request: GeocodeRequest,
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> PropertyInput:
+    client = AttomClient(settings.attom_api_key)
+    if not client.is_configured:
+        raise HTTPException(status_code=503, detail="ATTOM_API_KEY is not configured")
+
+    usage = get_api_usage(db, "attom")
+    if usage.count >= settings.attom_monthly_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"ATTOM monthly pull limit reached: {usage.count}/{settings.attom_monthly_limit}",
+        )
+
+    address1, address2 = split_address_for_attom(request.address)
+    reserve_api_call(db, "attom", settings.attom_monthly_limit)
+
+    try:
+        data = await client.property_detail(address1, address2)
+    except HTTPStatusError as error:
+        detail = error.response.text[:300] if error.response is not None else ""
+        raise HTTPException(
+            status_code=502,
+            detail=f"ATTOM property request failed with status {error.response.status_code}: {detail}",
+        ) from error
+    except HTTPError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"ATTOM property request failed before a response was received: {type(error).__name__}",
+        ) from error
+
+    return property_input_from_attom(attom_record_from_response(data))
 
 
 @router.post("/rentcast", response_model=PropertyInput)

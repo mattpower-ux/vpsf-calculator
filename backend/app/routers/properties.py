@@ -209,6 +209,16 @@ def property_input_from_attom(record: dict) -> PropertyInput:
     )
 
 
+async def fetch_attom_property(client: AttomClient, address1: str, address2: str) -> tuple[dict, str]:
+    try:
+        return await client.property_detail(address1, address2), "detail"
+    except HTTPStatusError as error:
+        if error.response is None or error.response.status_code not in {401, 403, 404}:
+            raise
+
+    return await client.property_basic_profile(address1, address2), "basicprofile"
+
+
 def normalize_attom_state(value: str) -> str:
     return value.upper() if len(value) == 2 else value
 
@@ -241,7 +251,7 @@ async def enrich_property_with_attom(
     reserve_api_call(db, "attom", settings.attom_monthly_limit)
 
     try:
-        data = await client.property_detail(address1, address2)
+        data, package = await fetch_attom_property(client, address1, address2)
     except HTTPStatusError as error:
         detail = error.response.text[:300] if error.response is not None else ""
         raise HTTPException(
@@ -254,7 +264,9 @@ async def enrich_property_with_attom(
             detail=f"ATTOM property request failed before a response was received: {type(error).__name__}",
         ) from error
 
-    return property_input_from_attom(attom_record_from_response(data))
+    property_input = property_input_from_attom(attom_record_from_response(data))
+    property_input.sourceNote = f"{property_input.sourceNote} ATTOM package: {package}."
+    return property_input
 
 
 @router.post("/rentcast", response_model=PropertyInput)

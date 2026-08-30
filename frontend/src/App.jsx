@@ -699,6 +699,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;
       let attomProperty = null;
+      let attomNote = "";
       let riskEnrichment = null;
       try {
         rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
@@ -709,6 +710,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         attomProperty = await enrichPropertyWithAttom(normalizedAddress);
       } catch (attomError) {
         console.warn("ATTOM enrichment unavailable.", attomError);
+        attomNote = " ATTOM did not return a usable property record for this address.";
       }
       try {
         riskEnrichment = await enrichPropertyRisk({
@@ -722,7 +724,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       }
       const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, attomProperty, riskEnrichment);
       setHome(scannedHome);
-      setScanNote(rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
+      setScanNote(`${rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}${attomNote}`);
       await onQueryStarted(scannedHome, rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
     } catch (error) {
       const fallbackHome = homeFromExistingScan(address);

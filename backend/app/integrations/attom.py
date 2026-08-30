@@ -13,6 +13,10 @@ class AttomClient:
     def is_configured(self) -> bool:
         return bool(self.api_key)
 
+    @property
+    def headers(self) -> dict[str, str]:
+        return {"APIKey": self.api_key, "Accept": "application/json"}
+
     async def property_basic_profile(self, address1: str, address2: str) -> dict[str, Any]:
         if not self.is_configured:
             raise RuntimeError("ATTOM_API_KEY is not configured")
@@ -20,7 +24,7 @@ class AttomClient:
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.get(
                 f"{self.base_url}/property/basicprofile",
-                headers={"apikey": self.api_key, "accept": "application/json"},
+                headers=self.headers,
                 params={"address1": address1, "address2": address2},
             )
             response.raise_for_status()
@@ -33,7 +37,7 @@ class AttomClient:
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.get(
                 f"{self.base_url}/property/detail",
-                headers={"apikey": self.api_key, "accept": "application/json"},
+                headers=self.headers,
                 params={"address1": address1, "address2": address2},
             )
             response.raise_for_status()

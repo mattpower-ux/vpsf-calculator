@@ -64,7 +64,7 @@ const SCREEN_LABELS = {
   13: "Product Detail",
   14: "All Home Specs",
   15: "Recommendation Detail",
-  16: "Matching Products",
+  16: "Product Categories",
   17: "Path to 700",
   18: "Future Cost",
   19: "Comparison",
@@ -2296,7 +2296,7 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation,
       <button className="primaryButton" onClick={openEducation}>
         Learn More <ArrowRight size={18} />
       </button>
-      <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>
+      <button className="primaryButton" onClick={() => setScreen(16)}>See Product Categories <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
@@ -2374,7 +2374,7 @@ function EducationDetail({ education, setScreen, returnScreen }) {
         <p>{content.vpsf}</p>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>
+      <button className="primaryButton" onClick={() => setScreen(16)}>See Product Categories <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(returnScreen)}>{returnLabel}</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
@@ -2389,7 +2389,7 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
 
   return (
     <div className="screen matchingProductsScreen withNav">
-      <header className="screenTop"><h2>Matching Products</h2><Package size={18} /></header>
+      <header className="screenTop"><h2>Product Categories</h2><Package size={18} /></header>
 
       <div className="matchProductList">
         {products.map((product) => (
@@ -2414,7 +2414,7 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
         ))}
       </div>
 
-      <button className="primaryButton" onClick={() => setScreen(7)}>View General Product Recommendations</button>
+      <button className="primaryButton" onClick={() => setScreen(7)}>Specific Products of this Type</button>
       <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
@@ -2455,7 +2455,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
           )}
 
           <button className="secondaryButton" onClick={() => setScreen(16)}>
-            Return to Matching Products
+            Return to Product Categories
           </button>
         </>
       )}
@@ -2477,7 +2477,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
 
           <div className="leadFormActions">
             <button className="secondaryButton" onClick={() => setScreen(16)}>
-              Return to Matching Products
+              Return to Product Categories
             </button>
             <button className="primaryButton" onClick={() => {
               onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });

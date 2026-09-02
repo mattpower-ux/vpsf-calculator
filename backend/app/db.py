@@ -57,6 +57,7 @@ def ensure_runtime_schema() -> None:
         "lead_email": "VARCHAR(255)",
         "lead_product_id": "VARCHAR(120)",
         "lead_action": "VARCHAR(120)",
+        "address_key": "VARCHAR(500)",
     }
     with engine.begin() as connection:
         for name, column_type in required_columns.items():

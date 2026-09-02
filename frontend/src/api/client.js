@@ -82,6 +82,11 @@ export async function enrichPropertyRisk({ latitude, longitude, state, zip }) {
   });
 }
 
+export async function findSavedProperty({ address, city = "", state = "", zip = "" }) {
+  const params = new URLSearchParams({ address, city, state, zip });
+  return optionalRequest(`/api/tracking/saved-property?${params.toString()}`);
+}
+
 export async function getProductRecommendations() {
   const products = await request("/api/products/recommendations");
   return products.map((product) => ({

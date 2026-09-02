@@ -181,6 +181,7 @@ class PropertyQueryResponse(BaseModel):
     city: str
     state: str
     zip: str
+    addressKey: str = ""
     source: str
     maxScreen: int
     maxScreenLabel: str

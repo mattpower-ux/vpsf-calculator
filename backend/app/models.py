@@ -123,6 +123,7 @@ class PropertyQueryRecord(Base):
     city: Mapped[str] = mapped_column(String(120), default="")
     state: Mapped[str] = mapped_column(String(40), default="")
     zip: Mapped[str] = mapped_column(String(20), default="")
+    address_key: Mapped[str] = mapped_column(String(500), default="", index=True)
     source: Mapped[str] = mapped_column(String(80), default="address_scan")
     max_screen: Mapped[int] = mapped_column(Integer, default=0)
     max_screen_label: Mapped[str] = mapped_column(String(120), default="Start")

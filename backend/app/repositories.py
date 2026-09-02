@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.address_normalization import normalize_state, normalize_street_address, normalize_text, normalize_zip, property_query_key
 from app.models import ApiUsageRecord, LeadRecord, ProductClickRecord, ProductRecord, PropertyDetailArchiveRecord, PropertyQueryRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
 from app.products.catalog import SEED_PRODUCTS
 from app.schemas import LeadRequest, ProductClickCreate, ProductRecommendation, PropertyInput, PropertyQueryCreate, PropertyQueryProgress
@@ -189,6 +190,7 @@ def serialize_property_query(record: PropertyQueryRecord) -> dict:
         "city": record.city,
         "state": record.state,
         "zip": record.zip,
+        "addressKey": record.address_key,
         "source": record.source,
         "maxScreen": record.max_screen,
         "maxScreenLabel": record.max_screen_label,
@@ -207,12 +209,26 @@ def serialize_property_query(record: PropertyQueryRecord) -> dict:
 
 
 def create_property_query(db: Session, payload: PropertyQueryCreate) -> PropertyQueryRecord:
+    address_key = property_query_key(payload.address, payload.city, payload.state, payload.zip)
+    existing = find_existing_property_query(db, payload.address, payload.city, payload.state, payload.zip, address_key)
+    if existing:
+        existing.session_id = payload.sessionId
+        existing.source = payload.source or existing.source
+        if payload.snapshot:
+            existing.latest_snapshot = merge_property_snapshots(existing.latest_snapshot or {}, payload.snapshot)
+        if not existing.address_key:
+            existing.address_key = address_key
+        db.commit()
+        db.refresh(existing)
+        return existing
+
     record = PropertyQueryRecord(
         session_id=payload.sessionId,
         address=payload.address,
         city=payload.city,
         state=payload.state,
         zip=payload.zip,
+        address_key=address_key,
         source=payload.source,
         latest_snapshot=payload.snapshot,
     )
@@ -220,6 +236,79 @@ def create_property_query(db: Session, payload: PropertyQueryCreate) -> Property
     db.commit()
     db.refresh(record)
     return record
+
+
+def find_existing_property_query(
+    db: Session,
+    address: str,
+    city: str,
+    state: str,
+    zip_code: str,
+    address_key: str | None = None,
+) -> PropertyQueryRecord | None:
+    address_key = address_key or property_query_key(address, city, state, zip_code)
+    if not address_key or address_key == "|||":
+        return None
+
+    record = db.scalar(
+        select(PropertyQueryRecord)
+        .where(PropertyQueryRecord.address_key == address_key)
+        .order_by(PropertyQueryRecord.updated_at.desc())
+    )
+    if record:
+        return record
+
+    return find_saved_property_query(db, address, city, state, zip_code)
+
+
+def find_saved_property_query(
+    db: Session,
+    address: str,
+    city: str = "",
+    state: str = "",
+    zip_code: str = "",
+) -> PropertyQueryRecord | None:
+    normalized_address = normalize_street_address(address)
+    normalized_city = normalize_text(city)
+    normalized_state = normalize_state(state)
+    normalized_zip = normalize_zip(zip_code)
+    if not normalized_address:
+        return None
+
+    records = db.scalars(select(PropertyQueryRecord).order_by(PropertyQueryRecord.updated_at.desc()).limit(500)).all()
+    for candidate in records:
+        candidate_address = normalize_street_address(candidate.address)
+        if candidate_address != normalized_address:
+            continue
+        if normalized_city and normalize_text(candidate.city) != normalized_city:
+            continue
+        if normalized_state and normalize_state(candidate.state) != normalized_state:
+            continue
+        if normalized_zip and normalize_zip(candidate.zip) != normalized_zip:
+            continue
+        if not candidate.address_key:
+            candidate.address_key = property_query_key(candidate.address, candidate.city, candidate.state, candidate.zip)
+            db.commit()
+            db.refresh(candidate)
+        return candidate
+    return None
+
+
+def merge_property_snapshots(existing: dict, incoming: dict) -> dict:
+    merged = dict(existing)
+    for key, value in incoming.items():
+        if is_blank_property_value(value) and not is_blank_property_value(merged.get(key)):
+            continue
+        merged[key] = value
+    return merged
+
+
+def is_blank_property_value(value: object) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, str):
+        return False
+    return value.strip().lower() in {"", "unknown", "none / unknown"}
 
 
 def record_query_progress(db: Session, payload: PropertyQueryProgress) -> PropertyQueryRecord | None:

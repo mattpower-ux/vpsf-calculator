@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -626,6 +626,43 @@ function mergePropertyFacts(primary, fallback) {
   return merged;
 }
 
+function mergeSavedPropertySnapshot(current, saved) {
+  if (!saved || typeof saved !== "object") return current;
+  const merged = { ...current };
+  Object.entries(saved).forEach(([key, value]) => {
+    if (key === "sourceNote") return;
+    if (hasUsableValue(value)) {
+      merged[key] = value;
+    }
+  });
+  if (current.sourceNote || saved.sourceNote) {
+    merged.sourceNote = [current.sourceNote, saved.sourceNote].filter(Boolean).join(" ");
+  }
+  return merged;
+}
+
+function savedPropertyToHome(record) {
+  return mergeSavedPropertySnapshot(
+    {
+      ...defaultHome,
+      address: record.address || "",
+      city: record.city || "",
+      state: normalizeState(record.state || ""),
+      zip: record.zip || "",
+      sourceNote: "Loaded saved property details from the VPSF archive."
+    },
+    record.latestSnapshot
+  );
+}
+
+function formatSavedAddress(record) {
+  return [
+    record.address,
+    record.city,
+    [normalizeState(record.state), record.zip].filter(Boolean).join(" ")
+  ].filter(Boolean).join(", ");
+}
+
 function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
   const publicRecordProperty = mergePropertyFacts(rentcastProperty, attomProperty);
 
@@ -692,6 +729,30 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
+  const [savedMatch, setSavedMatch] = useState(null);
+
+  useEffect(() => {
+    const parsedAddress = parseAddressParts(address);
+    if (!parsedAddress.address || parsedAddress.address.length < 5) {
+      setSavedMatch(null);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const result = await findSavedProperty(parsedAddress);
+      setSavedMatch(result?.found ? result.property : null);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [address]);
+
+  const applySavedAutofill = () => {
+    if (!savedMatch) return;
+    const savedHome = savedPropertyToHome(savedMatch);
+    setAddress(formatSavedAddress(savedMatch));
+    setHome(savedHome);
+    setScanNote("Saved property details loaded from the VPSF archive.");
+  };
 
   const startExistingHomeScan = async () => {
     if (isScanningAddress) return;
@@ -770,6 +831,11 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
           {isScanningAddress ? "Checking Address..." : "Start Existing Home Scan"} <ArrowRight size={18} />
         </button>
         {scanNote && <p className="addressScanNote">{scanNote}</p>}
+        {savedMatch && (
+          <button className="savedAddressAutofill" type="button" onClick={applySavedAutofill}>
+            Autofill saved address: {formatSavedAddress(savedMatch)}
+          </button>
+        )}
         <div className="quickScanGrid">
           {quickScanSources.map(([title, description]) => (
             <div key={title}>
@@ -2307,7 +2373,9 @@ export default function App() {
     if (record?.id) {
       setQueryId(record.id);
       queryIdRef.current = record.id;
-      previousArchivedHomeRef.current = property;
+      const archivedProperty = mergeSavedPropertySnapshot(property, record.latestSnapshot);
+      setHome(archivedProperty);
+      previousArchivedHomeRef.current = archivedProperty;
     }
   };
 
@@ -2645,6 +2713,20 @@ export default function App() {
           font-size: 11px;
           line-height: 1.35;
           text-align: center;
+        }
+        .savedAddressAutofill {
+          width: 100%;
+          margin-top: 8px;
+          border: 1px solid #cfe0f1;
+          border-radius: 9px;
+          background: #f7fbff;
+          color: #126fd2;
+          cursor: pointer;
+          font-size: 11px;
+          font-weight: 850;
+          line-height: 1.25;
+          padding: 9px 10px;
+          text-align: left;
         }
         .quickScanGrid {
           display: grid;

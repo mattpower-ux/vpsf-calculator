@@ -180,6 +180,48 @@ def test_tracking_archives_added_property_details():
     assert archive_row["newValue"] == "FORCED AIR WITH AIR CONDITIONING"
 
 
+def test_tracking_reuses_saved_scan_with_flexible_address_syntax():
+    first_response = client.post(
+        "/api/tracking/property-query",
+        json={
+            "sessionId": "test-session-address-normalization-a",
+            "address": "44 Harbor View Street",
+            "city": "Portland",
+            "state": "Maine",
+            "zip": "04102",
+            "source": "manual_entry",
+            "snapshot": {"address": "44 Harbor View Street", "hvac": "Heat Pump"},
+        },
+    )
+    assert first_response.status_code == 200
+    first_id = first_response.json()["id"]
+
+    second_response = client.post(
+        "/api/tracking/property-query",
+        json={
+            "sessionId": "test-session-address-normalization-b",
+            "address": "44 Harbor View St.",
+            "city": "Portland",
+            "state": "ME",
+            "zip": "04102-1234",
+            "source": "address_scan",
+            "snapshot": {"address": "44 Harbor View St.", "roof": "Metal"},
+        },
+    )
+    assert second_response.status_code == 200
+    second_body = second_response.json()
+    assert second_body["id"] == first_id
+    assert second_body["latestSnapshot"]["hvac"] == "Heat Pump"
+    assert second_body["latestSnapshot"]["roof"] == "Metal"
+
+    saved_response = client.get("/api/tracking/saved-property", params={"address": "44 Harbor View St"})
+    assert saved_response.status_code == 200
+    saved_body = saved_response.json()
+    assert saved_body["found"] is True
+    assert saved_body["property"]["id"] == first_id
+    assert saved_body["property"]["state"] == "Maine"
+
+
 def test_attom_parser_reads_public_record_shapes_and_permits():
     property_input = property_input_from_attom(
         {

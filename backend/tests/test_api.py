@@ -222,6 +222,49 @@ def test_tracking_reuses_saved_scan_with_flexible_address_syntax():
     assert saved_body["property"]["state"] == "Maine"
 
 
+def test_education_content_is_cached_and_admin_updatable():
+    key = "test-education-cache"
+    payload = {
+        "title": "Heat Pump Water Heating",
+        "intro": "DeepThink draft about water heating.",
+        "why": ["Cuts water-heating energy.", "Supports electrification."],
+        "verify": ["UEF rating", "Install year"],
+        "vpsf": "Improves operating-cost confidence.",
+        "source": "deepthink",
+        "sourceUrl": "https://www.greenbuildermedia.com",
+    }
+
+    missing_response = client.get(f"/api/products/education/{key}")
+    assert missing_response.status_code == 404
+
+    cache_response = client.post(f"/api/products/education/{key}/cache", json=payload)
+    assert cache_response.status_code == 200
+    assert cache_response.json()["title"] == "Heat Pump Water Heating"
+
+    get_response = client.get(f"/api/products/education/{key}")
+    assert get_response.status_code == 200
+    assert get_response.json()["why"] == payload["why"]
+
+    ignored_overwrite = client.post(
+        f"/api/products/education/{key}/cache",
+        json={**payload, "title": "Should Not Replace"},
+    )
+    assert ignored_overwrite.status_code == 200
+    assert ignored_overwrite.json()["title"] == "Heat Pump Water Heating"
+
+    admin_update = client.put(
+        f"/api/admin/education/{key}",
+        headers={"X-Admin-Passcode": "2027"},
+        json={**payload, "title": "DeepThink Final Page"},
+    )
+    assert admin_update.status_code == 200
+    assert admin_update.json()["title"] == "DeepThink Final Page"
+
+    admin_list = client.get("/api/admin/education", headers={"X-Admin-Passcode": "2027"})
+    assert admin_list.status_code == 200
+    assert any(item["key"] == key for item in admin_list.json())
+
+
 def test_attom_parser_reads_public_record_shapes_and_permits():
     property_input = property_input_from_attom(
         {

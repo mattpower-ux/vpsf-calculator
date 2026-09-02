@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord
-from app.repositories import list_product_clicks, list_products, list_property_detail_archive, list_property_queries, seed_products
-from app.schemas import AdminSummary, ProductRecommendation
+from app.repositories import list_educational_content, list_product_clicks, list_products, list_property_detail_archive, list_property_queries, seed_products, upsert_educational_content
+from app.schemas import AdminSummary, EducationalContent, EducationalContentUpsert, ProductRecommendation
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -29,6 +29,21 @@ async def summary(_: None = Depends(require_admin_passcode), db: Session = Depen
 @router.get("/products", response_model=list[ProductRecommendation])
 async def products(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[ProductRecommendation]:
     return list_products(db)
+
+
+@router.get("/education", response_model=list[EducationalContent])
+async def educational_pages(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[EducationalContent]:
+    return list_educational_content(db)
+
+
+@router.put("/education/{content_key}", response_model=EducationalContent)
+async def upsert_educational_page(
+    content_key: str,
+    payload: EducationalContentUpsert,
+    _: None = Depends(require_admin_passcode),
+    db: Session = Depends(get_db),
+) -> EducationalContent:
+    return upsert_educational_content(db, content_key, payload)
 
 
 @router.patch("/products/{product_id}/weighting", response_model=ProductRecommendation)

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getEducationContent, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -1740,6 +1740,12 @@ const educationByRecommendation = {
   "ownership-insurance": educationFallbacks.financial
 };
 
+function educationForRecommendation(recommendation) {
+  const key = recommendation.id || recommendation.pillar || "energy";
+  const content = educationByRecommendation[key] || educationFallbacks[recommendation.pillar] || educationFallbacks.energy;
+  return { key, content };
+}
+
 const demoMatchingProducts = {
   "water-fixtures": [
     {
@@ -2005,6 +2011,27 @@ function Recommendations({ setScreen, setSelectedRecommendation, activePillar, s
 
 function RecommendationDetail({ recommendation, setScreen, setSelectedEducation }) {
   const Icon = recommendation.icon;
+  const openEducation = async () => {
+    const { key, content } = educationForRecommendation(recommendation);
+    setSelectedEducation({ ...content, key });
+    setScreen(21);
+
+    const cachedContent = await getEducationContent(key);
+    if (cachedContent) {
+      setSelectedEducation(cachedContent);
+      return;
+    }
+
+    const persistedContent = await cacheEducationContent(key, {
+      ...content,
+      source: content.source || "deepthink",
+      sourceUrl: content.sourceUrl || "https://www.greenbuildermedia.com"
+    });
+    if (persistedContent) {
+      setSelectedEducation(persistedContent);
+    }
+  };
+
   return (
     <div className="screen recommendationDetailScreen withNav">
       <header className="screenTop"><h2>Smart Summary</h2><Icon size={20} /></header>
@@ -2024,10 +2051,7 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation 
         </ul>
       </section>
 
-      <button className="primaryButton" onClick={() => {
-        setSelectedEducation(educationByRecommendation[recommendation.id] || educationFallbacks[recommendation.pillar] || educationFallbacks.energy);
-        setScreen(21);
-      }}>
+      <button className="primaryButton" onClick={openEducation}>
         Dive Deeper <ArrowRight size={18} />
       </button>
       <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>

@@ -4,9 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.address_normalization import normalize_state, normalize_street_address, normalize_text, normalize_zip, property_query_key
-from app.models import ApiUsageRecord, LeadRecord, ProductClickRecord, ProductRecord, PropertyDetailArchiveRecord, PropertyQueryRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
+from app.models import ApiUsageRecord, EducationalContentRecord, LeadRecord, ProductClickRecord, ProductRecord, PropertyDetailArchiveRecord, PropertyQueryRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
 from app.products.catalog import SEED_PRODUCTS
-from app.schemas import LeadRequest, ProductClickCreate, ProductRecommendation, PropertyInput, PropertyQueryCreate, PropertyQueryProgress
+from app.schemas import EducationalContent, EducationalContentUpsert, LeadRequest, ProductClickCreate, ProductRecommendation, PropertyInput, PropertyQueryCreate, PropertyQueryProgress
 
 
 def create_property(
@@ -124,6 +124,55 @@ def list_products(db: Session) -> list[ProductRecommendation]:
         )
         for record in records
     ]
+
+
+def serialize_educational_content(record: EducationalContentRecord) -> EducationalContent:
+    return EducationalContent(
+        key=record.key,
+        title=record.title,
+        intro=record.intro,
+        why=record.why or [],
+        verify=record.verify or [],
+        vpsf=record.vpsf,
+        source=record.source,
+        sourceUrl=record.source_url,
+    )
+
+
+def get_educational_content(db: Session, key: str) -> EducationalContent | None:
+    record = db.get(EducationalContentRecord, key)
+    return serialize_educational_content(record) if record else None
+
+
+def list_educational_content(db: Session) -> list[EducationalContent]:
+    records = db.scalars(select(EducationalContentRecord).order_by(EducationalContentRecord.updated_at.desc())).all()
+    return [serialize_educational_content(record) for record in records]
+
+
+def upsert_educational_content(
+    db: Session,
+    key: str,
+    payload: EducationalContentUpsert,
+    *,
+    overwrite: bool = True,
+) -> EducationalContent:
+    record = db.get(EducationalContentRecord, key)
+    if record and not overwrite:
+        return serialize_educational_content(record)
+    if not record:
+        record = EducationalContentRecord(key=key)
+        db.add(record)
+
+    record.title = payload.title
+    record.intro = payload.intro
+    record.why = payload.why
+    record.verify = payload.verify
+    record.vpsf = payload.vpsf
+    record.source = payload.source
+    record.source_url = payload.sourceUrl
+    db.commit()
+    db.refresh(record)
+    return serialize_educational_content(record)
 
 
 def create_lead(db: Session, lead: LeadRequest) -> LeadRecord:

@@ -88,6 +88,21 @@ class ProductRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
+class EducationalContentRecord(Base):
+    __tablename__ = "educational_content"
+
+    key: Mapped[str] = mapped_column(String(120), primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), default="")
+    intro: Mapped[str] = mapped_column(Text, default="")
+    why: Mapped[list[str]] = mapped_column(JSON, default=list)
+    verify: Mapped[list[str]] = mapped_column(JSON, default=list)
+    vpsf: Mapped[str] = mapped_column(Text, default="")
+    source: Mapped[str] = mapped_column(String(120), default="deepthink")
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
 class LeadRecord(Base):
     __tablename__ = "leads"
 

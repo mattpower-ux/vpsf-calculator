@@ -117,6 +117,27 @@ class ProductRecommendation(BaseModel):
     imageUrl: str | None = None
 
 
+class EducationalContent(BaseModel):
+    key: str
+    title: str
+    intro: str
+    why: list[str] = Field(default_factory=list)
+    verify: list[str] = Field(default_factory=list)
+    vpsf: str
+    source: str = "deepthink"
+    sourceUrl: str | None = None
+
+
+class EducationalContentUpsert(BaseModel):
+    title: str
+    intro: str
+    why: list[str] = Field(default_factory=list)
+    verify: list[str] = Field(default_factory=list)
+    vpsf: str
+    source: str = "deepthink"
+    sourceUrl: str | None = None
+
+
 class LeadRequest(BaseModel):
     name: str | None = None
     email: str | None = None

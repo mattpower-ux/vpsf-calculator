@@ -87,6 +87,17 @@ export async function findSavedProperty({ address, city = "", state = "", zip = 
   return optionalRequest(`/api/tracking/saved-property?${params.toString()}`);
 }
 
+export async function getEducationContent(key) {
+  return optionalRequest(`/api/products/education/${encodeURIComponent(key)}`);
+}
+
+export async function cacheEducationContent(key, content) {
+  return optionalRequest(`/api/products/education/${encodeURIComponent(key)}/cache`, {
+    method: "POST",
+    body: JSON.stringify(content)
+  });
+}
+
 export async function getProductRecommendations() {
   const products = await request("/api/products/recommendations");
   return products.map((product) => ({

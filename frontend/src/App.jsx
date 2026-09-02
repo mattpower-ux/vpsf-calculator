@@ -1032,14 +1032,15 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
   );
 }
 
-function DemoAnalyzingScreen({ setScreen }) {
+function DemoAnalyzingScreen({ setScreen, autoAdvance = true }) {
   useEffect(() => {
+    if (!autoAdvance) return undefined;
     const timer = window.setTimeout(() => {
       setScreen(4);
     }, 4000);
 
     return () => window.clearTimeout(timer);
-  }, [setScreen]);
+  }, [autoAdvance, setScreen]);
 
   return (
     <div className="screen analyzingScreen">
@@ -2809,7 +2810,9 @@ export default function App() {
 
   const handleGenerateScore = async () => {
     setResultMode("manual");
+    setScreen(12);
     setIsScoring(true);
+    const startedAt = Date.now();
     let finalScore = manualResult;
     try {
       const score = await scoreProperty(home);
@@ -2829,6 +2832,11 @@ export default function App() {
           scoreLabel: finalScore.label,
           scoreRunId: finalScore.scoreRunId
         });
+      }
+      const minimumDelay = 3200;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < minimumDelay) {
+        await new Promise((resolve) => window.setTimeout(resolve, minimumDelay - elapsed));
       }
       setIsScoring(false);
       setScreen(4);
@@ -2936,7 +2944,7 @@ export default function App() {
 
   return (
     <main className="app">
-      <AppChrome screen={screen} setScreen={setScreen} onBack={screen === 21 ? () => setScreen(educationReturnScreen) : undefined}>
+      <AppChrome screen={screen} setScreen={setScreen} onBack={screen === 21 ? () => setScreen(educationReturnScreen) : screen === 12 && resultMode !== "demo" ? () => setScreen(3) : undefined}>
         {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
@@ -2956,7 +2964,7 @@ export default function App() {
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
-        {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
+        {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}

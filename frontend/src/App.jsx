@@ -2332,7 +2332,7 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
       </div>
 
       <button className="primaryButton" onClick={() => setScreen(7)}>View General Product Recommendations</button>
-      <button className="secondaryButton" onClick={() => setScreen(15)}>Return to Smart Summary</button>
+      <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
@@ -2942,9 +2942,33 @@ export default function App() {
     };
   }, []);
 
+  const handleBack = () => {
+    if (screen === 21) {
+      setScreen(educationReturnScreen);
+      return;
+    }
+    if (screen === 20) {
+      setScreen(16);
+      return;
+    }
+    if (screen === 16) {
+      setScreen(6);
+      return;
+    }
+    if (screen === 13) {
+      setScreen(7);
+      return;
+    }
+    if (screen === 12 && resultMode !== "demo") {
+      setScreen(3);
+      return;
+    }
+    setScreen(Math.max(0, screen - 1));
+  };
+
   return (
     <main className="app">
-      <AppChrome screen={screen} setScreen={setScreen} onBack={screen === 21 ? () => setScreen(educationReturnScreen) : screen === 12 && resultMode !== "demo" ? () => setScreen(3) : undefined}>
+      <AppChrome screen={screen} setScreen={setScreen} onBack={handleBack}>
         {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}

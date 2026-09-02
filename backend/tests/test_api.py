@@ -137,6 +137,49 @@ def test_tracking_records_score_and_lead_for_admin_table():
     assert row["leadEmail"] == "demo@example.com"
 
 
+def test_tracking_archives_added_property_details():
+    query_response = client.post(
+        "/api/tracking/property-query",
+        json={
+            "sessionId": "test-session-detail-archive",
+            "address": "22 Dow St",
+            "city": "Portland",
+            "state": "ME",
+            "zip": "04102",
+            "source": "manual_entry",
+            "snapshot": {"address": "22 Dow St", "hvac": "Unknown"},
+        },
+    )
+    assert query_response.status_code == 200
+    query_id = query_response.json()["id"]
+
+    progress_response = client.post(
+        "/api/tracking/progress",
+        json={
+            "sessionId": "test-session-detail-archive",
+            "queryId": query_id,
+            "screen": 2,
+            "screenLabel": "Home Specs",
+            "snapshot": {"address": "22 Dow St", "hvac": "FORCED AIR WITH AIR CONDITIONING"},
+            "detailChanges": [
+                {
+                    "field": "hvac",
+                    "previousValue": "Unknown",
+                    "newValue": "FORCED AIR WITH AIR CONDITIONING",
+                }
+            ],
+        },
+    )
+    assert progress_response.status_code == 200
+
+    archive_response = client.get("/api/admin/property-detail-archive", headers={"X-Admin-Passcode": "2027"})
+    assert archive_response.status_code == 200
+    archive_row = next(item for item in archive_response.json() if item["queryId"] == query_id)
+    assert archive_row["field"] == "hvac"
+    assert archive_row["previousValue"] == "Unknown"
+    assert archive_row["newValue"] == "FORCED AIR WITH AIR CONDITIONING"
+
+
 def test_attom_parser_reads_public_record_shapes_and_permits():
     property_input = property_input_from_attom(
         {

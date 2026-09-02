@@ -162,6 +162,7 @@ class PropertyQueryProgress(BaseModel):
     leadEmail: str | None = None
     leadProductId: str | None = None
     leadAction: str | None = None
+    detailChanges: list[dict] = Field(default_factory=list)
 
 
 class ProductClickCreate(BaseModel):

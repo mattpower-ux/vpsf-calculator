@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import { enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, geocodeProperty, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
@@ -2283,10 +2283,16 @@ export default function App() {
   const [products, setProducts] = useState(demoProducts);
   const sessionId = useMemo(() => getOrCreateSessionId(), []);
   const [queryId, setQueryId] = useState(null);
+  const queryIdRef = useRef(null);
+  const previousArchivedHomeRef = useRef(defaultHome);
   const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
   const update = (key, value) => setHome((current) => ({ ...current, [key]: value }));
+
+  useEffect(() => {
+    queryIdRef.current = queryId;
+  }, [queryId]);
 
   const handleQueryStarted = async (property, source) => {
     const record = await trackPropertyQuery({
@@ -2300,6 +2306,8 @@ export default function App() {
     });
     if (record?.id) {
       setQueryId(record.id);
+      queryIdRef.current = record.id;
+      previousArchivedHomeRef.current = property;
     }
   };
 
@@ -2365,15 +2373,52 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!queryId) return;
-    trackProgress({
-      sessionId,
-      queryId,
-      screen,
-      screenLabel: SCREEN_LABELS[screen] || "Unknown",
-      snapshot: home
-    });
-  }, [home, queryId, screen, sessionId]);
+    const timer = window.setTimeout(async () => {
+      const previousHome = previousArchivedHomeRef.current;
+      const detailChanges = Object.keys(home)
+        .filter((key) => previousHome[key] !== home[key])
+        .map((key) => ({
+          field: key,
+          previousValue: previousHome[key] ?? "",
+          newValue: home[key] ?? ""
+        }));
+
+      let activeQueryId = queryIdRef.current;
+      if (!activeQueryId && detailChanges.length) {
+        const record = await trackPropertyQuery({
+          sessionId,
+          address: home.address,
+          city: home.city,
+          state: home.state,
+          zip: home.zip,
+          source: "manual_entry",
+          snapshot: home
+        });
+        if (record?.id) {
+          activeQueryId = record.id;
+          queryIdRef.current = record.id;
+          setQueryId(record.id);
+        }
+      }
+
+      if (!activeQueryId) {
+        previousArchivedHomeRef.current = home;
+        return;
+      }
+
+      await trackProgress({
+        sessionId,
+        queryId: activeQueryId,
+        screen,
+        screenLabel: SCREEN_LABELS[screen] || "Unknown",
+        snapshot: home,
+        detailChanges
+      });
+      previousArchivedHomeRef.current = home;
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [home, screen, sessionId]);
 
   useEffect(() => {
     let isMounted = true;

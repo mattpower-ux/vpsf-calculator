@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import ApiUsageRecord, LeadRecord, ProductClickRecord, ProductRecord, PropertyQueryRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
+from app.models import ApiUsageRecord, LeadRecord, ProductClickRecord, ProductRecord, PropertyDetailArchiveRecord, PropertyQueryRecord, PropertyRecord, ScoreRunRecord, SourceDocumentRecord
 from app.products.catalog import SEED_PRODUCTS
 from app.schemas import LeadRequest, ProductClickCreate, ProductRecommendation, PropertyInput, PropertyQueryCreate, PropertyQueryProgress
 
@@ -243,6 +243,19 @@ def record_query_progress(db: Session, payload: PropertyQueryProgress) -> Proper
         record.lead_email = payload.leadEmail
         record.lead_product_id = payload.leadProductId
         record.lead_action = payload.leadAction
+    for change in payload.detailChanges:
+        db.add(
+            PropertyDetailArchiveRecord(
+                query_id=record.id,
+                session_id=payload.sessionId,
+                screen=payload.screen,
+                screen_label=payload.screenLabel,
+                field=str(change.get("field", "")),
+                previous_value=str(change.get("previousValue", "")),
+                new_value=str(change.get("newValue", "")),
+                snapshot=payload.snapshot,
+            )
+        )
     db.commit()
     db.refresh(record)
     return record
@@ -283,6 +296,25 @@ def list_product_clicks(db: Session, limit: int = 250) -> list[dict]:
             "productName": record.product_name,
             "pillar": record.pillar,
             "context": record.click_context,
+            "createdAt": record.created_at.isoformat(),
+        }
+        for record in records
+    ]
+
+
+def list_property_detail_archive(db: Session, limit: int = 500) -> list[dict]:
+    records = db.scalars(select(PropertyDetailArchiveRecord).order_by(PropertyDetailArchiveRecord.created_at.desc()).limit(limit)).all()
+    return [
+        {
+            "id": record.id,
+            "queryId": record.query_id,
+            "sessionId": record.session_id,
+            "screen": record.screen,
+            "screenLabel": record.screen_label,
+            "field": record.field,
+            "previousValue": record.previous_value,
+            "newValue": record.new_value,
+            "snapshot": record.snapshot or {},
             "createdAt": record.created_at.isoformat(),
         }
         for record in records

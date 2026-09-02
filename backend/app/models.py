@@ -139,6 +139,7 @@ class PropertyQueryRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     product_events: Mapped[list["ProductClickRecord"]] = relationship(back_populates="query", cascade="all, delete-orphan")
+    detail_events: Mapped[list["PropertyDetailArchiveRecord"]] = relationship(back_populates="query", cascade="all, delete-orphan")
 
 
 class ProductClickRecord(Base):
@@ -154,3 +155,20 @@ class ProductClickRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     query: Mapped[PropertyQueryRecord | None] = relationship(back_populates="product_events")
+
+
+class PropertyDetailArchiveRecord(Base):
+    __tablename__ = "property_detail_archive"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    query_id: Mapped[int | None] = mapped_column(ForeignKey("property_queries.id"), nullable=True)
+    session_id: Mapped[str] = mapped_column(String(120), index=True)
+    screen: Mapped[int] = mapped_column(Integer, default=0)
+    screen_label: Mapped[str] = mapped_column(String(120), default="")
+    field: Mapped[str] = mapped_column(String(120), default="")
+    previous_value: Mapped[str] = mapped_column(Text, default="")
+    new_value: Mapped[str] = mapped_column(Text, default="")
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    query: Mapped[PropertyQueryRecord | None] = relationship(back_populates="detail_events")

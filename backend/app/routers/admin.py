@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord
-from app.repositories import list_product_clicks, list_products, list_property_queries, seed_products
+from app.repositories import list_product_clicks, list_products, list_property_detail_archive, list_property_queries, seed_products
 from app.schemas import AdminSummary, ProductRecommendation
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -126,3 +126,8 @@ async def property_queries(_: None = Depends(require_admin_passcode), db: Sessio
 @router.get("/product-clicks")
 async def product_clicks(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
     return list_product_clicks(db)
+
+
+@router.get("/property-detail-archive")
+async def property_detail_archive(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
+    return list_property_detail_archive(db)

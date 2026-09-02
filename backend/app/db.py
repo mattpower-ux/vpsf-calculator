@@ -69,6 +69,11 @@ def ensure_runtime_schema() -> None:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE api_usage ADD COLUMN limit_notified_at DATETIME"))
 
+    if "property_detail_archive" not in table_names:
+        from app.models import PropertyDetailArchiveRecord
+
+        PropertyDetailArchiveRecord.__table__.create(bind=engine, checkfirst=True)
+
 
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()

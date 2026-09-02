@@ -1995,7 +1995,8 @@ const demoMatchingProducts = {
       category: "Low-Flow Faucet",
       impact: "+3 VPSF",
       image: kohlerFaucetThumb,
-      note: "Reduces lavatory water use while preserving everyday performance."
+      note: "Reduces lavatory water use while preserving everyday performance.",
+      requestSpecs: true
     },
     {
       id: "moen-eco-showerhead",
@@ -2003,7 +2004,8 @@ const demoMatchingProducts = {
       category: "Low-Flow Showerhead",
       impact: "+4 VPSF",
       image: moenShowerThumb,
-      note: "Cuts shower water demand, one of the highest-use fixture categories."
+      note: "Cuts shower water demand, one of the highest-use fixture categories.",
+      requestSpecs: true
     },
     {
       id: "niagara-low-flow-toilet",
@@ -2011,7 +2013,8 @@ const demoMatchingProducts = {
       category: "High-Efficiency Toilet",
       impact: "+5 VPSF",
       image: niagaraToiletThumb,
-      note: "High-efficiency flushing can materially reduce indoor water demand."
+      note: "High-efficiency flushing can materially reduce indoor water demand.",
+      requestSpecs: true
     },
     {
       id: "rachio-smart-irrigation",
@@ -2019,7 +2022,8 @@ const demoMatchingProducts = {
       category: "Smart Irrigation",
       impact: "+6 VPSF",
       image: rachioThumb,
-      note: "Weather-based scheduling reduces outdoor irrigation waste."
+      note: "Weather-based scheduling reduces outdoor irrigation waste.",
+      requestSpecs: true
     }
   ],
   "roof-risk": [
@@ -2029,7 +2033,8 @@ const demoMatchingProducts = {
       category: "Solar-Ready Roofing",
       impact: "+8 VPSF",
       image: atasRoofingThumb,
-      note: "Standing-seam metal roofing designed for future solar integration and long-term durability."
+      note: "Standing-seam metal roofing designed for future solar integration and long-term durability.",
+      requestSpecs: true
     },
     {
       id: "certainteed-solaris",
@@ -2037,7 +2042,8 @@ const demoMatchingProducts = {
       category: "Reflective Roofing",
       impact: "+6 VPSF",
       image: certainteedSolarisThumb,
-      note: "Solar-reflective shingles that reduce roof heat gain and cooling demand."
+      note: "Solar-reflective shingles that reduce roof heat gain and cooling demand.",
+      requestSpecs: true
     },
     {
       id: "euroshield-roofing",
@@ -2045,7 +2051,8 @@ const demoMatchingProducts = {
       category: "Impact-Resistant Roofing",
       impact: "+9 VPSF",
       image: euroshieldThumb,
-      note: "Class 4 impact-resistant roofing made from recycled rubber with exceptional durability."
+      note: "Class 4 impact-resistant roofing made from recycled rubber with exceptional durability.",
+      requestSpecs: true
     }
   ],
   "tree-risk": [
@@ -2088,7 +2095,8 @@ const demoMatchingProducts = {
       name: "Rheem ProTerra Heat Pump Water Heater",
       category: "Water Heating",
       impact: "+15 VPSF",
-      note: "Heat-pump water heating reduces energy use and operating cost exposure."
+      note: "Heat-pump water heating reduces energy use and operating cost exposure.",
+      requestSpecs: true
     }
   ],
   "water-leak-detection": [
@@ -2105,7 +2113,8 @@ const demoMatchingProducts = {
       category: "Smart Irrigation",
       impact: "+6 VPSF",
       image: rachioThumb,
-      note: "Weather-based scheduling reduces outdoor irrigation waste."
+      note: "Weather-based scheduling reduces outdoor irrigation waste.",
+      requestSpecs: true
     }
   ],
   "health-ventilation": [
@@ -2114,7 +2123,8 @@ const demoMatchingProducts = {
       name: "RenewAire Energy Recovery Ventilator",
       category: "Ventilation",
       impact: "+10 VPSF",
-      note: "Energy recovery ventilation improves fresh-air delivery and humidity control."
+      note: "Energy recovery ventilation improves fresh-air delivery and humidity control.",
+      requestSpecs: true
     }
   ],
   "health-filtration": [
@@ -2170,6 +2180,10 @@ const demoMatchingProducts = {
     }
   ]
 };
+
+function canRequestProductSpecs(product) {
+  return Boolean(product?.requestSpecs || (product?.technicalWriteup && product?.image));
+}
 
 const pillarLabelMap = {
   energy: "Energy",
@@ -2412,6 +2426,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
+  const allowSpecRequest = canRequestProductSpecs(product);
 
   return (
     <div className="screen productDetailScreen withNav">
@@ -2433,9 +2448,11 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
             <p>{product.note}</p>
           </section>
 
-          <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
-            Request Specs and Pricing <ArrowRight size={18} />
-          </button>
+          {allowSpecRequest && (
+            <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
+              Request Specs and Pricing <ArrowRight size={18} />
+            </button>
+          )}
 
           <button className="secondaryButton" onClick={() => setScreen(16)}>
             Return to Matching Products
@@ -2443,7 +2460,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
         </>
       )}
 
-      {showLeadForm && (
+      {showLeadForm && allowSpecRequest && (
         <section className="leadFormCard productLeadFormCard">
           <h3>Request Specs and Pricing</h3>
           <p className="leadFormIntro">
@@ -2525,6 +2542,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
+  const allowSpecRequest = canRequestProductSpecs(product);
 
   return (
     <div className="screen productDetailScreen withNav">
@@ -2546,9 +2564,11 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
             <p>{product.technicalWriteup}</p>
           </section>
 
-          <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
-            Request Specs and Pricing <ArrowRight size={18} />
-          </button>
+          {allowSpecRequest && (
+            <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
+              Request Specs and Pricing <ArrowRight size={18} />
+            </button>
+          )}
 
           <button className="secondaryButton" onClick={() => setScreen(7)}>
             Return to Products
@@ -2556,7 +2576,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
         </>
       )}
 
-      {showLeadForm && (
+      {showLeadForm && allowSpecRequest && (
         <section className="leadFormCard productLeadFormCard">
           <h3>Request Specs and Pricing</h3>
           <p className="leadFormIntro">

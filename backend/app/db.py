@@ -70,6 +70,18 @@ def ensure_runtime_schema() -> None:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE api_usage ADD COLUMN limit_notified_at DATETIME"))
 
+    if "educational_content" in table_names:
+        educational_columns = {column["name"] for column in inspector.get_columns("educational_content")}
+        required_educational_columns = {
+            "background": "TEXT",
+            "how_it_works": "JSON",
+            "sustainable_aspects": "JSON",
+        }
+        with engine.begin() as connection:
+            for name, column_type in required_educational_columns.items():
+                if name not in educational_columns:
+                    connection.execute(text(f"ALTER TABLE educational_content ADD COLUMN {name} {column_type}"))
+
     if "property_detail_archive" not in table_names:
         from app.models import PropertyDetailArchiveRecord
 

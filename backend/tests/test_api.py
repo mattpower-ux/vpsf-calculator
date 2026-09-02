@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from uuid import uuid4
 
 from app.db import init_db
 from app.main import app
@@ -223,10 +224,13 @@ def test_tracking_reuses_saved_scan_with_flexible_address_syntax():
 
 
 def test_education_content_is_cached_and_admin_updatable():
-    key = "test-education-cache"
+    key = f"test-education-cache-{uuid4().hex}"
     payload = {
         "title": "Heat Pump Water Heating",
         "intro": "DeepThink draft about water heating.",
+        "background": "Water heating is a major energy load, so the system type and controls shape both operating cost and electrification value.",
+        "howItWorks": ["Heat pump water heaters move heat from nearby air into stored water.", "Controls can shift operation away from peak hours."],
+        "sustainableAspects": ["Lower electric demand than resistance heating.", "Pairs well with solar and clean-grid electricity."],
         "why": ["Cuts water-heating energy.", "Supports electrification."],
         "verify": ["UEF rating", "Install year"],
         "vpsf": "Improves operating-cost confidence.",
@@ -244,6 +248,9 @@ def test_education_content_is_cached_and_admin_updatable():
     get_response = client.get(f"/api/products/education/{key}")
     assert get_response.status_code == 200
     assert get_response.json()["why"] == payload["why"]
+    assert get_response.json()["background"] == payload["background"]
+    assert get_response.json()["howItWorks"] == payload["howItWorks"]
+    assert get_response.json()["sustainableAspects"] == payload["sustainableAspects"]
 
     ignored_overwrite = client.post(
         f"/api/products/education/{key}/cache",

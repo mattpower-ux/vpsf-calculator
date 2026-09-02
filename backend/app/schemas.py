@@ -121,6 +121,9 @@ class EducationalContent(BaseModel):
     key: str
     title: str
     intro: str
+    background: str = ""
+    howItWorks: list[str] = Field(default_factory=list)
+    sustainableAspects: list[str] = Field(default_factory=list)
     why: list[str] = Field(default_factory=list)
     verify: list[str] = Field(default_factory=list)
     vpsf: str
@@ -131,6 +134,9 @@ class EducationalContent(BaseModel):
 class EducationalContentUpsert(BaseModel):
     title: str
     intro: str
+    background: str = ""
+    howItWorks: list[str] = Field(default_factory=list)
+    sustainableAspects: list[str] = Field(default_factory=list)
     why: list[str] = Field(default_factory=list)
     verify: list[str] = Field(default_factory=list)
     vpsf: str

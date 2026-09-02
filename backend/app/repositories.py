@@ -131,6 +131,9 @@ def serialize_educational_content(record: EducationalContentRecord) -> Education
         key=record.key,
         title=record.title,
         intro=record.intro,
+        background=record.background or "",
+        howItWorks=record.how_it_works or [],
+        sustainableAspects=record.sustainable_aspects or [],
         why=record.why or [],
         verify=record.verify or [],
         vpsf=record.vpsf,
@@ -158,13 +161,19 @@ def upsert_educational_content(
 ) -> EducationalContent:
     record = db.get(EducationalContentRecord, key)
     if record and not overwrite:
-        return serialize_educational_content(record)
+        has_rich_content = bool(record.background or record.how_it_works or record.sustainable_aspects)
+        incoming_is_richer = bool(payload.background or payload.howItWorks or payload.sustainableAspects)
+        if has_rich_content or not incoming_is_richer:
+            return serialize_educational_content(record)
     if not record:
         record = EducationalContentRecord(key=key)
         db.add(record)
 
     record.title = payload.title
     record.intro = payload.intro
+    record.background = payload.background
+    record.how_it_works = payload.howItWorks
+    record.sustainable_aspects = payload.sustainableAspects
     record.why = payload.why
     record.verify = payload.verify
     record.vpsf = payload.vpsf

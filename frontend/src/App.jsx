@@ -1586,6 +1586,19 @@ const educationFallbacks = {
   energy: {
     title: "Energy Systems",
     intro: "Energy upgrades work best when equipment, controls, and the building envelope are evaluated as one home-performance system.",
+    background: "Energy performance is building science in motion: heat, air, and moisture all move through a home, and every mechanical system has to respond to that load. A high-value upgrade is not just a new box outside the house. It is the right-sized equipment, a tighter and better insulated enclosure, smarter controls, and documentation that proves the home can deliver comfort with less waste.",
+    howItWorks: [
+      "Heat flows from warm areas to cooler areas through walls, roofs, windows, slabs, and air leaks. Better envelopes reduce the load before equipment ever turns on.",
+      "Heat pumps move heat instead of burning fuel or using electric resistance, which can deliver several units of heat for each unit of electricity consumed.",
+      "Smart controls, zoning, and variable-speed equipment keep temperatures steadier and reduce cycling losses.",
+      "Solar, storage, and demand-response-ready equipment can shift energy use toward cleaner or lower-cost hours."
+    ],
+    sustainableAspects: [
+      "Load reduction first: air sealing, insulation, windows, and shading usually make equipment smaller and more effective.",
+      "Electrification with efficient heat pumps supports cleaner operation as the grid gets cleaner.",
+      "Right-sized equipment avoids short cycling, comfort problems, and unnecessary material use.",
+      "Measured ratings, permits, commissioning notes, and maintenance records make the performance claim durable at resale."
+    ],
     why: [
       "Heat pumps and heat pump water heaters move heat instead of creating it, which can cut operating energy while supporting electrification.",
       "Smart thermostats and controls improve comfort, scheduling, and peak-load management.",
@@ -1601,6 +1614,19 @@ const educationFallbacks = {
   water: {
     title: "Water Performance",
     intro: "Water upgrades combine lower fixture demand with damage prevention, irrigation control, and clear documentation.",
+    background: "Water performance matters because a home uses water twice: first as a resource, then as a source of energy demand when it is heated, pumped, or wasted through leaks. The most sustainable strategy is to reduce unnecessary flow while protecting the building from water damage, which is one of the most expensive and disruptive failure modes in housing.",
+    howItWorks: [
+      "Efficient fixtures control flow and pressure so occupants use less water without feeling a major performance penalty.",
+      "Hot-water distribution affects both water and energy use because long pipe runs waste water while occupants wait for hot water.",
+      "Leak sensors and automatic shutoff valves detect abnormal flow or moisture and stop damage before it spreads.",
+      "Smart irrigation responds to rainfall, soil moisture, plant needs, and local climate instead of watering on a fixed schedule."
+    ],
+    sustainableAspects: [
+      "WaterSense-labeled fixtures and toilets are simple, durable, and easy for buyers to verify.",
+      "Compact plumbing layouts, pipe insulation, and demand-controlled recirculation reduce hot-water waste.",
+      "Leak protection preserves materials, reduces mold risk, and lowers ownership risk.",
+      "Drought-tolerant landscaping and weather-based irrigation reduce outdoor demand where it matters most."
+    ],
     why: [
       "Efficient fixtures reduce daily indoor water use without requiring major remodeling.",
       "Leak detection and automatic shutoff can reduce costly water-damage risk.",
@@ -1616,6 +1642,19 @@ const educationFallbacks = {
   health: {
     title: "Indoor Air Quality",
     intro: "Healthy-home upgrades focus on fresh air, filtration, humidity control, and lower-emitting materials.",
+    background: "Indoor air quality sits at the intersection of health, comfort, and energy. As homes get tighter, accidental leaks are no longer a reliable source of fresh air. A better building-science approach is to control the air that enters, filter it, manage humidity, and avoid bringing pollutants into the home in the first place.",
+    howItWorks: [
+      "Ventilation replaces stale indoor air with outdoor air at a predictable rate.",
+      "ERVs and HRVs exchange heat between outgoing and incoming air; ERVs also transfer some moisture, which can help in humid or dry climates.",
+      "Filtration captures particles such as dust, pollen, smoke, and some fine particulates as air passes through HVAC or dedicated filtration systems.",
+      "Source control reduces pollutants from finishes, combustion appliances, garages, moisture problems, and stored chemicals."
+    ],
+    sustainableAspects: [
+      "Balanced ventilation provides fresh air without depending on random leakage.",
+      "ERV or HRV systems recover energy that would otherwise be lost through ventilation.",
+      "Low-emitting materials and good moisture control reduce health risks without adding operating energy.",
+      "Accessible filters, sensors, and service records help owners maintain performance over time."
+    ],
     why: [
       "Tighter homes need intentional ventilation instead of relying on uncontrolled leakage.",
       "ERVs and HRVs can provide balanced fresh air while recovering some heating or cooling energy.",
@@ -1631,6 +1670,19 @@ const educationFallbacks = {
   resilience: {
     title: "Resilience Upgrades",
     intro: "Resilience value comes from reducing damage risk, outage risk, and insurance uncertainty.",
+    background: "Resilience is the part of building science that asks how a home performs when conditions are not normal: storms, heat waves, outages, floods, smoke, hail, wind, or insurance pressure. The best resilience improvements are specific to the local hazard and are documented well enough that owners, buyers, insurers, and appraisers can understand the risk reduction.",
+    howItWorks: [
+      "The roof, drainage plane, windows, doors, and foundation manage water, wind, and impact before damage reaches the interior.",
+      "Backup power protects defined critical loads such as refrigeration, communications, medical equipment, pumps, and selected HVAC circuits.",
+      "Moisture-resistant assemblies and drainage details help the home dry after wetting events.",
+      "Hazard data such as flood maps, wind zones, wildfire exposure, and heat risk help prioritize the right upgrades."
+    ],
+    sustainableAspects: [
+      "Durable roofs, flashing, underlayments, and attachments extend service life and reduce replacement waste.",
+      "Solar plus battery storage can provide cleaner backup power than portable fossil-fuel generators for many loads.",
+      "Passive survivability, including shade, insulation, and natural cooling strategies, reduces dependence on emergency power.",
+      "Climate-specific upgrades prevent overbuilding while focusing money and materials where risk is highest."
+    ],
     why: [
       "Roof age, roof type, impact resistance, and deck attachment can heavily shape storm and insurance risk.",
       "Backup power helps preserve critical loads during outages.",
@@ -1646,6 +1698,19 @@ const educationFallbacks = {
   carbon: {
     title: "Carbon + Materials",
     intro: "Material value is strongest when durability and carbon documentation travel with the home.",
+    background: "Carbon and materials performance looks beyond utility bills to the climate impact of the products used to build, repair, and improve the home. The building-science question is whether materials are durable, low-emitting, appropriate for the climate, and backed by disclosures that make their impacts visible instead of assumed.",
+    howItWorks: [
+      "Embodied carbon comes from extraction, manufacturing, transport, installation, maintenance, and replacement of building products.",
+      "Environmental Product Declarations help compare materials using standardized life-cycle data.",
+      "Durability matters because a lower-carbon product that fails early may perform worse over the life of the home.",
+      "Material choices also affect moisture safety, fire resistance, indoor air quality, and thermal performance."
+    ],
+    sustainableAspects: [
+      "Use lower-carbon concrete mixes, recycled content, responsibly sourced wood, and verified insulation where appropriate.",
+      "Choose assemblies that are durable, repairable, and suited to local moisture and hazard conditions.",
+      "Prioritize products with EPDs, HPDs, Declare labels, or other credible disclosures.",
+      "Avoid replacing sound materials prematurely; reuse and maintenance can be more sustainable than cosmetic replacement."
+    ],
     why: [
       "EPDs and product disclosures make lower-carbon choices verifiable.",
       "Durable materials can reduce replacement cycles and waste.",
@@ -1661,6 +1726,19 @@ const educationFallbacks = {
   community: {
     title: "Community Value",
     intro: "Community value captures the daily usefulness of location: services, mobility, broadband, trees, and livability.",
+    background: "Community value recognizes that sustainability is not only inside the property line. A home can perform better for its occupants when daily needs are nearby, mobility options are practical, broadband is reliable, and landscape features reduce heat while avoiding avoidable risk.",
+    howItWorks: [
+      "Access to services changes transportation energy, time cost, and long-term livability.",
+      "Transit, walking, biking, and safe street networks reduce dependence on one expensive transportation mode.",
+      "Tree canopy can lower surrounding temperatures, shade roofs and walls, and improve stormwater absorption.",
+      "Broadband access supports remote work, home energy monitoring, telehealth, and connected devices."
+    ],
+    sustainableAspects: [
+      "Compact access to daily services can reduce transportation emissions and household costs.",
+      "Healthy tree canopy provides shade and cooling when trees are well maintained and correctly located.",
+      "Reliable broadband makes smart home systems more useful and supports work-from-home resilience.",
+      "Walkable and bikeable context broadens buyer value without requiring every trip to be a car trip."
+    ],
     why: [
       "Fast broadband and nearby services can affect remote work, aging in place, and day-to-day convenience.",
       "Walk, bike, and transit access reduce dependence on driving where those options are realistic.",
@@ -1676,6 +1754,19 @@ const educationFallbacks = {
   financial: {
     title: "Ownership Risk",
     intro: "Ownership-risk education turns hidden future costs into a clearer replacement and insurance story.",
+    background: "Ownership risk is where building performance becomes financial clarity. Major systems have useful lives, failure modes, and maintenance needs. When those details are unknown, buyers discount value or inherit surprise costs. When they are documented, the home can tell a stronger story about comfort, durability, insurability, and future capital needs.",
+    howItWorks: [
+      "Each major system has an expected service life that depends on type, climate, installation quality, and maintenance.",
+      "Insurance risk is shaped by roof condition, hazard exposure, mitigation features, and local market rules.",
+      "Permits, invoices, warranties, and inspection reports turn claims into evidence.",
+      "A replacement timeline helps separate urgent safety or durability needs from optional upgrades."
+    ],
+    sustainableAspects: [
+      "Preventive maintenance extends the life of existing systems and avoids premature replacement.",
+      "Risk-reducing upgrades such as roof improvements, leak protection, and storm mitigation protect materials already invested in the home.",
+      "Clear records help buyers value performance and may support financing, appraisal, or insurance conversations.",
+      "Lifecycle planning encourages durable, right-timed upgrades instead of reactive emergency replacements."
+    ],
     why: [
       "Aging roof, HVAC, water heater, and major systems create near-term cost uncertainty.",
       "Insurance-relevant improvements can matter as much as cosmetic upgrades in risk-prone markets.",
@@ -1695,6 +1786,19 @@ const educationByRecommendation = {
     ...educationFallbacks.energy,
     title: "HVAC + Smart Controls",
     intro: "Modern HVAC value comes from the equipment, the controls, and how well the system fits the home's envelope.",
+    background: "HVAC is often the largest comfort system in the home, but its real performance depends on loads, ducts, air sealing, insulation, humidity, and controls. A sustainable HVAC upgrade starts by lowering the load, then selecting right-sized equipment that can run efficiently at part load instead of blasting on and off.",
+    howItWorks: [
+      "A load calculation estimates how much heating and cooling the home actually needs after accounting for insulation, windows, air leakage, orientation, and climate.",
+      "Variable-speed heat pumps modulate output so they can run longer at lower power, improving comfort and efficiency.",
+      "Duct sealing, proper airflow, and refrigerant charge are as important as the nameplate efficiency rating.",
+      "Smart controls can coordinate setbacks, humidity, occupancy, time-of-use rates, and demand-response events."
+    ],
+    sustainableAspects: [
+      "Cold-climate or high-efficiency heat pumps reduce fossil-fuel dependence when correctly specified.",
+      "Right-sized systems use fewer materials and avoid wasteful oversizing.",
+      "Sealed, insulated ducts protect delivered efficiency and comfort.",
+      "Commissioning records, model numbers, and efficiency ratings help prove value."
+    ],
     why: [
       "High-performance heat pumps can deliver efficient heating and cooling, including cold-climate performance when specified correctly.",
       "Inverter-driven systems and smart controls can reduce energy waste while improving comfort and load management.",
@@ -1705,6 +1809,19 @@ const educationByRecommendation = {
     ...educationFallbacks.energy,
     title: "Heat Pump Water Heating",
     intro: "Water heating is one of the clearest electrification upgrades because heat pump water heaters can sharply reduce energy use.",
+    background: "Water heating is a steady year-round energy load, which makes it a high-leverage place to improve performance. Heat pump water heaters are especially valuable because they use the surrounding air as a heat source, but the installation location, tank size, controls, condensate handling, and noise all affect how well they work in the real home.",
+    howItWorks: [
+      "A small refrigeration cycle pulls heat from nearby air and transfers it into stored water.",
+      "Hybrid controls can use heat-pump mode for efficiency and resistance backup for high-demand periods.",
+      "The unit cools and dehumidifies the surrounding space, which can be beneficial or problematic depending on location and climate.",
+      "Timers, smart controls, and mixing valves can improve comfort while shifting operation to lower-cost or cleaner hours."
+    ],
+    sustainableAspects: [
+      "High UEF ratings reduce energy use compared with standard electric resistance water heaters.",
+      "Smart scheduling pairs well with solar production and time-of-use rates.",
+      "Leak pans, drains, sensors, and shutoff valves reduce water-damage risk.",
+      "Adequate space volume and ducting, when needed, preserve efficiency and comfort."
+    ],
     why: [
       "Heat pump water heaters use surrounding air as a heat source, often cutting water-heating energy compared with electric resistance models.",
       "Smart modes, leak detection, and demand-response readiness can add operating and resilience value.",
@@ -2017,7 +2134,8 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation 
     setScreen(21);
 
     const cachedContent = await getEducationContent(key);
-    if (cachedContent) {
+    const cachedHasRichSections = Boolean(cachedContent?.background || cachedContent?.howItWorks?.length || cachedContent?.sustainableAspects?.length);
+    if (cachedContent && cachedHasRichSections) {
       setSelectedEducation(cachedContent);
       return;
     }
@@ -2065,6 +2183,10 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation 
 
 function EducationDetail({ education, setScreen }) {
   const content = education || educationFallbacks.energy;
+  const howItWorks = content.howItWorks || [];
+  const sustainableAspects = content.sustainableAspects || [];
+  const why = content.why || [];
+  const verify = content.verify || [];
   return (
     <div className="screen educationDetailScreen withNav">
       <header className="screenTop"><h2>Learn More</h2><BookOpen size={18} /></header>
@@ -2075,10 +2197,39 @@ function EducationDetail({ education, setScreen }) {
         <p>{content.intro}</p>
       </section>
 
+      {content.background ? (
+        <section className="copyCard">
+          <h3>Background</h3>
+          <p>{content.background}</p>
+        </section>
+      ) : null}
+
+      {howItWorks.length ? (
+        <section className="copyCard">
+          <h3>How It Works</h3>
+          <ul className="smartSummaryList">
+            {howItWorks.map((item) => (
+              <li key={item}><Check size={15} /> {item}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {sustainableAspects.length ? (
+        <section className="copyCard">
+          <h3>Most Sustainable Aspects</h3>
+          <ul className="smartSummaryList">
+            {sustainableAspects.map((item) => (
+              <li key={item}><Check size={15} /> {item}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="copyCard">
         <h3>Why It Matters</h3>
         <ul className="smartSummaryList">
-          {content.why.map((item) => (
+          {why.map((item) => (
             <li key={item}><Check size={15} /> {item}</li>
           ))}
         </ul>
@@ -2087,7 +2238,7 @@ function EducationDetail({ education, setScreen }) {
       <section className="copyCard">
         <h3>What to Verify</h3>
         <ul className="smartSummaryList">
-          {content.verify.map((item) => (
+          {verify.map((item) => (
             <li key={item}><ClipboardList size={15} /> {item}</li>
           ))}
         </ul>

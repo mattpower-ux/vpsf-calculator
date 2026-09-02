@@ -249,15 +249,42 @@ def property_input_from_attom(record: dict) -> PropertyInput:
 def permit_records_from_attom(data: dict) -> list[dict]:
     records: list[dict] = []
 
+    def is_permit_record(value: dict) -> bool:
+        permit_keys = {
+            "type",
+            "subType",
+            "subtype",
+            "permitType",
+            "permitSubType",
+            "projectName",
+            "description",
+            "jobValueDescription",
+            "workDescription",
+            "permitDescription",
+            "effectiveDate",
+            "permitDate",
+            "issueDate",
+            "statusDate",
+            "completedDate",
+        }
+        return any(key in value for key in permit_keys)
+
+    def add_permits(value: object) -> None:
+        if isinstance(value, dict):
+            if is_permit_record(value):
+                records.append(value)
+            else:
+                visit(value)
+        elif isinstance(value, list):
+            for item in value:
+                add_permits(item)
+
     def visit(value: object) -> None:
         if isinstance(value, dict):
             for key, child in value.items():
                 lowered = key.lower()
                 if "permit" in lowered:
-                    if isinstance(child, list):
-                        records.extend([item for item in child if isinstance(item, dict)])
-                    elif isinstance(child, dict):
-                        records.append(child)
+                    add_permits(child)
                 visit(child)
         elif isinstance(value, list):
             for child in value:
@@ -268,7 +295,8 @@ def permit_records_from_attom(data: dict) -> list[dict]:
         if isinstance(permits, dict):
             permits = [permits]
         if isinstance(permits, list):
-            records.extend([permit for permit in permits if isinstance(permit, dict)])
+            for permit in permits:
+                add_permits(permit)
         visit(property_record)
     if not records:
         visit(data)

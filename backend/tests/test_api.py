@@ -2,6 +2,8 @@ from fastapi.testclient import TestClient
 
 from app.db import init_db
 from app.main import app
+from app.routers.properties import apply_attom_permit_facts, permit_records_from_attom, property_input_from_attom
+from app.schemas import PropertyInput
 
 init_db()
 client = TestClient(app)
@@ -133,3 +135,51 @@ def test_tracking_records_score_and_lead_for_admin_table():
     assert row["scoreLabel"] == "Needs Upgrade"
     assert row["leadName"] == "Demo Buyer"
     assert row["leadEmail"] == "demo@example.com"
+
+
+def test_attom_parser_reads_public_record_shapes_and_permits():
+    property_input = property_input_from_attom(
+        {
+            "address": {"line1": "1313 MARGO LN", "locality": "LAKE CITY", "countrySubd": "CO", "postal1": "81235"},
+            "summary": {"propType": "SFR", "yearBuilt": "1990"},
+            "building": {
+                "size": {"universalSize": "3000"},
+                "rooms": {"beds": "3", "bathsTotal": "2.5"},
+                "summary": {"levels": "2"},
+                "parking": {"prkgSpaces": "2"},
+            },
+            "lot": {"lotSize1": "53.11"},
+        }
+    )
+
+    assert property_input.squareFeet == "3000"
+    assert property_input.yearBuilt == "1990"
+    assert property_input.homeType == "SFR"
+    assert property_input.stories == "2"
+    assert property_input.bedrooms == "3"
+    assert property_input.bathrooms == "2.5"
+    assert property_input.garage == "2 Car Garage"
+
+    permits = permit_records_from_attom(
+        {
+            "property": [
+                {
+                    "buildingPermits": {
+                        "permits": [
+                            {"description": "Replace roof shingles", "issueDate": "2020-03-15"},
+                            {"workDescription": "Install heat pump HVAC", "permitDate": "2022-06-01"},
+                            {"permitDescription": "Solar battery storage", "completedDate": "2023-01-12"},
+                        ]
+                    }
+                }
+            ]
+        }
+    )
+    enriched = apply_attom_permit_facts(PropertyInput(), permits)
+
+    assert enriched.roof == "Permit found - roof work"
+    assert enriched.roofAge == "Permit year 2020"
+    assert enriched.hvac == "Permit found - HVAC/mechanical work"
+    assert enriched.hvacAge == "Permit year 2022"
+    assert enriched.solar == "Permit found - solar/battery work"
+    assert enriched.backup == "Permit found - battery/storage work"

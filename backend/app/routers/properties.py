@@ -487,7 +487,16 @@ async def enrich_property_with_attom(
             detail=f"ATTOM property request failed before a response was received: {type(error).__name__}",
         ) from error
 
-    property_input = property_input_from_attom(attom_record_from_response(data))
+    try:
+        property_input = property_input_from_attom(attom_record_from_response(data))
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"ATTOM property record could not be parsed: {type(error).__name__}",
+        ) from error
+
     property_input.sourceNote = f"{property_input.sourceNote} ATTOM package: {package}."
     if get_api_usage(db, "attom").count >= settings.attom_monthly_limit:
         property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup skipped because the monthly pull limit is reached."
@@ -503,6 +512,8 @@ async def enrich_property_with_attom(
                 raise
         except HTTPError:
             property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup was unavailable."
+        except Exception:
+            property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit response could not be parsed safely."
     return property_input
 
 

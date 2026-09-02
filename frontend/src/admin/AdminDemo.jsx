@@ -23,6 +23,131 @@ import {
 } from "lucide-react";
 
 const PILLARS = ["Energy", "Water", "Health", "Resilience", "Carbon", "Community", "Ownership"];
+const factorLevels = ["Low", "Average", "High", "Extreme"];
+
+const weightingFactors = [
+  ["Energy", "Utility Cost Multiplier", "Grid Reliability", "Solar Opportunity"],
+  ["Water", "Drought Severity", "Water Rates", "Flood Risk"],
+  ["Health", "Air Quality Risk", "Healthcare Access", "Extreme Heat Exposure"],
+  ["Resilience", "Hurricane Risk", "Wildfire Risk", "Power Failure Risk"],
+  ["Carbon", "Grid Carbon Intensity", "Transit Availability", "EV Infrastructure"],
+  ["Community", "Broadband Access", "Walkability", "Public Transportation"],
+  ["Ownership", "Insurance Cost Pressure", "Property Tax Burden", "Maintenance Burden"]
+];
+
+const regionalWeightingProfiles = {
+  "Florida Coastal 2026": {
+    note: "Insurance pressure, hurricane exposure, flood risk, high cooling loads, and strong solar economics move resilience, water, and ownership risk upward.",
+    weights: { Energy: 18, Water: 17, Health: 12, Resilience: 26, Carbon: 7, Community: 7, Ownership: 13 },
+    factors: {
+      Energy: ["High", "Average", "High"],
+      Water: ["Average", "High", "Extreme"],
+      Health: ["Average", "Average", "Extreme"],
+      Resilience: ["Extreme", "Low", "High"],
+      Carbon: ["Average", "Low", "Average"],
+      Community: ["Average", "Average", "Low"],
+      Ownership: ["Extreme", "Average", "High"]
+    }
+  },
+  "Mountain West": {
+    note: "Drought, wildfire, water rates, large temperature swings, and outage risk increase the value of water, resilience, energy, and ownership planning.",
+    weights: { Energy: 19, Water: 20, Health: 10, Resilience: 18, Carbon: 8, Community: 10, Ownership: 15 },
+    factors: {
+      Energy: ["Average", "Average", "High"],
+      Water: ["Extreme", "High", "Low"],
+      Health: ["High", "Average", "Average"],
+      Resilience: ["Low", "Extreme", "High"],
+      Carbon: ["Average", "Low", "Average"],
+      Community: ["Average", "Low", "Low"],
+      Ownership: ["High", "Average", "Average"]
+    }
+  },
+  "Texas Heat Belt": {
+    note: "Extreme heat, grid stress, high cooling demand, solar opportunity, and water volatility make energy, health, resilience, and ownership costs more important.",
+    weights: { Energy: 24, Water: 13, Health: 15, Resilience: 18, Carbon: 8, Community: 8, Ownership: 14 },
+    factors: {
+      Energy: ["High", "High", "Extreme"],
+      Water: ["High", "Average", "Average"],
+      Health: ["Average", "Average", "Extreme"],
+      Resilience: ["High", "Low", "Extreme"],
+      Carbon: ["Average", "Low", "High"],
+      Community: ["Average", "Low", "Low"],
+      Ownership: ["High", "High", "Average"]
+    }
+  },
+  "Midwest Rural": {
+    note: "Lower water scarcity but higher grid reliability concerns, storm exposure, broadband gaps, maintenance burden, and older housing stock raise community and ownership weighting.",
+    weights: { Energy: 20, Water: 9, Health: 11, Resilience: 18, Carbon: 7, Community: 17, Ownership: 18 },
+    factors: {
+      Energy: ["Average", "High", "Average"],
+      Water: ["Low", "Low", "Average"],
+      Health: ["Average", "High", "Average"],
+      Resilience: ["Low", "Low", "High"],
+      Carbon: ["Average", "Low", "Low"],
+      Community: ["High", "Low", "Low"],
+      Ownership: ["Average", "Average", "High"]
+    }
+  },
+  "California Wildfire": {
+    note: "Wildfire, insurance availability, drought, heat, electricity costs, and carbon policy make resilience, energy, water, health, and ownership risk more prominent.",
+    weights: { Energy: 18, Water: 15, Health: 14, Resilience: 23, Carbon: 9, Community: 8, Ownership: 13 },
+    factors: {
+      Energy: ["High", "High", "High"],
+      Water: ["High", "High", "Average"],
+      Health: ["Extreme", "Average", "High"],
+      Resilience: ["Low", "Extreme", "High"],
+      Carbon: ["High", "Average", "High"],
+      Community: ["Average", "Average", "Average"],
+      Ownership: ["Extreme", "High", "Average"]
+    }
+  },
+  Custom: {
+    note: "Custom weights are recalculated from the selected regional cost and risk factors.",
+    weights: { Energy: 15, Water: 14, Health: 13, Resilience: 16, Carbon: 12, Community: 15, Ownership: 15 },
+    factors: {
+      Energy: ["Average", "Average", "Average"],
+      Water: ["Average", "Average", "Average"],
+      Health: ["Average", "Average", "Average"],
+      Resilience: ["Average", "Average", "Average"],
+      Carbon: ["Average", "Average", "Average"],
+      Community: ["Average", "Average", "Average"],
+      Ownership: ["Average", "Average", "Average"]
+    }
+  }
+};
+
+const baseWeightScores = { Energy: 15, Water: 14, Health: 13, Resilience: 16, Carbon: 12, Community: 15, Ownership: 15 };
+const levelWeightScores = { Low: -2, Average: 0, High: 3, Extreme: 6 };
+
+function cloneFactors(factors) {
+  return Object.fromEntries(Object.entries(factors).map(([pillar, values]) => [pillar, [...values]]));
+}
+
+function normalizeWeights(rawWeights) {
+  const total = Object.values(rawWeights).reduce((sum, value) => sum + value, 0);
+  let running = 0;
+  const normalized = {};
+  PILLARS.forEach((pillar, index) => {
+    if (index === PILLARS.length - 1) {
+      normalized[pillar] = 100 - running;
+      return;
+    }
+    const value = Math.max(5, Math.round((rawWeights[pillar] / total) * 100));
+    normalized[pillar] = value;
+    running += value;
+  });
+  return normalized;
+}
+
+function calculateWeightsFromFactors(factors) {
+  const rawWeights = Object.fromEntries(
+    PILLARS.map((pillar) => [
+      pillar,
+      baseWeightScores[pillar] + (factors[pillar] || []).reduce((sum, level) => sum + (levelWeightScores[level] || 0), 0)
+    ])
+  );
+  return normalizeWeights(rawWeights);
+}
 
 const initialProducts = [
   { brand: "ATAS", product: "Solar-Ready Metal Roofing", pillar: "Resilience", category: "Roofing", weight: "Priority" },
@@ -695,15 +820,27 @@ function Reports({ products }) {
 
 
 function ScoringControlsPage() {
-  const pillars = [
-    ["Energy","Utility Cost Multiplier","Grid Reliability","Solar Opportunity"],
-    ["Water","Drought Severity","Water Rates","Flood Risk"],
-    ["Health","Air Quality Risk","Healthcare Access","Extreme Heat Exposure"],
-    ["Resilience","Hurricane Risk","Wildfire Risk","Power Failure Risk"],
-    ["Carbon","Grid Carbon Intensity","Transit Availability","EV Infrastructure"],
-    ["Community","Broadband Access","Walkability","Public Transportation"],
-    ["Ownership","Insurance Cost Pressure","Property Tax Burden","Maintenance Burden"]
-  ];
+  const [activeProfile, setActiveProfile] = useState("Midwest Rural");
+  const [factorValues, setFactorValues] = useState(() => cloneFactors(regionalWeightingProfiles["Midwest Rural"].factors));
+  const [weights, setWeights] = useState(regionalWeightingProfiles["Midwest Rural"].weights);
+  const profile = regionalWeightingProfiles[activeProfile] || regionalWeightingProfiles.Custom;
+
+  const handleProfileChange = (profileName) => {
+    const nextProfile = regionalWeightingProfiles[profileName] || regionalWeightingProfiles.Custom;
+    setActiveProfile(profileName);
+    setFactorValues(cloneFactors(nextProfile.factors));
+    setWeights(nextProfile.weights);
+  };
+
+  const handleFactorChange = (pillar, index, value) => {
+    setActiveProfile("Custom");
+    setFactorValues((current) => {
+      const updated = cloneFactors(current);
+      updated[pillar][index] = value;
+      setWeights(calculateWeightsFromFactors(updated));
+      return updated;
+    });
+  };
 
   return (
     <div className="scoringControlsPage">
@@ -711,37 +848,39 @@ function ScoringControlsPage() {
         <div>
           <h2>Active Weighting Profile</h2>
           <p>Select a regional scoring profile or create a custom model.</p>
+          <span className="profileNote">{profile.note}</span>
         </div>
-        <select>
-          <option>Florida Coastal 2026</option>
-          <option>Mountain West</option>
-          <option>Texas Heat Belt</option>
-          <option>Midwest Rural</option>
-          <option>California Wildfire</option>
-          <option>Custom</option>
+        <select value={activeProfile} onChange={(event) => handleProfileChange(event.target.value)}>
+          {Object.keys(regionalWeightingProfiles).map((profileName) => (
+            <option key={profileName}>{profileName}</option>
+          ))}
         </select>
       </section>
 
       <section className="impactPreview">
         <h2>Weighting Impact Preview</h2>
         <div className="impactGrid">
-          <div>Energy <strong>22%</strong></div>
-          <div>Water <strong>18%</strong></div>
-          <div>Health <strong>11%</strong></div>
-          <div>Resilience <strong>24%</strong></div>
-          <div>Carbon <strong>8%</strong></div>
-          <div>Community <strong>7%</strong></div>
-          <div>Ownership <strong>10%</strong></div>
+          {PILLARS.map((pillar) => (
+            <div key={pillar}>{pillar} <strong>{weights[pillar]}%</strong></div>
+          ))}
         </div>
       </section>
 
       <div className="pillarControlGrid">
-        {pillars.map(([pillar,a,b,c]) => (
+        {weightingFactors.map(([pillar, ...factors]) => (
           <article className="pillarControlCard" key={pillar}>
             <h3>{pillar}</h3>
-            <label>{a}<select><option>Low</option><option>Average</option><option>High</option><option>Extreme</option></select></label>
-            <label>{b}<select><option>Low</option><option>Average</option><option>High</option><option>Extreme</option></select></label>
-            <label>{c}<select><option>Low</option><option>Average</option><option>High</option><option>Extreme</option></select></label>
+            {factors.map((factor, index) => (
+              <label key={factor}>
+                {factor}
+                <select
+                  value={factorValues[pillar][index]}
+                  onChange={(event) => handleFactorChange(pillar, index, event.target.value)}
+                >
+                  {factorLevels.map((level) => <option key={level}>{level}</option>)}
+                </select>
+              </label>
+            ))}
           </article>
         ))}
       </div>
@@ -1266,6 +1405,14 @@ export default function AdminDemo() {
         }
         .weightingProfile select,.pillarControlCard select{
           height:40px;border:1px solid #ccd9e8;border-radius:8px;padding:0 10px;
+        }
+        .profileNote{
+          display:block;
+          max-width:840px;
+          margin-top:10px;
+          color:#52657a;
+          font-size:13px;
+          line-height:1.45;
         }
         .impactGrid{
           display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:12px;

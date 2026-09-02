@@ -511,7 +511,8 @@ async def enrich_property_with_attom(
                 if error.response is not None and error.response.status_code in {401, 403, 404}:
                     property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit package unavailable for this key or address."
                 else:
-                    raise
+                    status_code = error.response.status_code if error.response is not None else "unknown"
+                    property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup failed with status {status_code}."
             except HTTPError:
                 property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup was unavailable."
             except Exception:

@@ -19,6 +19,7 @@ import {
   Award,
   BatteryCharging,
   Bike,
+  BookOpen,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -67,7 +68,8 @@ const SCREEN_LABELS = {
   17: "Path to 700",
   18: "Future Cost",
   19: "Comparison",
-  20: "Matching Product Detail"
+  20: "Matching Product Detail",
+  21: "Dive Deeper"
 };
 
 function getOrCreateSessionId() {
@@ -1580,6 +1582,164 @@ const demoRecommendationDetails = [
   }
 ];
 
+const educationFallbacks = {
+  energy: {
+    title: "Energy Systems",
+    intro: "Energy upgrades work best when equipment, controls, and the building envelope are evaluated as one home-performance system.",
+    why: [
+      "Heat pumps and heat pump water heaters move heat instead of creating it, which can cut operating energy while supporting electrification.",
+      "Smart thermostats and controls improve comfort, scheduling, and peak-load management.",
+      "Documentation matters: model numbers, efficiency ratings, install dates, and maintenance records help turn upgrades into resale evidence."
+    ],
+    verify: [
+      "HVAC type, fuel, capacity, efficiency rating, install year, and thermostat/control platform.",
+      "Water heater type, tank size, UEF or efficiency rating, install year, and leak protection.",
+      "Solar PV size, inverter age, battery capacity, and interconnection or monitoring records."
+    ],
+    vpsf: "VPSF rewards efficient, documented systems because they reduce operating cost uncertainty and make performance easier to prove."
+  },
+  water: {
+    title: "Water Performance",
+    intro: "Water upgrades combine lower fixture demand with damage prevention, irrigation control, and clear documentation.",
+    why: [
+      "Efficient fixtures reduce daily indoor water use without requiring major remodeling.",
+      "Leak detection and automatic shutoff can reduce costly water-damage risk.",
+      "Smart irrigation and climate-aware landscaping help limit outdoor waste."
+    ],
+    verify: [
+      "WaterSense labels, toilet flush ratings, showerhead flow rates, and faucet specs.",
+      "Leak detector brand, shutoff capability, and install date.",
+      "Irrigation controller type, rain sensor, soil-moisture sensor, and landscaping notes."
+    ],
+    vpsf: "VPSF improves when water savings and water-damage risk reduction are both documented."
+  },
+  health: {
+    title: "Indoor Air Quality",
+    intro: "Healthy-home upgrades focus on fresh air, filtration, humidity control, and lower-emitting materials.",
+    why: [
+      "Tighter homes need intentional ventilation instead of relying on uncontrolled leakage.",
+      "ERVs and HRVs can provide balanced fresh air while recovering some heating or cooling energy.",
+      "Filtration, moisture control, and IAQ monitoring make invisible performance more visible."
+    ],
+    verify: [
+      "Ventilation type: exhaust-only, supply-only, balanced ERV, or balanced HRV.",
+      "Filter rating, IAQ sensors, humidity controls, and bath/kitchen exhaust details.",
+      "Low/no-VOC finishes, formaldehyde documentation, and healthy-home certifications."
+    ],
+    vpsf: "VPSF improves when health claims are supported by systems and documentation, not just marketing language."
+  },
+  resilience: {
+    title: "Resilience Upgrades",
+    intro: "Resilience value comes from reducing damage risk, outage risk, and insurance uncertainty.",
+    why: [
+      "Roof age, roof type, impact resistance, and deck attachment can heavily shape storm and insurance risk.",
+      "Backup power helps preserve critical loads during outages.",
+      "Flood, wind, fire, and moisture details matter most when they are matched to local hazards."
+    ],
+    verify: [
+      "Roof material, install year, impact rating, underlayment, permits, and warranty.",
+      "Battery, generator, transfer switch, or critical-load panel details.",
+      "Flood elevation, drainage, defensible space, storm shutters, and insurance documentation."
+    ],
+    vpsf: "VPSF rewards resilience when the home can show lower exposure to predictable local risks."
+  },
+  carbon: {
+    title: "Carbon + Materials",
+    intro: "Material value is strongest when durability and carbon documentation travel with the home.",
+    why: [
+      "EPDs and product disclosures make lower-carbon choices verifiable.",
+      "Durable materials can reduce replacement cycles and waste.",
+      "Electrification and solar readiness can support a cleaner operating-carbon story."
+    ],
+    verify: [
+      "EPDs, recycled content, product declarations, and manufacturer documentation.",
+      "Concrete, insulation, roofing, siding, flooring, and finish specifications.",
+      "Expected service life, warranty terms, and replacement history."
+    ],
+    vpsf: "VPSF gives more credit when material claims are documented and connected to durability or lower replacement risk."
+  },
+  community: {
+    title: "Community Value",
+    intro: "Community value captures the daily usefulness of location: services, mobility, broadband, trees, and livability.",
+    why: [
+      "Fast broadband and nearby services can affect remote work, aging in place, and day-to-day convenience.",
+      "Walk, bike, and transit access reduce dependence on driving where those options are realistic.",
+      "Tree canopy can help cooling loads, but unmanaged trees can add roof and storm risk."
+    ],
+    verify: [
+      "Broadband providers, speed tiers, and service availability.",
+      "Distance to transit, grocery, medical care, schools, parks, and daily services.",
+      "Tree proximity to rooflines, pruning history, and shade benefits."
+    ],
+    vpsf: "VPSF treats community strengths as value multipliers when they are measurable and relevant to buyers."
+  },
+  financial: {
+    title: "Ownership Risk",
+    intro: "Ownership-risk education turns hidden future costs into a clearer replacement and insurance story.",
+    why: [
+      "Aging roof, HVAC, water heater, and major systems create near-term cost uncertainty.",
+      "Insurance-relevant improvements can matter as much as cosmetic upgrades in risk-prone markets.",
+      "Maintenance history reduces buyer doubt and helps explain value per square foot."
+    ],
+    verify: [
+      "Install dates, warranties, service records, permits, and contractor invoices.",
+      "Insurance discounts, inspection reports, mitigation certificates, and claim history where available.",
+      "Replacement timelines for roof, HVAC, water heater, appliances, and envelope components."
+    ],
+    vpsf: "VPSF improves when future cost exposure is documented and the buyer can see what has already been handled."
+  }
+};
+
+const educationByRecommendation = {
+  "energy-hvac": {
+    ...educationFallbacks.energy,
+    title: "HVAC + Smart Controls",
+    intro: "Modern HVAC value comes from the equipment, the controls, and how well the system fits the home's envelope.",
+    why: [
+      "High-performance heat pumps can deliver efficient heating and cooling, including cold-climate performance when specified correctly.",
+      "Inverter-driven systems and smart controls can reduce energy waste while improving comfort and load management.",
+      "The strongest VPSF evidence includes install date, equipment type, SEER2/HSPF2/COP where available, and maintenance history."
+    ]
+  },
+  "energy-water-heating": {
+    ...educationFallbacks.energy,
+    title: "Heat Pump Water Heating",
+    intro: "Water heating is one of the clearest electrification upgrades because heat pump water heaters can sharply reduce energy use.",
+    why: [
+      "Heat pump water heaters use surrounding air as a heat source, often cutting water-heating energy compared with electric resistance models.",
+      "Smart modes, leak detection, and demand-response readiness can add operating and resilience value.",
+      "Install location, condensate handling, capacity, and recovery performance should be documented."
+    ]
+  },
+  "health-ventilation": {
+    ...educationFallbacks.health,
+    title: "Balanced Ventilation",
+    intro: "A tighter, more efficient home needs deliberate fresh-air design, especially when humidity, smoke, allergens, or CO2 are concerns."
+  },
+  "roof-risk": {
+    ...educationFallbacks.resilience,
+    title: "Roof Age + Climate Defense",
+    intro: "Roofing is both a durability system and an insurance signal. Age, material, attachment, and local hazards all matter."
+  },
+  "resilience-backup-power": {
+    ...educationFallbacks.resilience,
+    title: "Backup Power Readiness",
+    intro: "Backup power is strongest when it protects defined critical loads and pairs cleanly with solar, storage, or generator infrastructure."
+  },
+  "water-fixtures": {
+    ...educationFallbacks.water,
+    title: "Fixtures + Smart Irrigation"
+  },
+  "water-leak-detection": {
+    ...educationFallbacks.water,
+    title: "Leak Detection + Automatic Shutoff"
+  },
+  "carbon-materials": educationFallbacks.carbon,
+  "tree-risk": educationFallbacks.community,
+  "community-connectivity": educationFallbacks.community,
+  "ownership-insurance": educationFallbacks.financial
+};
+
 const demoMatchingProducts = {
   "water-fixtures": [
     {
@@ -1843,7 +2003,7 @@ function Recommendations({ setScreen, setSelectedRecommendation, activePillar, s
   );
 }
 
-function RecommendationDetail({ recommendation, setScreen }) {
+function RecommendationDetail({ recommendation, setScreen, setSelectedEducation }) {
   const Icon = recommendation.icon;
   return (
     <div className="screen recommendationDetailScreen withNav">
@@ -1864,8 +2024,58 @@ function RecommendationDetail({ recommendation, setScreen }) {
         </ul>
       </section>
 
+      <button className="primaryButton" onClick={() => {
+        setSelectedEducation(educationByRecommendation[recommendation.id] || educationFallbacks[recommendation.pillar] || educationFallbacks.energy);
+        setScreen(21);
+      }}>
+        Dive Deeper <ArrowRight size={18} />
+      </button>
       <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
+
+      <BottomNav active="Recommendations" setScreen={setScreen} />
+    </div>
+  );
+}
+
+
+function EducationDetail({ education, setScreen }) {
+  const content = education || educationFallbacks.energy;
+  return (
+    <div className="screen educationDetailScreen withNav">
+      <header className="screenTop"><h2>Dive Deeper</h2><BookOpen size={18} /></header>
+
+      <section className="recommendationSummaryHero educationHero">
+        <span>Educational Guide</span>
+        <h3>{content.title}</h3>
+        <p>{content.intro}</p>
+      </section>
+
+      <section className="copyCard">
+        <h3>Why It Matters</h3>
+        <ul className="smartSummaryList">
+          {content.why.map((item) => (
+            <li key={item}><Check size={15} /> {item}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="copyCard">
+        <h3>What to Verify</h3>
+        <ul className="smartSummaryList">
+          {content.verify.map((item) => (
+            <li key={item}><ClipboardList size={15} /> {item}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="copyCard vpsfEducationNote">
+        <h3>VPSF Impact</h3>
+        <p>{content.vpsf}</p>
+      </section>
+
+      <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>
+      <button className="secondaryButton" onClick={() => setScreen(15)}>Return to Smart Summary</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
@@ -2340,6 +2550,7 @@ export default function App() {
   const [activePillar, setActivePillar] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
+  const [selectedEducation, setSelectedEducation] = useState(educationByRecommendation[demoRecommendationDetails[0].id]);
   const [selectedMatchingProduct, setSelectedMatchingProduct] = useState(demoMatchingProducts["water-fixtures"][0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
@@ -2531,12 +2742,13 @@ export default function App() {
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
-        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} />}
+        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} setSelectedEducation={setSelectedEducation} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
         {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
         {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
         {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
+        {screen === 21 && <EducationDetail education={selectedEducation} setScreen={setScreen} />}
       </AppChrome>
 
       <style>{`
@@ -4095,6 +4307,22 @@ export default function App() {
           font-size: 13px;
           line-height: 1.4;
           margin: 0;
+        }
+        .educationHero {
+          border-color: #cfe0f1;
+          background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        }
+        .educationHero span {
+          color: var(--blue);
+          display: block;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: .04em;
+          text-transform: uppercase;
+        }
+        .vpsfEducationNote {
+          background: #f7fbff;
+          border-color: #cfe0f1;
         }
         .smartSummaryList {
           list-style: none;

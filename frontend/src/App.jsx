@@ -614,6 +614,22 @@ function hasUsableValue(value) {
   return value !== undefined && value !== null && value !== "" && value !== "Unknown" && value !== "None / Unknown";
 }
 
+function joinUniqueNotes(...notes) {
+  const seen = new Set();
+  return notes
+    .filter(Boolean)
+    .flatMap((note) => String(note).split(/(?<=\.)\s+/))
+    .map((note) => note.trim())
+    .filter(Boolean)
+    .filter((note) => {
+      const key = note.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(" ");
+}
+
 function mergePropertyFacts(primary, fallback) {
   if (!primary) return fallback;
   if (!fallback) return primary;
@@ -624,7 +640,7 @@ function mergePropertyFacts(primary, fallback) {
       merged[key] = value;
     }
   });
-  merged.sourceNote = [primary.sourceNote, fallback.sourceNote].filter(Boolean).join(" ");
+  merged.sourceNote = joinUniqueNotes(primary.sourceNote, fallback.sourceNote);
   return merged;
 }
 
@@ -638,7 +654,7 @@ function mergeSavedPropertySnapshot(current, saved) {
     }
   });
   if (current.sourceNote || saved.sourceNote) {
-    merged.sourceNote = [current.sourceNote, saved.sourceNote].filter(Boolean).join(" ");
+    merged.sourceNote = joinUniqueNotes(current.sourceNote, saved.sourceNote);
   }
   return merged;
 }
@@ -651,7 +667,7 @@ function savedPropertyToHome(record) {
       city: record.city || "",
       state: normalizeState(record.state || ""),
       zip: record.zip || "",
-      sourceNote: "Loaded saved property details from the VPSF archive."
+      sourceNote: "Loaded saved property details from the VPSF archive. No new property-data API pull was used."
     },
     record.latestSnapshot
   );
@@ -764,6 +780,21 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
     setScanNote("");
     setSelectedProperty(existingHome);
     try {
+      const parsedAddress = parseAddressParts(address);
+      const savedResult = savedMatch
+        ? { found: true, property: savedMatch }
+        : await findSavedProperty(parsedAddress);
+      if (savedResult?.found && savedResult.property) {
+        const savedHome = savedPropertyToHome(savedResult.property);
+        setAddress(formatSavedAddress(savedResult.property));
+        setHome(savedHome);
+        setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
+        await onQueryStarted(savedHome, "saved_archive");
+        setResultMode("manual");
+        setScreen(3);
+        return;
+      }
+
       const geocode = await geocodeProperty(address);
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;

@@ -174,6 +174,13 @@ def reserve_api_call(db: Session, provider: str, monthly_limit: int) -> ApiUsage
     return record
 
 
+def mark_api_usage_limit_notified(db: Session, record: ApiUsageRecord) -> ApiUsageRecord:
+    record.limit_notified_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 def serialize_property_query(record: PropertyQueryRecord) -> dict:
     return {
         "id": record.id,

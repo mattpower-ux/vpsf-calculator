@@ -110,6 +110,7 @@ class ApiUsageRecord(Base):
     provider: Mapped[str] = mapped_column(String(80), index=True)
     period: Mapped[str] = mapped_column(String(7), index=True)
     count: Mapped[int] = mapped_column(Integer, default=0)
+    limit_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 

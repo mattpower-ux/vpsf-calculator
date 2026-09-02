@@ -25,6 +25,13 @@ class Settings:
     google_document_ai_project_id = os.getenv("GOOGLE_DOCUMENT_AI_PROJECT_ID", "")
     google_document_ai_location = os.getenv("GOOGLE_DOCUMENT_AI_LOCATION", "")
     google_document_ai_processor_id = os.getenv("GOOGLE_DOCUMENT_AI_PROCESSOR_ID", "")
+    alert_email_to = os.getenv("ALERT_EMAIL_TO", "matt.power@greenbuildermedia.com")
+    alert_email_from = os.getenv("ALERT_EMAIL_FROM", "")
+    smtp_host = os.getenv("SMTP_HOST", "")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_username = os.getenv("SMTP_USERNAME", "")
+    smtp_password = os.getenv("SMTP_PASSWORD", "")
+    smtp_use_tls = os.getenv("SMTP_USE_TLS", "true").lower() not in {"0", "false", "no"}
 
     @property
     def database_url(self) -> str:

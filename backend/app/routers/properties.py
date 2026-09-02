@@ -7,13 +7,14 @@ from sqlalchemy.orm import Session
 from app.adapters import get_listing_adapter
 from app.config import Settings, get_settings
 from app.db import get_db
+from app.integrations.attom import AttomClient
 from app.integrations.climate import estimate_climate_zone
 from app.integrations.fema import FemaFloodClient, flood_label
 from app.integrations.mapbox import MapboxClient
-from app.integrations.attom import AttomClient
 from app.integrations.rentcast import RentCastClient
+from app.notifications import send_email
 from app.ocr import extract_property_from_upload
-from app.repositories import create_property, create_source_document, get_api_usage, reserve_api_call
+from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
 from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput, RiskEnrichmentRequest, RiskEnrichmentResponse
 
 router = APIRouter(prefix="/api/properties", tags=["properties"])
@@ -414,11 +415,39 @@ async def fetch_attom_property(
 def reserve_attom_call_or_429(db: Session, settings: Settings) -> None:
     usage = get_api_usage(db, "attom")
     if usage.count >= settings.attom_monthly_limit:
+        notify_attom_limit_reached(db, settings, usage.count, usage.period, usage.limit_notified_at)
         raise HTTPException(
             status_code=429,
             detail=f"ATTOM monthly pull limit reached: {usage.count}/{settings.attom_monthly_limit}",
         )
     reserve_api_call(db, "attom", settings.attom_monthly_limit)
+
+
+def notify_attom_limit_reached(
+    db: Session,
+    settings: Settings,
+    count: int,
+    period: str,
+    limit_notified_at: object | None,
+) -> None:
+    if limit_notified_at:
+        return
+
+    subject = f"VPSF ATTOM monthly pull limit reached for {period}"
+    body = (
+        "The VPSF Calculator attempted to make an ATTOM API pull after the monthly cap was reached.\n\n"
+        f"Period: {period}\n"
+        f"ATTOM pulls used: {count}/{settings.attom_monthly_limit}\n\n"
+        "Address lookups will continue with other available data sources, but ATTOM enrichment will be skipped "
+        "until the next monthly usage period or until ATTOM_MONTHLY_LIMIT is raised in Render."
+    )
+    try:
+        sent = send_email(settings, subject=subject, body=body)
+    except Exception:
+        return
+    if sent:
+        usage = get_api_usage(db, "attom", period)
+        mark_api_usage_limit_notified(db, usage)
 
 
 def normalize_attom_state(value: str) -> str:

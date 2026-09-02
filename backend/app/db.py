@@ -44,7 +44,8 @@ def ensure_runtime_schema() -> None:
         return
 
     inspector = inspect(engine)
-    if "property_queries" not in inspector.get_table_names():
+    table_names = inspector.get_table_names()
+    if "property_queries" not in table_names:
         return
 
     existing_columns = {column["name"] for column in inspector.get_columns("property_queries")}
@@ -61,6 +62,12 @@ def ensure_runtime_schema() -> None:
         for name, column_type in required_columns.items():
             if name not in existing_columns:
                 connection.execute(text(f"ALTER TABLE property_queries ADD COLUMN {name} {column_type}"))
+
+    if "api_usage" in table_names:
+        api_usage_columns = {column["name"] for column in inspector.get_columns("api_usage")}
+        if "limit_notified_at" not in api_usage_columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE api_usage ADD COLUMN limit_notified_at DATETIME"))
 
 
 def get_db() -> Generator[Session, None, None]:

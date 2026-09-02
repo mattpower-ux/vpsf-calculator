@@ -1894,6 +1894,28 @@ function educationForRecommendation(recommendation) {
   return { key, content };
 }
 
+async function openEducationForRecommendation(recommendation, setScreen, setSelectedEducation) {
+  const { key, content } = educationForRecommendation(recommendation);
+  setSelectedEducation({ ...content, key });
+  setScreen(21);
+
+  const cachedContent = await getEducationContent(key);
+  const cachedHasRichSections = Boolean(cachedContent?.background || cachedContent?.howItWorks?.length || cachedContent?.sustainableAspects?.length);
+  if (cachedContent && cachedHasRichSections) {
+    setSelectedEducation(cachedContent);
+    return;
+  }
+
+  const persistedContent = await cacheEducationContent(key, {
+    ...content,
+    source: content.source || "deepthink",
+    sourceUrl: content.sourceUrl || "https://www.greenbuildermedia.com"
+  });
+  if (persistedContent) {
+    setSelectedEducation(persistedContent);
+  }
+}
+
 const demoMatchingProducts = {
   "water-fixtures": [
     {
@@ -2112,7 +2134,7 @@ function recommendationMatchesPillar(recommendation, pillarKey) {
 
 
 
-function Recommendations({ setScreen, setSelectedRecommendation, activePillar, setActivePillar }) {
+function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, activePillar, setActivePillar }) {
   const filteredRecommendations = demoRecommendationDetails.filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
@@ -2141,10 +2163,16 @@ function Recommendations({ setScreen, setSelectedRecommendation, activePillar, s
             <div className="recHead"><Icon size={22} /><span>{rec.eyebrow}</span><strong>{rec.gain}</strong></div>
             <h3>{rec.title}</h3>
             <p>{rec.copy}</p>
-            <button onClick={() => {
-              setSelectedRecommendation(rec);
-              setScreen(15);
-            }}>View Details</button>
+            <div className="recommendationCardActions">
+              <button onClick={() => {
+                setSelectedRecommendation(rec);
+                openEducationForRecommendation(rec, setScreen, setSelectedEducation);
+              }}>Learn More <ArrowRight size={15} /></button>
+              <button onClick={() => {
+                setSelectedRecommendation(rec);
+                setScreen(16);
+              }}>Product Options <ArrowRight size={15} /></button>
+            </div>
           </article>
         );
       })}
@@ -2159,27 +2187,7 @@ function Recommendations({ setScreen, setSelectedRecommendation, activePillar, s
 
 function RecommendationDetail({ recommendation, setScreen, setSelectedEducation }) {
   const Icon = recommendation.icon;
-  const openEducation = async () => {
-    const { key, content } = educationForRecommendation(recommendation);
-    setSelectedEducation({ ...content, key });
-    setScreen(21);
-
-    const cachedContent = await getEducationContent(key);
-    const cachedHasRichSections = Boolean(cachedContent?.background || cachedContent?.howItWorks?.length || cachedContent?.sustainableAspects?.length);
-    if (cachedContent && cachedHasRichSections) {
-      setSelectedEducation(cachedContent);
-      return;
-    }
-
-    const persistedContent = await cacheEducationContent(key, {
-      ...content,
-      source: content.source || "deepthink",
-      sourceUrl: content.sourceUrl || "https://www.greenbuildermedia.com"
-    });
-    if (persistedContent) {
-      setSelectedEducation(persistedContent);
-    }
-  };
+  const openEducation = () => openEducationForRecommendation(recommendation, setScreen, setSelectedEducation);
 
   return (
     <div className="screen recommendationDetailScreen withNav">
@@ -2939,7 +2947,7 @@ export default function App() {
         )}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
-        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} activePillar={activePillar} setActivePillar={setActivePillar} />}
+        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} activePillar={activePillar} setActivePillar={setActivePillar} />}
         {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
@@ -3701,6 +3709,12 @@ export default function App() {
         .recHead strong { color: var(--red); font-size: 12px; }
         .recommendationCard h3 { text-transform: none; letter-spacing: 0; font-size: 14px; margin: 10px 0 4px; }
         .recommendationCard p { color: #52657a; line-height: 1.45; font-size: 13px; }
+        .recommendationCardActions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          margin-top: 14px;
+        }
         .recommendationCard button, .productCard button {
           border: 0;
           background: transparent;

@@ -69,7 +69,7 @@ const SCREEN_LABELS = {
   18: "Future Cost",
   19: "Comparison",
   20: "Matching Product Detail",
-  21: "Dive Deeper"
+  21: "Learn More"
 };
 
 function getOrCreateSessionId() {
@@ -1224,7 +1224,7 @@ function Dashboard({ result, setScreen, setSelectedPillar }) {
       </section>
 
       <button className="primaryButton diveButton" onClick={() => setScreen(5)}>
-        Next — Dive Deeper <ArrowRight size={18} />
+        Next — Learn More <ArrowRight size={18} />
       </button>
     </div>
   );
@@ -2052,7 +2052,7 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation 
       </section>
 
       <button className="primaryButton" onClick={openEducation}>
-        Dive Deeper <ArrowRight size={18} />
+        Learn More <ArrowRight size={18} />
       </button>
       <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
@@ -2067,7 +2067,7 @@ function EducationDetail({ education, setScreen }) {
   const content = education || educationFallbacks.energy;
   return (
     <div className="screen educationDetailScreen withNav">
-      <header className="screenTop"><h2>Dive Deeper</h2><BookOpen size={18} /></header>
+      <header className="screenTop"><h2>Learn More</h2><BookOpen size={18} /></header>
 
       <section className="recommendationSummaryHero educationHero">
         <span>Educational Guide</span>

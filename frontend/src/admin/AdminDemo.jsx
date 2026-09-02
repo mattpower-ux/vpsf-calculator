@@ -246,7 +246,7 @@ function Sidebar({ active, setActive }) {
   const items = [
     ["Dashboard", Gauge],
     ["Properties", Home],
-    ["Recommendations", SlidersHorizontal],
+    ["Climate and Location Metrics", SlidersHorizontal],
     ["Products", Package],
     ["Brand Weighting", Layers],
     ["Users", Users],
@@ -297,6 +297,8 @@ function Header({ active }) {
         <p>
           {active === "Brand Weighting"
             ? "Manage brand and product priority weighting across the seven VPSF pillars."
+            : active === "Climate and Location Metrics"
+              ? "Adjust regional climate, cost, and location factors that shape VPSF scoring impact."
             : "Demo admin workspace for monitoring prototype activity, product interest, and property scoring."}
         </p>
       </div>
@@ -986,7 +988,7 @@ export default function AdminDemo() {
   const content = {
     Dashboard: <Dashboard />,
     Properties: <Properties queries={queries} productClicks={productClicks} isLoading={isLoadingAdmin} />,
-    Recommendations: <ScoringControlsPage />,
+    "Climate and Location Metrics": <ScoringControlsPage />,
     Products: <BrandWeighting products={products} setProducts={setProducts} passcode={passcode} />,
     "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={passcode} />,
     Users: <UsersPage />,

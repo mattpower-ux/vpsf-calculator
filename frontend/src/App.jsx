@@ -453,14 +453,14 @@ function ProgressDots({ step }) {
   );
 }
 
-function AppChrome({ children, screen, setScreen }) {
+function AppChrome({ children, screen, setScreen, onBack }) {
   return (
     <div className="phoneShell">
       <div className="bannerWrap">
         <img src={VPSF_BANNER} alt="VPSF Value Per Square Foot" />
       </div>
       {screen > 0 && screen !== 11 && (
-        <button className="backButton" onClick={() => setScreen(Math.max(0, screen - 1))} aria-label="Go back">
+        <button className="backButton" onClick={() => (onBack ? onBack() : setScreen(Math.max(0, screen - 1)))} aria-label="Go back">
           <ChevronLeft size={24} strokeWidth={4} />
         </button>
       )}
@@ -1894,9 +1894,10 @@ function educationForRecommendation(recommendation) {
   return { key, content };
 }
 
-async function openEducationForRecommendation(recommendation, setScreen, setSelectedEducation) {
+async function openEducationForRecommendation(recommendation, setScreen, setSelectedEducation, setEducationReturnScreen, returnScreen = 15) {
   const { key, content } = educationForRecommendation(recommendation);
   setSelectedEducation({ ...content, key });
+  setEducationReturnScreen(returnScreen);
   setScreen(21);
 
   const cachedContent = await getEducationContent(key);
@@ -2134,7 +2135,7 @@ function recommendationMatchesPillar(recommendation, pillarKey) {
 
 
 
-function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, activePillar, setActivePillar }) {
+function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar }) {
   const filteredRecommendations = demoRecommendationDetails.filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
@@ -2166,7 +2167,7 @@ function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEduc
             <div className="recommendationCardActions">
               <button onClick={() => {
                 setSelectedRecommendation(rec);
-                openEducationForRecommendation(rec, setScreen, setSelectedEducation);
+                openEducationForRecommendation(rec, setScreen, setSelectedEducation, setEducationReturnScreen, 6);
               }}>Learn More <ArrowRight size={15} /></button>
               <button onClick={() => {
                 setSelectedRecommendation(rec);
@@ -2185,9 +2186,9 @@ function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEduc
   );
 }
 
-function RecommendationDetail({ recommendation, setScreen, setSelectedEducation }) {
+function RecommendationDetail({ recommendation, setScreen, setSelectedEducation, setEducationReturnScreen }) {
   const Icon = recommendation.icon;
-  const openEducation = () => openEducationForRecommendation(recommendation, setScreen, setSelectedEducation);
+  const openEducation = () => openEducationForRecommendation(recommendation, setScreen, setSelectedEducation, setEducationReturnScreen, 15);
 
   return (
     <div className="screen recommendationDetailScreen withNav">
@@ -2220,8 +2221,9 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation 
 }
 
 
-function EducationDetail({ education, setScreen }) {
+function EducationDetail({ education, setScreen, returnScreen }) {
   const content = education || educationFallbacks.energy;
+  const returnLabel = returnScreen === 6 ? "Return to Recommendations" : "Return to Smart Summary";
   const howItWorks = content.howItWorks || [];
   const sustainableAspects = content.sustainableAspects || [];
   const why = content.why || [];
@@ -2289,7 +2291,7 @@ function EducationDetail({ education, setScreen }) {
       </section>
 
       <button className="primaryButton" onClick={() => setScreen(16)}>See Matching Products <ArrowRight size={18} /></button>
-      <button className="secondaryButton" onClick={() => setScreen(15)}>Return to Smart Summary</button>
+      <button className="secondaryButton" onClick={() => setScreen(returnScreen)}>{returnLabel}</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
@@ -2765,6 +2767,7 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
   const [selectedEducation, setSelectedEducation] = useState(educationByRecommendation[demoRecommendationDetails[0].id]);
+  const [educationReturnScreen, setEducationReturnScreen] = useState(15);
   const [selectedMatchingProduct, setSelectedMatchingProduct] = useState(demoMatchingProducts["water-fixtures"][0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
@@ -2933,7 +2936,7 @@ export default function App() {
 
   return (
     <main className="app">
-      <AppChrome screen={screen} setScreen={setScreen}>
+      <AppChrome screen={screen} setScreen={setScreen} onBack={screen === 21 ? () => setScreen(educationReturnScreen) : undefined}>
         {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
@@ -2947,7 +2950,7 @@ export default function App() {
         )}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
-        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} activePillar={activePillar} setActivePillar={setActivePillar} />}
+        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} />}
         {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
         {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
@@ -2956,13 +2959,13 @@ export default function App() {
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
-        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} setSelectedEducation={setSelectedEducation} />}
+        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
         {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
         {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
         {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
-        {screen === 21 && <EducationDetail education={selectedEducation} setScreen={setScreen} />}
+        {screen === 21 && <EducationDetail education={selectedEducation} setScreen={setScreen} returnScreen={educationReturnScreen} />}
       </AppChrome>
 
       <style>{`

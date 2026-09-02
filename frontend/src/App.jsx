@@ -229,8 +229,11 @@ const defaultHome = {
   climateZone: "2A – Hot Humid",
   occupancy: "Owner Occupied",
   hvac: "Heat Pump (Electric)",
+  hvacAge: "Unknown",
   waterHeater: "Heat Pump Water Heater",
+  waterHeaterAge: "Unknown",
   roof: "Architectural Shingle",
+  roofAge: "Unknown",
   windows: "Double Pane, Low-E",
   insulation: "R-19 Walls / R-38 Attic",
   solar: "5.2 kW Solar PV + Battery",
@@ -660,8 +663,11 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
     climateZone: riskEnrichment?.climateZone || "Unknown",
     occupancy: "Owner Occupied",
     hvac: "Unknown",
+    hvacAge: "Unknown",
     waterHeater: "Unknown",
+    waterHeaterAge: "Unknown",
     roof: "Unknown",
+    roofAge: "Unknown",
     windows: "Unknown",
     insulation: "Unknown",
     solar: "None",
@@ -1018,7 +1024,9 @@ function HomeSpecs({ home, update, setScreen }) {
         <h3>Energy</h3>
         <Field label="HERS Score" value={home.hers} onChange={(v) => update("hers", v)} options={selectOptions.hers} />
         <Field label="HVAC System" value={home.hvac} onChange={(v) => update("hvac", v)} options={selectOptions.hvac} />
+        <Field label="HVAC Age" value={home.hvacAge} onChange={(v) => update("hvacAge", v)} />
         <Field label="Water Heating" value={home.waterHeater} onChange={(v) => update("waterHeater", v)} options={selectOptions.waterHeater} />
+        <Field label="Water Heater Age" value={home.waterHeaterAge} onChange={(v) => update("waterHeaterAge", v)} />
         <Field label="Solar / Battery" value={home.solar} onChange={(v) => update("solar", v)} options={selectOptions.solar} />
         <Field wide label="EV Readiness" value={home.evReady} onChange={(v) => update("evReady", v)} options={selectOptions.evReady} />
       </section>
@@ -1027,6 +1035,7 @@ function HomeSpecs({ home, update, setScreen }) {
         <h3>Resilience + Health</h3>
         <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)} options={selectOptions.fortified} />
         <Field label="Flood Design" value={home.flood} onChange={(v) => update("flood", v)} options={selectOptions.flood} />
+        <Field label="Roof Age" value={home.roofAge} onChange={(v) => update("roofAge", v)} />
         <Field label="Ventilation" value={home.ventilation} onChange={(v) => update("ventilation", v)} options={selectOptions.ventilation} />
         <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
       </section>
@@ -1076,9 +1085,9 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
     [Sun, `Climate Zone: ${home.climateZone}`, `Lot Size: ${home.lotSize}`]
   ];
   const specRows = [
-    [Zap, "HVAC System", home.hvac],
-    [Droplets, "Water Heating", home.waterHeater],
-    [Home, "Roofing", home.roof],
+    [Zap, "HVAC System", home.hvacAge && home.hvacAge !== "Unknown" ? `${home.hvac} • ${home.hvacAge}` : home.hvac],
+    [Droplets, "Water Heating", home.waterHeaterAge && home.waterHeaterAge !== "Unknown" ? `${home.waterHeater} • ${home.waterHeaterAge}` : home.waterHeater],
+    [Home, "Roofing", home.roofAge && home.roofAge !== "Unknown" ? `${home.roof} • ${home.roofAge}` : home.roof],
     [Wind, "Ventilation", home.ventilation],
     [Sun, "Solar", home.solar]
   ];

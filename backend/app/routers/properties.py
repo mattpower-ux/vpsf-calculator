@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from httpx import HTTPError, HTTPStatusError
 from sqlalchemy.orm import Session
@@ -137,6 +139,14 @@ def first_nested_value(record: dict, *paths: tuple[str, ...]) -> str:
     return ""
 
 
+def first_nested_dict(record: dict, *paths: tuple[str, ...]) -> dict:
+    for path in paths:
+        value = nested_value(record, *path)
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
 def split_address_for_attom(address: str) -> tuple[str, str]:
     parts = [part.strip() for part in address.split(",") if part.strip()]
     if len(parts) >= 3:
@@ -150,8 +160,8 @@ def property_input_from_attom(record: dict) -> PropertyInput:
     address = record.get("address") or {}
     summary = record.get("summary") or {}
     building = record.get("building") or {}
-    size = building.get("size") or {}
-    rooms = building.get("rooms") or {}
+    size = first_nested_dict(record, ("building", "size"))
+    rooms = first_nested_dict(record, ("building", "rooms"))
     lot = record.get("lot") or {}
     assessment = record.get("assessment") or {}
     tax = assessment.get("tax") or {}
@@ -159,19 +169,23 @@ def property_input_from_attom(record: dict) -> PropertyInput:
     sale = record.get("sale") or {}
     amount = sale.get("amount") or {}
 
-    lot_acres = first_value(lot, "lotsize1", "lotSize1")
-    lot_square_feet = first_value(lot, "lotsize2", "lotSize2")
+    lot_acres = first_value(lot, "lotSize1", "lotsize1")
+    lot_square_feet = first_value(lot, "lotSize2", "lotsize2")
     lot_size = f"{lot_acres} acres" if lot_acres else acres_from_square_feet(lot_square_feet)
     heating = first_nested_value(
         record,
         ("utilities", "heatingType"),
         ("utilities", "heatingtype"),
+        ("utilities", "heatingFuel"),
+        ("utilities", "heatingfuel"),
+        ("building", "interior", "heatingType"),
         ("building", "interior", "heatingtype"),
     )
     cooling = first_nested_value(
         record,
         ("utilities", "coolingType"),
         ("utilities", "coolingtype"),
+        ("building", "interior", "coolingType"),
         ("building", "interior", "coolingtype"),
     )
     roof = first_nested_value(
@@ -180,10 +194,29 @@ def property_input_from_attom(record: dict) -> PropertyInput:
         ("building", "construction", "roofcover"),
         ("building", "construction", "roofType"),
         ("building", "construction", "rooftype"),
+        ("building", "construction", "roofShape"),
+        ("building", "construction", "roofshape"),
+    )
+    water_heater = first_nested_value(
+        record,
+        ("utilities", "waterHeater"),
+        ("utilities", "waterheater"),
+        ("utilities", "hotWater"),
+        ("utilities", "hotwater"),
+        ("building", "interior", "waterHeater"),
+        ("building", "interior", "waterheater"),
     )
     garage_spaces = first_nested_value(record, ("building", "parking", "prkgSpaces"), ("building", "parking", "prkgSize"))
+    stories = first_nested_value(
+        record,
+        ("building", "summary", "levels"),
+        ("building", "summary", "storyDesc"),
+        ("building", "summary", "storydesc"),
+    )
 
     note_parts = ["ATTOM returned public property records."]
+    if first_value(summary, "propLandUse", "propIndicator", "propertyType"):
+        note_parts.append(f"ATTOM land-use/property type: {first_value(summary, 'propLandUse', 'propIndicator', 'propertyType')}.")
     if assessed or tax:
         note_parts.append("Assessment/tax data was available.")
     if amount:
@@ -194,29 +227,170 @@ def property_input_from_attom(record: dict) -> PropertyInput:
         city=first_value(address, "locality"),
         state=normalize_attom_state(first_value(address, "countrySubd")),
         zip=first_value(address, "postal1", "postalCode"),
-        squareFeet=known_or_unknown(first_value(size, "universalsize", "livingSize", "livingsize", "bldgsize", "grossSize")),
-        yearBuilt=known_or_unknown(first_value(summary, "yearbuilt", "yearBuilt")),
-        homeType=first_value(summary, "proptype", "propertyType", "propsubtype") or "Unknown",
-        stories=first_value(building, "summarylevels", "levels") or "Unknown",
+        squareFeet=known_or_unknown(first_value(size, "universalSize", "universalsize", "livingSize", "livingsize", "bldgSize", "bldgsize", "grossSize", "grossSizeAdjusted")),
+        yearBuilt=known_or_unknown(first_value(summary, "yearbuilt", "yearBuilt") or first_nested_value(record, ("building", "summary", "yearBuilt"), ("building", "summary", "yearbuilt"))),
+        homeType=first_value(summary, "propType", "proptype", "propertyType", "propSubType", "propsubtype") or "Unknown",
+        stories=stories or "Unknown",
         bedrooms=known_or_unknown(first_value(rooms, "beds", "bedrooms")),
-        bathrooms=known_or_unknown(first_value(rooms, "bathstotal", "bathsTotal", "bathrooms")),
+        bathrooms=known_or_unknown(first_value(rooms, "bathsTotal", "bathstotal", "bathrooms", "bathsFull")),
         garage=f"{garage_spaces} Car Garage" if garage_spaces else "Unknown",
         lotSize=lot_size or "Unknown",
         occupancy="Owner Occupied",
         hvac=heating or cooling or "Unknown",
+        hvacAge="Unknown",
+        waterHeater=water_heater or "Unknown",
+        waterHeaterAge="Unknown",
         roof=roof or "Unknown",
+        roofAge="Unknown",
         sourceNote=" ".join(note_parts),
     )
 
 
-async def fetch_attom_property(client: AttomClient, address1: str, address2: str) -> tuple[dict, str]:
+def permit_records_from_attom(data: dict) -> list[dict]:
+    records: list[dict] = []
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                lowered = key.lower()
+                if "permit" in lowered:
+                    if isinstance(child, list):
+                        records.extend([item for item in child if isinstance(item, dict)])
+                    elif isinstance(child, dict):
+                        records.append(child)
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    for property_record in data.get("property") or []:
+        permits = property_record.get("buildingPermits") or property_record.get("buildingpermits") or []
+        if isinstance(permits, dict):
+            permits = [permits]
+        if isinstance(permits, list):
+            records.extend([permit for permit in permits if isinstance(permit, dict)])
+        visit(property_record)
+    if not records:
+        visit(data)
+    deduped: list[dict] = []
+    seen: set[str] = set()
+    for record in records:
+        key = json.dumps(record, sort_keys=True, default=str)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(record)
+    return deduped
+
+
+def permit_text(permit: dict) -> str:
+    values = [
+        permit.get("type"),
+        permit.get("subType"),
+        permit.get("subtype"),
+        permit.get("permitType"),
+        permit.get("permitSubType"),
+        permit.get("projectName"),
+        permit.get("description"),
+        permit.get("jobValueDescription"),
+        permit.get("workDescription"),
+        permit.get("permitDescription"),
+        permit.get("businessName"),
+    ]
+    return " ".join(str(value) for value in values if value).lower()
+
+
+def permit_year(permit: dict) -> str:
+    for key in ("effectiveDate", "permitDate", "issueDate", "statusDate", "completedDate", "date"):
+        value = permit.get(key)
+        if not value:
+            continue
+        year_match = str(value).strip()[:10]
+        if len(year_match) >= 4 and year_match[:4].isdigit():
+            return year_match[:4]
+    return ""
+
+
+def age_label_from_year(year: str) -> str:
+    if not year:
+        return "Permit date unknown"
+    return f"Permit year {year}"
+
+
+def apply_attom_permit_facts(property_input: PropertyInput, permits: list[dict]) -> PropertyInput:
+    if not permits:
+        return property_input
+
+    texts = [permit_text(permit) for permit in permits]
+    combined = " ".join(texts)
+    for permit, text in zip(permits, texts):
+        year_label = age_label_from_year(permit_year(permit))
+        if "roof" in text:
+            if property_input.roof == "Unknown":
+                property_input.roof = "Permit found - roof work"
+            if property_input.roofAge == "Unknown":
+                property_input.roofAge = year_label
+        if any(term in text for term in ["hvac", "furnace", "heat pump", "air condition", "air-condition", "mechanical"]):
+            if property_input.hvac == "Unknown":
+                property_input.hvac = "Permit found - HVAC/mechanical work"
+            if property_input.hvacAge == "Unknown":
+                property_input.hvacAge = year_label
+        if "water heater" in text:
+            if property_input.waterHeater == "Unknown":
+                property_input.waterHeater = "Permit found - water heater work"
+            if property_input.waterHeaterAge == "Unknown":
+                property_input.waterHeaterAge = year_label
+        if "solar" in text:
+            property_input.solar = "Permit found - solar work"
+        if "battery" in text or "storage" in text:
+            property_input.solar = "Permit found - solar/battery work"
+            property_input.backup = "Permit found - battery/storage work"
+        if "erv" in text or "energy recovery ventilator" in text:
+            property_input.ventilation = "Permit found - ERV"
+        elif "hrv" in text or "heat recovery ventilator" in text:
+            property_input.ventilation = "Permit found - HRV"
+        elif "ventilation" in text and property_input.ventilation == "None / Unknown":
+            property_input.ventilation = "Permit found - ventilation work"
+        if "window" in text and not property_input.windows:
+            property_input.windows = "Permit found - window work"
+        if "insulation" in text and not property_input.insulation:
+            property_input.insulation = "Permit found - insulation work"
+
+    matched_count = sum(
+        1
+        for text in texts
+        if any(term in text for term in ["roof", "hvac", "furnace", "heat pump", "air condition", "mechanical", "water heater", "solar", "window", "insulation"])
+    )
+    property_input.sourceNote = f"{property_input.sourceNote} ATTOM returned {len(permits)} permit record(s); {matched_count} matched VPSF key-system categories."
+    return property_input
+
+
+async def fetch_attom_property(
+    client: AttomClient,
+    address1: str,
+    address2: str,
+    db: Session,
+    settings: Settings,
+) -> tuple[dict, str]:
     try:
+        reserve_attom_call_or_429(db, settings)
         return await client.property_detail(address1, address2), "detail"
     except HTTPStatusError as error:
         if error.response is None or error.response.status_code not in {401, 403, 404}:
             raise
 
+    reserve_attom_call_or_429(db, settings)
     return await client.property_basic_profile(address1, address2), "basicprofile"
+
+
+def reserve_attom_call_or_429(db: Session, settings: Settings) -> None:
+    usage = get_api_usage(db, "attom")
+    if usage.count >= settings.attom_monthly_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"ATTOM monthly pull limit reached: {usage.count}/{settings.attom_monthly_limit}",
+        )
+    reserve_api_call(db, "attom", settings.attom_monthly_limit)
 
 
 def normalize_attom_state(value: str) -> str:
@@ -240,18 +414,10 @@ async def enrich_property_with_attom(
     if not client.is_configured:
         raise HTTPException(status_code=503, detail="ATTOM_API_KEY is not configured")
 
-    usage = get_api_usage(db, "attom")
-    if usage.count >= settings.attom_monthly_limit:
-        raise HTTPException(
-            status_code=429,
-            detail=f"ATTOM monthly pull limit reached: {usage.count}/{settings.attom_monthly_limit}",
-        )
-
     address1, address2 = split_address_for_attom(request.address)
-    reserve_api_call(db, "attom", settings.attom_monthly_limit)
 
     try:
-        data, package = await fetch_attom_property(client, address1, address2)
+        data, package = await fetch_attom_property(client, address1, address2, db, settings)
     except HTTPStatusError as error:
         detail = error.response.text[:300] if error.response is not None else ""
         raise HTTPException(
@@ -266,6 +432,20 @@ async def enrich_property_with_attom(
 
     property_input = property_input_from_attom(attom_record_from_response(data))
     property_input.sourceNote = f"{property_input.sourceNote} ATTOM package: {package}."
+    if get_api_usage(db, "attom").count >= settings.attom_monthly_limit:
+        property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup skipped because the monthly pull limit is reached."
+    else:
+        try:
+            reserve_attom_call_or_429(db, settings)
+            permits_data = await client.property_building_permits(address1, address2)
+            property_input = apply_attom_permit_facts(property_input, permit_records_from_attom(permits_data))
+        except HTTPStatusError as error:
+            if error.response is not None and error.response.status_code in {401, 403, 404}:
+                property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit package unavailable for this key or address."
+            else:
+                raise
+        except HTTPError:
+            property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup was unavailable."
     return property_input
 
 

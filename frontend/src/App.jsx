@@ -578,6 +578,41 @@ const stateNameToCode = {
   wyoming: "WY"
 };
 
+const streetSuffixWords = new Set([
+  "alley",
+  "aly",
+  "avenue",
+  "ave",
+  "av",
+  "boulevard",
+  "blvd",
+  "circle",
+  "cir",
+  "court",
+  "ct",
+  "drive",
+  "dr",
+  "highway",
+  "hwy",
+  "lane",
+  "ln",
+  "parkway",
+  "pkwy",
+  "place",
+  "pl",
+  "road",
+  "rd",
+  "square",
+  "sq",
+  "street",
+  "st",
+  "terrace",
+  "ter",
+  "trail",
+  "trl",
+  "way"
+]);
+
 function normalizeState(value) {
   const trimmed = (value || "").trim();
   if (trimmed.length === 2) return trimmed.toUpperCase();
@@ -595,6 +630,23 @@ function parseAddressParts(rawAddress) {
       state: normalizeState(stateZip[0] || ""),
       zip: stateZip.find((part) => /^\d{5}/.test(part)) || ""
     };
+  }
+
+  const stateZipMatch = value.match(/^(.*?)\s+([A-Z]{2}|[A-Za-z ]+)\s+(\d{5}(?:-\d{4})?)$/);
+  if (stateZipMatch) {
+    const beforeState = stateZipMatch[1].trim();
+    const beforeStateWords = beforeState.split(/\s+/);
+    const suffixIndex = beforeStateWords.findLastIndex((word) =>
+      streetSuffixWords.has(word.toLowerCase().replace(/[^\w]/g, ""))
+    );
+    if (suffixIndex > 0 && suffixIndex < beforeStateWords.length - 1) {
+      return {
+        address: beforeStateWords.slice(0, suffixIndex + 1).join(" "),
+        city: beforeStateWords.slice(suffixIndex + 1).join(" "),
+        state: normalizeState(stateZipMatch[2]),
+        zip: stateZipMatch[3]
+      };
+    }
   }
 
   const looseMatch = value.match(/^(.*?)([A-Za-z][A-Za-z .'-]+?)\s+([A-Z]{2}|[A-Za-z ]+)\s+(\d{5}(?:-\d{4})?)$/);
@@ -647,8 +699,10 @@ function mergePropertyFacts(primary, fallback) {
 function mergeSavedPropertySnapshot(current, saved) {
   if (!saved || typeof saved !== "object") return current;
   const merged = { ...current };
+  const protectedFields = new Set(["address", "city", "state", "zip"]);
   Object.entries(saved).forEach(([key, value]) => {
     if (key === "sourceNote") return;
+    if (protectedFields.has(key) && hasUsableValue(merged[key])) return;
     if (hasUsableValue(value)) {
       merged[key] = value;
     }
@@ -673,6 +727,21 @@ function savedPropertyToHome(record) {
   );
 }
 
+function savedPropertyToHomeForEnteredAddress(record, enteredAddress) {
+  const parsedAddress = parseAddressParts(enteredAddress);
+  return mergeSavedPropertySnapshot(
+    {
+      ...defaultHome,
+      address: parsedAddress.address || record.address || "",
+      city: parsedAddress.city || record.city || "",
+      state: normalizeState(parsedAddress.state || record.state || ""),
+      zip: parsedAddress.zip || record.zip || "",
+      sourceNote: "Loaded saved property details from the VPSF archive. No new property-data API pull was used."
+    },
+    record.latestSnapshot
+  );
+}
+
 function formatSavedAddress(record) {
   return [
     record.address,
@@ -683,15 +752,16 @@ function formatSavedAddress(record) {
 
 function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
   const publicRecordProperty = mergePropertyFacts(rentcastProperty, attomProperty);
+  const enteredParts = parseAddressParts(enteredAddress);
 
   if (publicRecordProperty) {
     return {
       ...defaultHome,
       ...publicRecordProperty,
-      address: publicRecordProperty.address || geocode?.address || enteredAddress,
-      city: publicRecordProperty.city || geocode?.city || "",
-      state: normalizeState(publicRecordProperty.state || geocode?.state || ""),
-      zip: publicRecordProperty.zip || geocode?.zip || "",
+      address: enteredParts.address || geocode?.address || publicRecordProperty.address || enteredAddress,
+      city: enteredParts.city || geocode?.city || publicRecordProperty.city || "",
+      state: normalizeState(enteredParts.state || geocode?.state || publicRecordProperty.state || ""),
+      zip: enteredParts.zip || geocode?.zip || publicRecordProperty.zip || "",
       climateZone: riskEnrichment?.climateZone || publicRecordProperty.climateZone || "Unknown",
       flood: riskEnrichment?.flood || publicRecordProperty.flood || "Unknown",
       sourceNote: `${publicRecordProperty.sourceNote || "Public property facts returned."} ${riskEnrichment?.sourceNote || ""}`.trim(),
@@ -785,8 +855,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         ? { found: true, property: savedMatch }
         : await findSavedProperty(parsedAddress);
       if (savedResult?.found && savedResult.property) {
-        const savedHome = savedPropertyToHome(savedResult.property);
-        setAddress(formatSavedAddress(savedResult.property));
+        const savedHome = savedPropertyToHomeForEnteredAddress(savedResult.property, address);
         setHome(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
         await onQueryStarted(savedHome, "saved_archive");

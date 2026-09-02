@@ -1100,7 +1100,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
       {home.sourceNote && <p className="sourceNote">{home.sourceNote}</p>}
 
       <section className="summaryCard">
-        <div className="summaryHeader"><h3>Property Summary</h3><button onClick={() => setScreen(1)}>Edit</button></div>
+        <div className="summaryHeader"><h3>Property Summary</h3><button onClick={() => setScreen(1)}>Edit/Add Details</button></div>
         {propertyRows.map(([Icon, a, b]) => (
           <div className="summaryRow" key={a}>
             <Icon size={18} />
@@ -1110,7 +1110,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
       </section>
 
       <section className="summaryCard">
-        <div className="summaryHeader"><h3>Home Specs Summary</h3><button onClick={() => setScreen(2)}>Edit</button></div>
+        <div className="summaryHeader"><h3>Home Specs Summary</h3><button onClick={() => setScreen(2)}>Edit/Add Details</button></div>
         {specRows.map(([Icon, a, b]) => (
           <div className="summaryRow compact" key={a}>
             <Icon size={17} />

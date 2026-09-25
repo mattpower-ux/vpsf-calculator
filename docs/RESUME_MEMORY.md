@@ -2,6 +2,14 @@
 
 ## Latest Update: September 25, 2026
 
+The seven Know-How pillar pages now use a generated Green Builder Media article
+catalog rather than four-to-five starter links. Each has up to 100 actual blog
+articles, with 12 per page, page-jump selectors, and title/description search.
+The index ships with the frontend, so browsing it uses no property API calls;
+individual articles continue to use the persistent clean-reader cache.
+See `docs/KNOW_HOW_ARCHIVE.md` and `scripts/build_know_how_catalog.py` for refresh
+instructions and source/relevance rules.
+
 Know-How collection links (`/blog/topic/...`, including paginated pages) now use
 the clean reader as compact linked-title lists with dates and excerpts, not full
 site pages or large photos. Article links stay in the clean reader. Existing

@@ -69,7 +69,8 @@ const SCREEN_LABELS = {
   18: "Future Cost",
   19: "Comparison",
   20: "Matching Product Detail",
-  21: "Learn More"
+  21: "Learn More",
+  22: "Know-How Archive"
 };
 
 function getOrCreateSessionId() {
@@ -1363,7 +1364,7 @@ function takeawaySentence(key, isBest) {
   return (isBest ? best : weak)[key] || "This pillar has a clear impact on the home’s value per square foot story.";
 }
 
-function TakeawayCard({ title, pillar, value, isBest }) {
+function TakeawayCard({ title, pillar, value, isBest, onOpenKnowHow }) {
   const Icon = pillar.icon;
   const pct = Math.round((value / pillar.max) * 100);
   return (
@@ -1377,6 +1378,9 @@ function TakeawayCard({ title, pillar, value, isBest }) {
         <strong>{pillarPerformanceLabel(value, pillar.max)}</strong>
         <p>{takeawaySentence(pillar.key, isBest)}</p>
       </div>
+      <button className="knowHowButton" onClick={() => onOpenKnowHow(pillar.key)}>
+        Open Know-How Archive <ArrowRight size={16} />
+      </button>
     </section>
   );
 }
@@ -1439,7 +1443,7 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
   );
 }
 
-function PillarBreakdown({ result, selectedPillar, setScreen }) {
+function PillarBreakdown({ result, selectedPillar, setScreen, setSelectedKnowHowPillar, setKnowHowReturnScreen }) {
   const pillarPriority = {
     health: 1,
     resilience: 2,
@@ -1469,6 +1473,11 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
 
   const focusPillar = PILLARS.find((item) => item.key === selectedPillar) || bestPillar;
   const focusValue = result.scores[focusPillar.key];
+  const openKnowHow = (pillarKey) => {
+    setSelectedKnowHowPillar(pillarKey);
+    setKnowHowReturnScreen(5);
+    setScreen(22);
+  };
 
   return (
     <div className="screen pillarBreakdown keyTakeawayScreen withNav">
@@ -1479,12 +1488,14 @@ function PillarBreakdown({ result, selectedPillar, setScreen }) {
         pillar={bestPillar}
         value={result.scores[bestPillar.key]}
         isBest
+        onOpenKnowHow={openKnowHow}
       />
 
       <TakeawayCard
         title="Biggest Opportunity"
         pillar={opportunityPillar}
         value={result.scores[opportunityPillar.key]}
+        onOpenKnowHow={openKnowHow}
       />
 
       <section className="detailCard compactDetail affordableUpgradeCard">
@@ -1879,6 +1890,206 @@ const educationFallbacks = {
       "Replacement timelines for roof, HVAC, water heater, appliances, and envelope components."
     ],
     vpsf: "VPSF improves when future cost exposure is documented and the buyer can see what has already been handled."
+  }
+};
+
+const knowHowArchive = {
+  energy: {
+    title: "KNOW-HOW-Energy",
+    intro: "Energy know-how focuses on lowering utility exposure, improving comfort, electrifying major systems, and documenting performance so efficiency translates into durable value.",
+    articles: [
+      {
+        title: "High-Performance Heat Pumps: The Backbone of All-Electric Homes",
+        url: "https://www.greenbuildermedia.com/blog/high-performance-heat-pumps-the-backbone-of-all-electric-homes",
+        description: "Explains why modern heat pumps have become a core technology for efficient, all-electric homes across climates."
+      },
+      {
+        title: "Heat Pumps for the Modern Era",
+        url: "https://www.greenbuildermedia.com/transcripts/heat-pumps-for-the-modern-era",
+        description: "A conversation about inverter-driven heat pumps, cold-climate performance, connected controls, and energy management."
+      },
+      {
+        title: "Efficient Living, Solar-Driven: The Next Generation of Homeownership",
+        url: "https://www.greenbuildermedia.com/transcripts/efficient-living-solar-driven-the-next-generation-of-homeownership",
+        description: "Shows how efficient envelopes, ERVs, all-electric systems, and solar can make attainable high-performance homes possible."
+      },
+      {
+        title: "Inside a Net-Zero Home: How Trane Powers Sustainable Living in Austin",
+        url: "https://www.greenbuildermedia.com/transcripts/inside-a-net-zero-home-how-trane-powers-sustainable-living-in-austin",
+        description: "Looks at climate-responsive heat pump design, solar, battery storage, and indoor comfort in a net-zero home."
+      },
+      {
+        title: "Green Builder Media: HVAC Articles",
+        url: "https://www.greenbuildermedia.com/blog/topic/hvac",
+        description: "An archive hub for HVAC, heat pump, comfort, and high-performance mechanical-system coverage."
+      }
+    ]
+  },
+  water: {
+    title: "KNOW-HOW-Water",
+    intro: "Water know-how covers efficient fixtures, leak detection, drought response, irrigation controls, water reuse, and the local risks that turn water performance into value.",
+    articles: [
+      {
+        title: "Persistent Drought Conditions Persist: Water Management Solutions are Becoming Increasingly Vital",
+        url: "https://www.greenbuildermedia.com/transcripts/persistent-drought-conditions-persist-water-management-solutions-are-becoming-increasingly-vital",
+        description: "Discusses drought, water rights, conservation technology, leak detection, and homeowner water management."
+      },
+      {
+        title: "Agenda Finalized for 2026 Next Generation Water Summit",
+        url: "https://www.greenbuildermedia.com/blog/agenda-finalized-for-2026-next-generation-water-summit",
+        description: "Highlights water policy, conservation, reuse, and building-sector sessions from the water summit agenda."
+      },
+      {
+        title: "Green Builder Media: Water Conservation Articles",
+        url: "https://www.greenbuildermedia.com/blog/topic/water-conservation",
+        description: "A topic archive for water conservation strategies, fixtures, drought response, and efficient outdoor water use."
+      },
+      {
+        title: "Green Builder Media: Water Articles",
+        url: "https://www.greenbuildermedia.com/blog/topic/water",
+        description: "A broader collection of Green Builder articles tied to water, reuse, scarcity, and resilient home performance."
+      }
+    ]
+  },
+  health: {
+    title: "KNOW-HOW-Health",
+    intro: "Health know-how connects ventilation, filtration, humidity, source control, low-emitting materials, and IAQ monitoring to buyer confidence and long-term comfort.",
+    articles: [
+      {
+        title: "Tight Homes Demand Smarter Ventilation",
+        url: "https://www.greenbuildermedia.com/blog/tight-homes-demand-smarter-ventilation",
+        description: "Explains why tighter homes need intentional ventilation strategies and climate-aware IAQ design."
+      },
+      {
+        title: "The Ventilation Challenge: What Every Builder Needs to Know About IAQ",
+        url: "https://www.greenbuildermedia.com/blog/the-ventilation-challenge-what-every-builder-needs-to-know-about-iaq",
+        description: "Covers ventilation, filtration, testing, code requirements, and IAQ performance in efficient homes."
+      },
+      {
+        title: "Top 5 Residential Wellness Design Trends for 2026",
+        url: "https://www.greenbuildermedia.com/blog/top-5-residential-wellness-design-trends-for-2026",
+        description: "Summarizes wellness features and design strategies shaping healthier, more comfortable homes."
+      },
+      {
+        title: "Easy Steps to Healthy Home",
+        url: "https://www.greenbuildermedia.com/transcripts/easy-steps-to-healthy-home",
+        description: "Outlines source control, filtration, ventilation, and fresh air exchange as practical healthy-home strategies."
+      },
+      {
+        title: "Green Builder Media: Healthy Homes Articles",
+        url: "https://www.greenbuildermedia.com/blog/topic/healthy-homes",
+        description: "A topic archive for IAQ, wellness, ventilation, low-toxin materials, and healthier home systems."
+      }
+    ]
+  },
+  resilience: {
+    title: "KNOW-HOW-Resilience",
+    intro: "Resilience know-how centers on climate risk, roof and envelope durability, backup power, insurability, storm protection, fire risk, and recovery cost reduction.",
+    articles: [
+      {
+        title: "Building Resilient Homes in an Era of Climate Extremes",
+        url: "https://www.greenbuildermedia.com/blog/building-resilient-homes-in-an-era-of-climate-extremes",
+        description: "Introduces practical strategies for homes that withstand heat, storms, wildfire, and escalating climate risk."
+      },
+      {
+        title: "Rising Insurance Costs Make Resiliency a Key Builder Selling Point",
+        url: "https://www.greenbuildermedia.com/blog/rising-insurance-costs-make-resiliency-a-key-builder-selling-point",
+        description: "Connects resilient upgrades to insurance availability, premium pressure, and buyer decision-making."
+      },
+      {
+        title: "Revenue Opportunity: Homeowners Are Willing To Pay For Protection and Safety",
+        url: "https://www.greenbuildermedia.com/blog/revenue-opportunity-homeowners-are-willing-to-pay-for-protection-and-safety",
+        description: "Uses COGNITION insights to show why homeowners value protection against climate events and rising insurance costs."
+      },
+      {
+        title: "Resilient Homes Get Payback, AI Reveals Climate-Risk Pricing, Two Paths to IECC Code",
+        url: "https://www.greenbuildermedia.com/transcripts/resilient-homes-get-payback-ai-reveals-climate-risk-pricing-two-paths-to-iecc-code",
+        description: "Reviews insurance incentives, climate-risk pricing, and energy-code changes affecting resilient housing."
+      },
+      {
+        title: "Green Builder Media: Resilient Housing Articles",
+        url: "https://www.greenbuildermedia.com/blog/topic/resilient-housing",
+        description: "A topic archive for durability, climate adaptation, storm protection, fire risk, and resilient housing."
+      }
+    ]
+  },
+  carbon: {
+    title: "KNOW-HOW-Carbon",
+    intro: "Carbon and materials know-how helps translate embodied carbon, EPDs, durability, recycled content, and low-carbon product choices into a clearer value story.",
+    articles: [
+      {
+        title: "EPDs Are the Conversation Starter",
+        url: "https://www.greenbuildermedia.com/blog/epds-are-the-conversation-starter",
+        description: "Explains how environmental product declarations make lower-carbon materials easier to compare and specify."
+      },
+      {
+        title: "Tackling Embodied Carbon in Residential Construction",
+        url: "https://www.greenbuildermedia.com/blog/tackling-embodied-carbon-in-residential-construction",
+        description: "Frames embodied carbon as a growing focus as homes become more operationally efficient."
+      },
+      {
+        title: "EPDs at the Core of Fiberon’s Decarbonization Strategy",
+        url: "https://www.greenbuildermedia.com/transcripts/epds-at-the-core-of-fiberons-decarbonization-strategy",
+        description: "Shows how product makers use EPDs, recycled content, and emissions goals to support decarbonization."
+      },
+      {
+        title: "Green Builder Media: COGNITION Weekly Hot Take Archive",
+        url: "https://www.greenbuildermedia.com/blog/topic/cognition-weekly-hot-take",
+        description: "A running archive of market insights, including material transparency, carbon, and buyer-value trends."
+      }
+    ]
+  },
+  financial: {
+    title: "KNOW-HOW-Ownership",
+    intro: "Ownership know-how looks at insurance, utility bills, maintenance exposure, replacement timing, warranties, and the total cost of living in a home.",
+    articles: [
+      {
+        title: "Homebuyers Shift Focus From Lowest Upfront Cost to Long-Term Value",
+        url: "https://www.greenbuildermedia.com/blog/homebuyers-shift-focus-from-lowest-upfront-cost-to-long-term-value",
+        description: "Explains why buyers increasingly weigh lifetime affordability, efficiency, durability, and operating costs."
+      },
+      {
+        title: "Efficient, Strong Homes: A Question of Cost",
+        url: "https://www.greenbuildermedia.com/blog/a-question-of-cost",
+        description: "Connects green upgrades, solar, batteries, insurance, utility costs, and long-term homeownership economics."
+      },
+      {
+        title: "2025 in Review",
+        url: "https://www.greenbuildermedia.com/blog/2025-in-review",
+        description: "Introduces the shift from price per square foot toward value per square foot and total ownership value."
+      },
+      {
+        title: "Rising Insurance Costs Make Resiliency a Key Builder Selling Point",
+        url: "https://www.greenbuildermedia.com/blog/rising-insurance-costs-make-resiliency-a-key-builder-selling-point",
+        description: "Shows how insurance pressure is changing the financial case for resilient, better-documented homes."
+      }
+    ]
+  },
+  community: {
+    title: "KNOW-HOW-Community",
+    intro: "Community know-how connects location, transportation choices, broadband, nearby services, green space, and daily livability to a home's practical value.",
+    articles: [
+      {
+        title: "Making the Connection: Green Buildings and Transportation",
+        url: "https://www.greenbuildermedia.com/blog/making-the-connection-green-buildings-and-transportation",
+        description: "Explains how building location, walkability, transit, and mixed-use planning affect emissions and livability."
+      },
+      {
+        title: "Beazer Homes Sustainability Report",
+        url: "https://www.greenbuildermedia.com/hubfs/VISION%20House%20Las%20Vegas/Advancing%20Sustainable%20Practices%20with%20Net-Zero%20Energy%20Goals/Beazer%202023%20Sustainability%20Report%20.pdf",
+        description: "Includes community-planning ideas around access to employment, services, recreation, schools, and infrastructure."
+      },
+      {
+        title: "Green Builder Media: Net Zero Articles",
+        url: "https://www.greenbuildermedia.com/blog/topic/net-zero",
+        description: "A topic archive that includes efficient communities, transportation, housing location, and net-zero planning."
+      },
+      {
+        title: "Green Builder Media Home Page",
+        url: "https://www.greenbuildermedia.com/",
+        description: "A gateway to current Green Builder coverage across building science, healthy homes, code, climate, and community value."
+      }
+    ]
   }
 };
 
@@ -2300,6 +2511,35 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation,
       <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
+  const archive = knowHowArchive[pillarKey] || knowHowArchive.energy;
+  return (
+    <div className="screen knowHowArchiveScreen withNav">
+      <header className="screenTop">
+        <h2>{archive.title}</h2>
+        <BookOpen size={18} />
+      </header>
+
+      <section className="copyCard knowHowIntro">
+        <p>{archive.intro}</p>
+        <span>{archive.articles.length} starter archive links</span>
+      </section>
+
+      <section className="knowHowArticleList" aria-label={`${archive.title} articles`}>
+        {archive.articles.map((article) => (
+          <a className="knowHowArticleCard" href={article.url} target="_blank" rel="noreferrer" key={article.url}>
+            <strong>{article.title}</strong>
+            <p>{article.description}</p>
+          </a>
+        ))}
+      </section>
+
+      <button className="secondaryButton" onClick={() => setScreen(returnScreen)}>Return to Key Takeaway</button>
+      <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );
 }
@@ -2858,6 +3098,8 @@ export default function App() {
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
   const [selectedEducation, setSelectedEducation] = useState(educationByRecommendation[demoRecommendationDetails[0].id]);
   const [educationReturnScreen, setEducationReturnScreen] = useState(15);
+  const [selectedKnowHowPillar, setSelectedKnowHowPillar] = useState("energy");
+  const [knowHowReturnScreen, setKnowHowReturnScreen] = useState(5);
   const [selectedMatchingProduct, setSelectedMatchingProduct] = useState(demoMatchingProducts["water-fixtures"][0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
@@ -3032,6 +3274,10 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
+    if (screen === 22) {
+      setScreen(knowHowReturnScreen);
+      return;
+    }
     if (screen === 21) {
       setScreen(educationReturnScreen);
       return;
@@ -3070,7 +3316,7 @@ export default function App() {
           />
         )}
         {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
-        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} />}
+        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} />}
         {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} />}
         {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
@@ -3087,6 +3333,7 @@ export default function App() {
         {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={setScreen} returnScreen={educationReturnScreen} />}
+        {screen === 22 && <KnowHowArchiveScreen pillarKey={selectedKnowHowPillar} setScreen={setScreen} returnScreen={knowHowReturnScreen} />}
       </AppChrome>
 
       <style>{`
@@ -3801,6 +4048,69 @@ export default function App() {
           color: #52657a;
           font-size: 12px;
           line-height: 1.38;
+          margin: 0;
+        }
+        .knowHowButton {
+          grid-column: 1 / -1;
+          min-height: 42px;
+          border: 1px solid #cfe1f1;
+          border-radius: 10px;
+          background: #f4f9ff;
+          color: var(--blue);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 11px;
+          font-weight: 950;
+          letter-spacing: .035em;
+          text-transform: uppercase;
+        }
+        .knowHowArchiveScreen .screenTop h2 {
+          font-size: 20px;
+        }
+        .knowHowIntro p {
+          font-size: 13px;
+          line-height: 1.55;
+        }
+        .knowHowIntro span {
+          display: inline-flex;
+          align-items: center;
+          margin-top: 10px;
+          padding: 6px 9px;
+          border-radius: 999px;
+          background: #eef6ff;
+          color: var(--blue);
+          font-size: 10px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .035em;
+        }
+        .knowHowArticleList {
+          display: grid;
+          gap: 12px;
+          margin-top: 14px;
+        }
+        .knowHowArticleCard {
+          display: grid;
+          gap: 7px;
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          background: #fff;
+          padding: 14px;
+          color: inherit;
+          text-decoration: none;
+          box-shadow: 0 8px 20px rgba(9, 33, 59, 0.04);
+        }
+        .knowHowArticleCard strong {
+          color: var(--blue);
+          font-size: 13px;
+          line-height: 1.25;
+        }
+        .knowHowArticleCard p {
+          color: #52657a;
+          font-size: 12px;
+          line-height: 1.45;
           margin: 0;
         }
         .compactDetail { margin-top: 16px; }

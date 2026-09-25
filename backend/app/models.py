@@ -106,6 +106,14 @@ class EducationalContentRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
+class WildfireRiskCacheRecord(Base):
+    __tablename__ = "wildfire_risk_cache"
+
+    key: Mapped[str] = mapped_column(String(120), primary_key=True)
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class ArticleCacheRecord(Base):
     __tablename__ = "article_cache"
 

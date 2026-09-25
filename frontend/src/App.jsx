@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -217,6 +218,9 @@ const PILLAR_DETAILS = {
 };
 
 const defaultHome = {
+  latitude: null,
+  longitude: null,
+  wildfire: null,
   address: "123 Harbor View Dr.",
   city: "Jacksonville",
   state: "FL",
@@ -340,7 +344,7 @@ function scoreHome(home) {
   if (home.roof.includes("Impact") || home.roof.includes("Metal")) resilience += 10;
   if (home.moisture.includes("Enhanced")) resilience += 10;
   if (home.backup !== "None") resilience += 10;
-  resilience = Math.min(200, resilience);
+  resilience = Math.max(0, Math.min(200, resilience + wildfireAdjustment(home)));
 
   let health = {
     "WELL or Fitwel Residential": 120,
@@ -398,7 +402,10 @@ function scoreHome(home) {
   community = Math.min(50, community);
 
   const scores = { energy, water, health, resilience, carbon, financial, community };
-  return { scores, total: Object.values(scores).reduce((a, b) => a + b, 0) };
+  return {
+    scores, total: Object.values(scores).reduce((a, b) => a + b, 0),
+    explanations: { resilience: wildfireExplanation(home) }
+  };
 }
 
 
@@ -759,6 +766,9 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
     return {
       ...defaultHome,
       ...publicRecordProperty,
+      latitude: geocode?.latitude ?? null,
+      longitude: geocode?.longitude ?? null,
+      wildfire: riskEnrichment?.wildfire ?? null,
       address: enteredParts.address || geocode?.address || publicRecordProperty.address || enteredAddress,
       city: enteredParts.city || geocode?.city || publicRecordProperty.city || "",
       state: normalizeState(enteredParts.state || geocode?.state || publicRecordProperty.state || ""),
@@ -774,6 +784,9 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
 
   return {
     ...defaultHome,
+    latitude: geocode?.latitude ?? null,
+    longitude: geocode?.longitude ?? null,
+    wildfire: riskEnrichment?.wildfire ?? null,
     address: geocode?.address || parsedAddress.address || enteredAddress,
     city: geocode?.city || parsedAddress.city,
     state: normalizeState(geocode?.state || parsedAddress.state),
@@ -856,7 +869,16 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         ? { found: true, property: savedMatch }
         : await findSavedProperty(parsedAddress);
       if (savedResult?.found && savedResult.property) {
-        const savedHome = savedPropertyToHomeForEnteredAddress(savedResult.property, address);
+        let savedHome = savedPropertyToHomeForEnteredAddress(savedResult.property, address);
+        if (Number.isFinite(savedHome.latitude) && Number.isFinite(savedHome.longitude)
+          && !["available", "no_data"].includes(savedHome.wildfire?.status)) {
+          try {
+            const risk = await enrichPropertyRisk(savedHome);
+            savedHome = { ...savedHome, wildfire: risk.wildfire ?? null };
+          } catch (error) {
+            console.warn("Saved location risk lookup unavailable.", error);
+          }
+        }
         setHome(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
         await onQueryStarted(savedHome, "saved_archive");
@@ -1406,6 +1428,10 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
           <p>{details.summary}</p>
         </div>
       </section>
+
+      {pillar.key === "resilience" && result.explanations?.resilience && (
+        <p className="sourceNote">{result.explanations.resilience}</p>
+      )}
 
       <section className="prosConsGrid">
         <article className="prosCard">
@@ -3135,7 +3161,19 @@ export default function App() {
   const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
-  const update = (key, value) => setHome((current) => ({ ...current, [key]: value }));
+  const update = (key, value) => {
+    setApiResult(null);
+    setHome((current) => {
+      const locationChanged = ["address", "city", "state", "zip"].includes(key) && current[key] !== value;
+      return {
+        ...current, [key]: value,
+        ...(locationChanged ? {
+          latitude: null, longitude: null, wildfire: null,
+          sourceNote: "Location changed. Previous location risk is no longer used; verify the updated address before scoring."
+        } : {})
+      };
+    });
+  };
 
   useEffect(() => {
     queryIdRef.current = queryId;

@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -12,6 +13,7 @@ from app.integrations.climate import estimate_climate_zone
 from app.integrations.fema import FemaFloodClient, flood_label
 from app.integrations.mapbox import MapboxClient
 from app.integrations.rentcast import RentCastClient
+from app.integrations.wildfire import cached_wildfire_risk
 from app.notifications import send_email
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
@@ -567,23 +569,33 @@ async def enrich_property_with_rentcast(
 
 
 @router.post("/risk", response_model=RiskEnrichmentResponse)
-async def enrich_property_risk(request: RiskEnrichmentRequest) -> RiskEnrichmentResponse:
+async def enrich_property_risk(request: RiskEnrichmentRequest, db: Session = Depends(get_db)) -> RiskEnrichmentResponse:
     climate_zone = estimate_climate_zone(request.state, request.zip)
-    fema_attributes = None
-    flood = "Unknown"
 
-    if request.latitude is not None and request.longitude is not None:
+    async def lookup_flood():
+        if request.latitude is None or request.longitude is None:
+            return None, "Unknown"
         try:
-            fema_attributes = await FemaFloodClient().flood_zone_for_point(request.latitude, request.longitude)
-            flood = flood_label(fema_attributes)
-        except HTTPError:
-            flood = "FEMA lookup unavailable"
+            attributes = await FemaFloodClient().flood_zone_for_point(request.latitude, request.longitude)
+            return attributes, flood_label(attributes)
+        except (HTTPError, ValueError, TypeError, AttributeError):
+            return None, "FEMA lookup unavailable"
+
+    flood_result, wildfire = await asyncio.gather(
+        lookup_flood(), cached_wildfire_risk(db, request.latitude, request.longitude),
+    )
+    fema_attributes, flood = flood_result
+    wildfire_note = (
+        f"USFS wildfire risk: {wildfire.level} ({wildfire.areaName}; {wildfire.areaType}-level context, not home fire resistance)."
+        if wildfire.status == "available" else "USFS area wildfire risk is unknown; no wildfire adjustment will be applied."
+    )
 
     return RiskEnrichmentResponse(
         climateZone=climate_zone,
         flood=flood,
         fema=fema_attributes,
-        sourceNote="Climate zone is estimated from location. FEMA flood lookup is based on mapped public flood-hazard layers when coordinates are available.",
+        wildfire=wildfire,
+        sourceNote="Climate zone is estimated from location. FEMA flood lookup is based on mapped public flood-hazard layers when coordinates are available. " + wildfire_note,
     )
 
 

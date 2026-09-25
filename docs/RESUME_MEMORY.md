@@ -1,5 +1,22 @@
 # VPSF Resume Memory
 
+## Latest Update: September 25, 2026
+
+USFS Wildfire Risk to Communities is integrated into `/api/properties/risk`
+alongside FEMA. It uses free community/county ArcGIS layers, no API key.
+`wildfire_risk_cache` persists results in the existing Render `/var/data/vpsf.db`;
+coordinates and wildfire provenance are retained in saved property/score snapshots.
+Saved scans reuse them without a paid property lookup. Older archives without
+coordinates remain unknown rather than spending API pulls or guessing.
+
+Scoring model `vpsf-0.2.0-usfs` adjusts Resilience (out of 200): Low +10,
+Medium 0, High -10, Very High -20, unknown 0. These are provisional VPSF
+weights for area exposure, not a home fire-resistance certification.
+Browser fallback uses the same policy. See `docs/WILDFIRE_RISK.md` for sources,
+cache behavior, limitations, and tests. Existing admin regional percentages
+are not changed by this integration. The sections below describe the original
+foundation and may no longer reflect the full current application.
+
 ## Where We Left Off
 
 The local staging folder is:

@@ -10,7 +10,7 @@ def default_database_url() -> str:
 
 class Settings:
     app_name = "VPSF Calculator API"
-    model_version = "vpsf-0.1.0"
+    model_version = "vpsf-0.2.0-usfs"
     raw_database_url = os.getenv("DATABASE_URL", default_database_url())
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")

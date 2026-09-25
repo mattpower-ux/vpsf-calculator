@@ -1,4 +1,5 @@
 from app.schemas import PropertyInput
+from app.scoring.wildfire import wildfire_adjustment, wildfire_explanation
 
 PILLAR_MAX = {
     "energy": 200,
@@ -64,7 +65,7 @@ def score_home(home: PropertyInput) -> dict[str, int]:
         resilience += 10
     if home.backup != "None":
         resilience += 10
-    resilience = min(200, resilience)
+    resilience = max(0, min(200, resilience + wildfire_adjustment(home)))
 
     health = {
         "WELL or Fitwel Residential": 120,
@@ -171,11 +172,11 @@ def explain_score(home: PropertyInput, scores: dict[str, int]) -> dict[str, str]
         "energy": f"Energy reflects HERS '{home.hers}', HVAC '{home.hvac}', solar '{home.solar}', and EV readiness '{home.evReady}'.",
         "water": f"Water reflects '{home.waterStandard}', leak protection '{home.leak}', reuse '{home.reuse}', and landscape '{home.landscape}'.",
         "health": f"Health reflects certification '{home.healthCert}', ventilation '{home.ventilation}', materials '{home.materials}', and IAQ '{home.iaq}'.",
-        "resilience": f"Resilience reflects '{home.fortified}', flood design '{home.flood}', roof '{home.roof}', moisture details, and backup power.",
+        "resilience": f"Resilience reflects '{home.fortified}', flood design '{home.flood}', roof '{home.roof}', moisture details, and backup power. " + wildfire_explanation(home),
         "carbon": f"Carbon reflects strategy '{home.carbonStrategy}', concrete '{home.carbonConcrete}', structure '{home.structure}', and electrification.",
         "financial": f"Financial risk reflects PIETIM '{home.pietim}', insurance '{home.insurance}', warranty '{home.warranty}', and maintenance documentation.",
         "community": f"Community reflects walk score '{home.walkscore}', transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access.",
-        "summary": f"Current backend model scored this property at {sum(scores.values())} out of 1000 using prototype-parity rules.",
+        "summary": f"Current backend model scored this property at {sum(scores.values())} out of 1000, including available USFS area wildfire context.",
     }
 
 

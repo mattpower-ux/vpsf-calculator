@@ -1,4 +1,22 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+
+class WildfireRisk(BaseModel):
+    source: str = "USFS Wildfire Risk to Communities"
+    sourceUrl: str = "https://wildfirerisk.org/"
+    datasetVersion: str = "wrc-2024"
+    status: Literal["available", "no_data", "unavailable", "no_coordinates"] = "no_coordinates"
+    level: Literal["Unknown", "Low", "Medium", "High", "Very High"] = "Unknown"
+    nationalPercentile: float | None = Field(default=None, ge=0, le=100)
+    areaName: str = ""
+    areaId: str = ""
+    areaType: Literal["community", "county"] | None = None
+    boundaryVintage: str = ""
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    retrievedAt: str | None = None
 
 
 class PropertyInput(BaseModel):
@@ -6,6 +24,9 @@ class PropertyInput(BaseModel):
     city: str = ""
     state: str = ""
     zip: str = ""
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    wildfire: WildfireRisk | None = None
     squareFeet: str = ""
     yearBuilt: str = ""
     homeType: str = "Single Family Detached"
@@ -80,8 +101,8 @@ class GeocodeResponse(BaseModel):
 
 
 class RiskEnrichmentRequest(BaseModel):
-    latitude: float | None = None
-    longitude: float | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
     state: str = ""
     zip: str = ""
 
@@ -90,6 +111,7 @@ class RiskEnrichmentResponse(BaseModel):
     climateZone: str = "Unknown"
     flood: str = "Unknown"
     fema: dict | None = None
+    wildfire: WildfireRisk = Field(default_factory=WildfireRisk)
     sourceNote: str = ""
 
 

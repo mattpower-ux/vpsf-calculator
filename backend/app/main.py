@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.db import init_db
-from app.routers import admin, integrations, leads, products, properties, scoring, tracking
+from app.routers import admin, articles, integrations, leads, products, properties, scoring, tracking
 
 settings = get_settings()
 default_cors_origins = [
@@ -39,6 +39,7 @@ app.include_router(leads.router)
 app.include_router(admin.router)
 app.include_router(integrations.router)
 app.include_router(tracking.router)
+app.include_router(articles.router)
 
 
 @app.get("/api/health")

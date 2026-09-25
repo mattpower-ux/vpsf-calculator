@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getEducationContent, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
@@ -2552,7 +2552,7 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
 
       <section className="knowHowArticleList" aria-label={`${archive.title} articles`}>
         {archive.articles.map((article) => (
-          <a className="knowHowArticleCard" href={article.url} target="_blank" rel="noopener noreferrer" onClick={openKnowHowArticle} key={article.url}>
+          <a className="knowHowArticleCard" href={getArticleReaderUrl(article.url)} target="_blank" rel="noopener noreferrer" onClick={openKnowHowArticle} key={article.url}>
             <strong>{article.title}</strong>
             <p>{article.description}</p>
           </a>

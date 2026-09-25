@@ -106,6 +106,14 @@ class EducationalContentRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
+class ArticleCacheRecord(Base):
+    __tablename__ = "article_cache"
+
+    url: Mapped[str] = mapped_column(String(1000), primary_key=True)
+    document: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class LeadRecord(Base):
     __tablename__ = "leads"
 

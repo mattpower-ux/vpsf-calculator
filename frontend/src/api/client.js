@@ -12,6 +12,15 @@ function resolveApiBaseUrl() {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+export function getArticleReaderUrl(sourceUrl) {
+  const url = new URL(sourceUrl);
+  const isArticle = url.hostname === "www.greenbuildermedia.com"
+    && /^\/(blog|transcripts)\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname);
+  // Topic indexes and PDFs remain their original resource types.
+  if (!isArticle) return sourceUrl;
+  return `${API_BASE_URL}/api/articles/read?${new URLSearchParams({ url: sourceUrl })}`;
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {

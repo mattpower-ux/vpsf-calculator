@@ -1,5 +1,5 @@
 function resolveApiBaseUrl() {
-  if (import.meta.env.VITE_API_BASE_URL) {
+  if (import.meta.env?.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
 
@@ -14,10 +14,13 @@ const API_BASE_URL = resolveApiBaseUrl();
 
 export function getArticleReaderUrl(sourceUrl) {
   const url = new URL(sourceUrl);
-  const isArticle = url.hostname === "www.greenbuildermedia.com"
-    && /^\/(blog|transcripts)\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname);
-  // Topic indexes and PDFs remain their original resource types.
-  if (!isArticle) return sourceUrl;
+  const isReaderPage = url.protocol === "https:"
+    && ["www.greenbuildermedia.com", "greenbuildermedia.com"].includes(url.hostname)
+    && !url.port && !url.username && !url.password
+    && (/^\/(blog|transcripts)\/[a-zA-Z0-9_-][a-zA-Z0-9_.-]*\/?$/.test(url.pathname)
+      || /^\/blog\/topic\/[a-zA-Z0-9_-]+(?:\/page\/[1-9][0-9]*)?\/?$/.test(url.pathname));
+  // PDFs and other non-article resources remain their original resource types.
+  if (!isReaderPage) return sourceUrl;
   return `${API_BASE_URL}/api/articles/read?${new URLSearchParams({ url: sourceUrl })}`;
 }
 

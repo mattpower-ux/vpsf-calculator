@@ -2,6 +2,13 @@
 
 ## Latest Update: September 25, 2026
 
+Know-How collection links (`/blog/topic/...`, including paginated pages) now use
+the clean reader as compact linked-title lists with dates and excerpts, not full
+site pages or large photos. Article links stay in the clean reader. Existing
+cached article links are upgraded without refetching their content. Topic lists
+are persisted in `article_cache` on the same Render disk. Logos, ads, topic tags,
+and the floating chatbot are excluded from both list and article views.
+
 USFS Wildfire Risk to Communities is integrated into `/api/properties/risk`
 alongside FEMA. It uses free community/county ArcGIS layers, no API key.
 `wildfire_risk_cache` persists results in the existing Render `/var/data/vpsf.db`;

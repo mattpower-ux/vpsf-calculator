@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.article_reader import document_shell, extract_article, fetch_article, normalize_article_url
+from app.article_reader import document_shell, extract_article, fetch_article, normalize_article_url, upgrade_cached_reader_links
 from app.db import get_db
 from app.models import ArticleCacheRecord
 
@@ -22,10 +22,14 @@ async def read_article(url: str = Query(max_length=2000), db: Session = Depends(
     try:
         source_url = normalize_article_url(url)
     except ValueError:
-        return HTMLResponse("<h1>Article unavailable</h1><p>A Green Builder Media article URL is required.</p>", status_code=400, headers=READER_HEADERS)
+        return HTMLResponse("<h1>Page unavailable</h1><p>A Green Builder Media article or topic URL is required.</p>", status_code=400, headers=READER_HEADERS)
 
     cached = db.get(ArticleCacheRecord, source_url)
     if cached:
+        document = upgrade_cached_reader_links(cached.document)
+        if document != cached.document:
+            cached.document = document
+            db.commit()
         return HTMLResponse(cached.document, headers={**READER_HEADERS, "X-Article-Cache": "HIT"})
 
     try:

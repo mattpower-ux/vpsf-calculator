@@ -8,7 +8,8 @@ from bs4 import BeautifulSoup
 
 
 ARTICLE_HOSTS = {"www.greenbuildermedia.com", "greenbuildermedia.com"}
-ARTICLE_PATH = re.compile(r"^/(blog|transcripts)/[a-zA-Z0-9_-]+/?$")
+ARTICLE_PATH = re.compile(r"^/(blog|transcripts)/[a-zA-Z0-9_-][a-zA-Z0-9_.-]*/?$")
+TOPIC_PATH = re.compile(r"^/blog/topic/(?P<topic>[a-zA-Z0-9_-]+)(?:/page/(?P<page>[1-9][0-9]*))?/?$")
 VIDEO_HOSTS = {"www.youtube.com", "www.youtube-nocookie.com", "player.vimeo.com"}
 MAX_PAGE_BYTES = 3_000_000
 
@@ -34,6 +35,16 @@ body.vpsf-article-reader { color: #343358; font-family: Roboto, Arial, sans-seri
 .reader .reader-video iframe { display: block; width: 100%; height: 100%; border: 0; }
 .reader-footer { clear: both; margin-top: 32px; padding-top: 16px; border-top: 1px solid #e1e5eb; font-size: 13px; }
 .reader a { overflow-wrap: anywhere; }
+.reader-topic-list { list-style: none; margin: 0; padding: 0; }
+.reader-topic-post { padding: 18px 0; border-bottom: 1px solid #e1e5eb; }
+.reader-topic-post .reader-date { font-size: 12px; margin-bottom: 6px; }
+.reader-topic-post h2 { font-size: 19px; margin: 0 0 8px; }
+.reader-topic-post h2 a { display: block; color: #126fd2; text-decoration: none; }
+.reader-topic-post h2 a:hover { text-decoration: underline; }
+.reader-topic-post p { font-size: 14px; margin: 0; overflow-wrap: anywhere; }
+.reader-pagination { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.reader-pagination a { color: #126fd2; padding: 4px; }
+.reader-pagination [aria-current="page"] { color: #343358; font-weight: 700; text-decoration: none; }
 """
 
 
@@ -44,10 +55,14 @@ def normalize_article_url(url: str) -> str:
         or parsed.hostname not in ARTICLE_HOSTS
         or parsed.username or parsed.password
         or parsed.port not in (None, 443)
-        or not ARTICLE_PATH.fullmatch(parsed.path)
+        or not (ARTICLE_PATH.fullmatch(parsed.path) or TOPIC_PATH.fullmatch(parsed.path))
     ):
-        raise ValueError("Only Green Builder Media article URLs are supported")
-    return urlunsplit(("https", "www.greenbuildermedia.com", parsed.path.rstrip("/"), "", ""))
+        raise ValueError("Only Green Builder Media article and topic URLs are supported")
+    path = parsed.path.rstrip("/")
+    topic = TOPIC_PATH.fullmatch(path)
+    if topic and topic.group("page") == "1":
+        path = f"/blog/topic/{topic.group('topic')}"
+    return urlunsplit(("https", "www.greenbuildermedia.com", path, "", ""))
 
 
 def reader_url(url: str) -> str:
@@ -134,17 +149,20 @@ def clean_body(body, source_url: str) -> str:
 
 def document_shell(title: str, content: str, source_url: str, stylesheets: list[str] | None = None) -> str:
     styles = "".join(f'<link rel="stylesheet" href="{escape(url, quote=True)}">' for url in stylesheets or [])
+    source_type = "topic" if TOPIC_PATH.fullmatch(urlsplit(source_url).path) else "article"
     return f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>{escape(title)}</title>
 {styles}<style>{READER_CSS}</style></head>
 <body class="vpsf-article-reader"><main class="reader">{content}
-<footer class="reader-footer"><a href="{escape(source_url, quote=True)}" target="_blank" rel="noopener noreferrer">Original article at Green Builder Media</a></footer>
+<footer class="reader-footer"><a href="{escape(source_url, quote=True)}" target="_blank" rel="noopener noreferrer">Original {source_type} at Green Builder Media</a></footer>
 </main></body></html>'''
 
 
 def extract_article(page: str, source_url: str) -> str:
     soup = BeautifulSoup(page, "html.parser")
+    if TOPIC_PATH.fullmatch(urlsplit(source_url).path):
+        return extract_topic(soup, source_url)
     body = soup.select_one("#hs_cos_wrapper_post_body, .blog-post__body, .post-body, [itemprop='articleBody']")
     title = soup.select_one("article h1, .post-header h1, h1")
     date = soup.select_one(".blog-post__timestamp, .post-date, time")
@@ -176,3 +194,71 @@ def extract_article(page: str, source_url: str) -> str:
     date_html = f'<time class="reader-date">{escape(date_text)}</time>' if date_text else ""
     content = f'<article class="blog-post">{date_html}<h1>{escape(title_text)}</h1><div class="blog-post__body">{clean_body(body, source_url)}</div></article>'
     return document_shell(title_text, content, source_url, stylesheets)
+
+
+def extract_topic(soup: BeautifulSoup, source_url: str) -> str:
+    title = soup.select_one(".blog-header__title, h1")
+    posts = []
+    seen = set()
+    for post in soup.select("article.blog-index__post"):
+        link = post.select_one(".blog-index__post-title a[href]")
+        if not link or not link.get_text(strip=True):
+            continue
+        try:
+            url = normalize_article_url(urljoin(source_url, link["href"]))
+        except ValueError:
+            continue
+        if not ARTICLE_PATH.fullmatch(urlsplit(url).path) or url in seen:
+            continue
+        seen.add(url)
+        date = post.select_one("time")
+        summary = post.select_one(".blog-index__post-body")
+        date_html = f'<time class="reader-date">{escape(date.get_text(" ", strip=True))}</time>' if date else ""
+        summary_html = f'<p>{escape(summary.get_text(" ", strip=True))}</p>' if summary else ""
+        posts.append(
+            f'<li class="reader-topic-post">{date_html}'
+            f'<h2><a href="{escape(reader_url(url), quote=True)}">{escape(link.get_text(" ", strip=True))}</a></h2>'
+            f'{summary_html}</li>'
+        )
+    if not title or not posts:
+        raise ValueError("This page does not contain a supported topic listing")
+
+    topic = TOPIC_PATH.fullmatch(urlsplit(source_url).path)
+    current_page = int(topic.group("page") or 1)
+    pages = []
+    for link in soup.select(".blog-pagination a[href]"):
+        try:
+            url = normalize_article_url(urljoin(source_url, link["href"]))
+        except ValueError:
+            continue
+        destination = TOPIC_PATH.fullmatch(urlsplit(url).path)
+        if not destination or destination.group("topic") != topic.group("topic"):
+            continue
+        for icon in link.select("svg, script"):
+            icon.decompose()
+        label = link.get_text(" ", strip=True)
+        if not label:
+            continue
+        current = ' aria-current="page"' if int(destination.group("page") or 1) == current_page else ""
+        pages.append(f'<a href="{escape(reader_url(url), quote=True)}"{current}>{escape(label)}</a>')
+    pagination = '<nav class="reader-pagination" aria-label="Article pages">' + "".join(pages) + "</nav>" if pages else ""
+    title_text = title.get_text(" ", strip=True)
+    content = f'<h1>{escape(title_text)}</h1><ol class="reader-topic-list">' + "".join(posts) + "</ol>" + pagination
+    return document_shell(title_text, content, source_url)
+
+
+def upgrade_cached_reader_links(document: str) -> str:
+    # Extend old caches to newly supported links without refetching article content.
+    soup = BeautifulSoup(document, "html.parser")
+    changed = False
+    for link in soup.select("a[href]"):
+        if link.find_parent(class_="reader-footer"):
+            continue
+        try:
+            url = normalize_article_url(link["href"])
+        except ValueError:
+            continue
+        link["href"] = reader_url(url)
+        link["target"] = "_self"
+        changed = True
+    return str(soup) if changed else document

@@ -2515,6 +2515,27 @@ function RecommendationDetail({ recommendation, setScreen, setSelectedEducation,
   );
 }
 
+function openKnowHowArticle(event) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+  const bounds = event.currentTarget.closest(".phoneShell")?.getBoundingClientRect();
+  if (!bounds) return;
+
+  const width = Math.round(Math.min(bounds.width, window.screen.availWidth || window.innerWidth));
+  const height = Math.round(Math.min(bounds.height, window.screen.availHeight || window.innerHeight));
+  const left = Math.round(window.screenX + bounds.left);
+  const top = Math.round(window.screenY + Math.max(0, window.outerHeight - window.innerHeight) + bounds.top);
+  const features = `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+  const reader = window.open("about:blank", "_blank", features);
+
+  // Keep the normal link as a fallback when the browser blocks popup windows.
+  if (!reader) return;
+  reader.opener = null;
+  reader.location.replace(event.currentTarget.href);
+  reader.focus();
+  event.preventDefault();
+}
+
 function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
   const archive = knowHowArchive[pillarKey] || knowHowArchive.energy;
   return (
@@ -2531,7 +2552,7 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
 
       <section className="knowHowArticleList" aria-label={`${archive.title} articles`}>
         {archive.articles.map((article) => (
-          <a className="knowHowArticleCard" href={article.url} target="_blank" rel="noreferrer" key={article.url}>
+          <a className="knowHowArticleCard" href={article.url} target="_blank" rel="noopener noreferrer" onClick={openKnowHowArticle} key={article.url}>
             <strong>{article.title}</strong>
             <p>{article.description}</p>
           </a>

@@ -1,0 +1,211 @@
+[
+  {
+    "id": "energy-water-heating",
+    "paragraphs": [
+      "Water heating runs all year, so an efficient upgrade matters even when heating and cooling are idle.",
+      "A heat pump water heater moves heat from surrounding air into the tank. That usually takes less electricity than a standard resistance element. Hybrid models can use backup heat during high demand.",
+      "Installation matters too. The unit needs enough air, service space, a safe condensate drain, and a tank sized for the household. Its cooling and sound may affect nearby rooms.",
+      "Smart scheduling can shift heating toward lower-cost hours or times when rooftop solar is producing. A drain pan, leak sensor, and shutoff add protection against water damage.",
+      "Keep the model number, efficiency rating, installation date, and permits. Those details turn a promised upgrade into something a future buyer can verify."
+    ],
+    "duration": 46.994286,
+    "totalFrames": 1422,
+    "sceneFrames": [
+      196,
+      350,
+      319,
+      299,
+      258
+    ]
+  },
+  {
+    "id": "water-fixtures",
+    "paragraphs": [
+      "Water performance is about more than faucet flow. Hot water takes energy to heat, and outdoor watering can add demand in dry months.",
+      "Start with efficient faucets, showerheads, and toilets that use less water without making everyday routines frustrating. WaterSense labels and flow ratings make those choices easier to check.",
+      "Then look at how quickly hot water reaches each fixture. Long waits send both water and the energy used to heat it down the drain. Good pipe layout, insulation, and appropriate controls can help.",
+      "Outside, a smart irrigation controller can respond to weather and plant needs instead of watering on a fixed calendar. Leak protection adds another layer of savings and damage prevention.",
+      "Save the fixture specifications and irrigation settings. Documented improvements make the home's water story more credible."
+    ],
+    "duration": 46.759184,
+    "totalFrames": 1415,
+    "sceneFrames": [
+      254,
+      295,
+      366,
+      316,
+      184
+    ]
+  },
+  {
+    "id": "water-leak-detection",
+    "paragraphs": [
+      "A hidden plumbing leak can damage walls, floors, and finishes. Preventing damage matters as much as saving water.",
+      "Whole-home leak detection watches for unusual flow or moisture. Some systems alert the owner; others can close an automatic shutoff valve before a problem spreads.",
+      "Place sensors where leaks are most likely to go unnoticed, such as near water heaters, washing machines, sinks, and mechanical equipment. The main valve should be accessible and the system should be tested after installation.",
+      "No sensor replaces good plumbing or regular inspection. But early detection can limit wasted water, reduce repair work, and protect materials already in the home.",
+      "Keep the model, installation date, shutoff details, and test records. That evidence helps buyers understand what protection is actually in place, and may be useful in insurance conversations."
+    ],
+    "duration": 50.599184,
+    "totalFrames": 1530,
+    "sceneFrames": [
+      217,
+      293,
+      401,
+      293,
+      326
+    ]
+  },
+  {
+    "id": "health-ventilation",
+    "paragraphs": [
+      "As homes get tighter, fresh air should not depend on leaks. Intentional ventilation controls how outdoor air enters.",
+      "A balanced system supplies outdoor air while removing stale indoor air. An H R V transfers some heat between those air streams. An E R V can also transfer some moisture, which may help in certain climates.",
+      "The design depends on the home and local humidity. Measure airflow, maintain filters, and keep outdoor intakes away from pollutants.",
+      "Ventilation works best alongside kitchen and bath exhaust, moisture control, and low-emitting materials. It cannot solve a damp wall or a combustion problem by itself.",
+      "Record the system type, airflow settings, service dates, and filter details. Those facts make a healthy-home claim more than a slogan."
+    ],
+    "duration": 46.027755,
+    "totalFrames": 1393,
+    "sceneFrames": [
+      213,
+      415,
+      234,
+      287,
+      244
+    ]
+  },
+  {
+    "id": "health-filtration",
+    "paragraphs": [
+      "Indoor air can carry dust, pollen, smoke particles, and pollutants released by everyday products. Better air quality starts by reducing sources, then moving and cleaning air deliberately.",
+      "Filtration captures particles as air passes through the heating and cooling system or a dedicated cleaner. A more effective filter only helps if the fan and duct system can move enough air through it.",
+      "Moisture deserves equal attention. Bathroom and kitchen exhaust, leak repairs, and humidity control help prevent damp surfaces and the problems that follow.",
+      "Choose low-emitting finishes when replacing materials, and avoid storing chemicals near living spaces or air intakes. Sensors can reveal trends, but they do not replace inspection or maintenance.",
+      "Keep filter specifications, ventilation details, humidity controls, and service records. Together, they show how the home manages indoor air in practice."
+    ],
+    "duration": 53.315918,
+    "totalFrames": 1612,
+    "sceneFrames": [
+      329,
+      409,
+      272,
+      341,
+      261
+    ]
+  },
+  {
+    "id": "roof-risk",
+    "paragraphs": [
+      "A roof is more than the visible shingles. It is a system of covering, underlayment, flashing, drainage, and attachment that keeps weather out of the house.",
+      "Age matters, but local wind, hail, heat, trees, installation quality, and maintenance also affect remaining life and risk.",
+      "When replacement is due, choose materials and attachment details suited to the actual hazards. Impact resistance may matter in hail country; secure edges and deck connections matter where strong winds are common.",
+      "Good flashing and water management protect insulation and finishes below. A durable roof also avoids repeated replacement waste and may support an insurance discussion, depending on the policy and market.",
+      "Save permits, invoices, product ratings, photos, and the installation date. They help the next owner understand what was installed and why."
+    ],
+    "duration": 48.587755,
+    "totalFrames": 1470,
+    "sceneFrames": [
+      300,
+      215,
+      365,
+      343,
+      247
+    ]
+  },
+  {
+    "id": "resilience-backup-power",
+    "paragraphs": [
+      "During an outage, you may not need to power the entire house. Identify essential loads: refrigeration, communications, medical equipment, pumps, and perhaps heating or cooling.",
+      "A critical-load panel can separate those circuits so a battery or generator serves them efficiently. Solar panels may recharge a compatible battery, but solar alone does not necessarily provide power when the grid is down.",
+      "The choice depends on outage length, local hazards, fuel availability, and how much power each essential device uses. Safe transfer equipment and professional installation are crucial.",
+      "Reduce the load first, too. Insulation, shade, and efficient appliances help a limited backup supply last longer.",
+      "Document the protected circuits, battery capacity or generator rating, installation date, permits, and maintenance. That makes backup readiness a verifiable feature, not just a claim."
+    ],
+    "duration": 52.506122,
+    "totalFrames": 1588,
+    "sceneFrames": [
+      311,
+      426,
+      322,
+      219,
+      310
+    ]
+  },
+  {
+    "id": "carbon-materials",
+    "paragraphs": [
+      "A home's climate impact does not begin when the lights turn on. Building products carry emissions from extraction, manufacturing, transport, installation, and eventual replacement.",
+      "Judge materials over their useful life, not by one label. A durable, repairable product may save materials and emissions over time.",
+      "Environmental Product Declarations, often called E P Ds, provide standardized information for comparing the impacts of similar products. They are evidence, not a shortcut around good design.",
+      "Choose materials suited to local moisture, fire, and weather conditions. Consider lower-carbon concrete, responsibly sourced wood, recycled content, and verified insulation when they fit the job.",
+      "Keep product declarations, specifications, warranties, and replacement records. Documentation makes the home's carbon story more credible and useful to future buyers."
+    ],
+    "duration": 52.68898,
+    "totalFrames": 1593,
+    "sceneFrames": [
+      321,
+      284,
+      358,
+      346,
+      284
+    ]
+  },
+  {
+    "id": "tree-risk",
+    "paragraphs": [
+      "Trees can make a property cooler and more comfortable. Well-placed shade can reduce sun on roofs and walls, while healthy soil and vegetation help manage rainwater.",
+      "But a large tree close to the house can also bring risk. Falling limbs, roof contact, clogged drainage, and storm cleanup may outweigh some of the cooling benefit.",
+      "The best approach is not to remove every tree. It is to understand the species, condition, distance from the building, and the hazards common to the area.",
+      "Prune where needed, keep branches clear of rooflines, and have a qualified arborist assess concerning trees. Preserve useful shade when it can be maintained safely.",
+      "Keep an inventory, photos, and maintenance records. They show how the landscape supports comfort while managing storm and ownership exposure."
+    ],
+    "duration": 44.59102,
+    "totalFrames": 1350,
+    "sceneFrames": [
+      278,
+      298,
+      288,
+      268,
+      218
+    ]
+  },
+  {
+    "id": "community-connectivity",
+    "paragraphs": [
+      "A home's usefulness extends beyond its walls. Nearby services, practical transportation choices, and reliable connectivity all shape daily life and long-term value.",
+      "Walkable destinations and safe biking or transit routes can reduce dependence on driving, but only when those options are genuinely practical for the household. Distance on a map is not the whole story.",
+      "Broadband matters too. It supports remote work, telehealth, learning, and the connected systems that monitor energy use or home security.",
+      "Trees, parks, and shaded routes can make a neighborhood more comfortable, while poorly managed trees may add storm risk close to the house.",
+      "Verify actual internet providers and speeds, travel routes, nearby services, and access limitations. Clear, current facts help buyers judge the location for their own needs instead of relying on vague claims."
+    ],
+    "duration": 50.834286,
+    "totalFrames": 1538,
+    "sceneFrames": [
+      266,
+      387,
+      243,
+      277,
+      365
+    ]
+  },
+  {
+    "id": "ownership-insurance",
+    "paragraphs": [
+      "The purchase price is only one part of what a home will cost. Roofs, heating systems, water heaters, and other major components eventually need service or replacement.",
+      "When their age and condition are unknown, buyers face surprise expenses. A simple inventory of equipment, installation dates, and maintenance history makes those future costs easier to plan.",
+      "Insurance exposure also depends on local hazards and the home's condition. A well-documented roof, leak protection, or storm upgrade may help explain risk, though discounts vary by insurer and location.",
+      "Prioritize work that prevents damage or keeps essential systems reliable before spending on optional cosmetic changes. Timely maintenance can extend service life and avoid unnecessary waste.",
+      "Save permits, invoices, warranties, inspections, and a realistic replacement timeline. Those records turn ownership risk into a clearer, more useful value story."
+    ],
+    "duration": 54.204082,
+    "totalFrames": 1639,
+    "sceneFrames": [
+      332,
+      344,
+      367,
+      321,
+      275
+    ]
+  }
+]

@@ -1,0 +1,9 @@
+During an outage, you may not need to power the entire house. Identify essential loads: refrigeration, communications, medical equipment, pumps, and perhaps heating or cooling.
+
+A critical-load panel can separate those circuits so a battery or generator serves them efficiently. Solar panels may recharge a compatible battery, but solar alone does not necessarily provide power when the grid is down.
+
+The choice depends on outage length, local hazards, fuel availability, and how much power each essential device uses. Safe transfer equipment and professional installation are crucial.
+
+Reduce the load first, too. Insulation, shade, and efficient appliances help a limited backup supply last longer.
+
+Document the protected circuits, battery capacity or generator rating, installation date, permits, and maintenance. That makes backup readiness a verifiable feature, not just a claim.

@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 *.pyc
 *.db
+videos/learn-more-videos/*.mp4
 .env
 .env.*
 !.env.example

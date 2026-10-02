@@ -2020,6 +2020,13 @@ const educationByRecommendation = {
   "ownership-insurance": educationFallbacks.financial
 };
 
+const educationVideoIds = new Set([
+  "energy-water-heating", "water-fixtures", "water-leak-detection",
+  "health-ventilation", "health-filtration", "roof-risk",
+  "resilience-backup-power", "carbon-materials", "tree-risk",
+  "community-connectivity", "ownership-insurance"
+]);
+
 function educationForRecommendation(recommendation) {
   const key = recommendation.id || recommendation.pillar || "energy";
   const content = educationByRecommendation[key] || educationFallbacks[recommendation.pillar] || educationFallbacks.energy;
@@ -2035,7 +2042,7 @@ async function openEducationForRecommendation(recommendation, setScreen, setSele
   const cachedContent = await getEducationContent(key);
   const cachedHasRichSections = Boolean(cachedContent?.background || cachedContent?.howItWorks?.length || cachedContent?.sustainableAspects?.length);
   if (cachedContent && cachedHasRichSections) {
-    setSelectedEducation(cachedContent);
+    setSelectedEducation({ ...cachedContent, key });
     return;
   }
 
@@ -2045,7 +2052,7 @@ async function openEducationForRecommendation(recommendation, setScreen, setSele
     sourceUrl: content.sourceUrl || "https://www.greenbuildermedia.com"
   });
   if (persistedContent) {
-    setSelectedEducation(persistedContent);
+    setSelectedEducation({ ...persistedContent, key });
   }
 }
 
@@ -2454,10 +2461,10 @@ function EducationDetail({ education, setScreen, returnScreen }) {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [videoTime, setVideoTime] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(47);
+  const [videoDuration, setVideoDuration] = useState(0);
   const videoRef = useRef(null);
   const videoTimeRef = useRef(0);
-  const hasHvacVideo = content.title === "HVAC + Smart Controls";
+  const videoId = content.title === "HVAC + Smart Controls" ? "hvac-smart-controls" : educationVideoIds.has(content.key) ? `learn-more-${content.key}` : null;
   const returnLabel = returnScreen === 6 ? "Return to Recommendations" : "Return to Smart Summary";
   const howItWorks = content.howItWorks || [];
   const sustainableAspects = content.sustainableAspects || [];
@@ -2491,17 +2498,18 @@ function EducationDetail({ education, setScreen, returnScreen }) {
         <p>{content.intro}</p>
       </section>
 
-      {hasHvacVideo ? (
-        <section className={`copyCard educationVideoCard${isVideoExpanded ? " isExpanded" : ""}`} aria-label="HVAC and Smart Controls video">
+      {videoId ? (
+        <section className={`copyCard educationVideoCard${isVideoExpanded ? " isExpanded" : ""}`} aria-label={`${content.title} video`}>
           <div className="educationVideoFrame">
             <video
+              key={videoId}
               ref={videoRef}
               controls={!isVideoExpanded}
               playsInline
               preload="metadata"
-              poster="/videos/hvac-smart-controls-poster.jpg"
-              src="/videos/hvac-smart-controls.mp4"
-              aria-label="HVAC and Smart Controls educational video"
+              poster={`/videos/${videoId}-poster.jpg`}
+              src={`/videos/${videoId}.mp4`}
+              aria-label={`${content.title} educational video`}
               onTimeUpdate={(event) => { videoTimeRef.current = event.currentTarget.currentTime; setVideoTime(event.currentTarget.currentTime); }}
               onLoadedMetadata={(event) => { event.currentTarget.currentTime = videoTimeRef.current; setVideoDuration(event.currentTarget.duration); }}
               onPlay={() => setIsVideoPlaying(true)}

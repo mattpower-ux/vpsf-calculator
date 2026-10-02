@@ -1,0 +1,37 @@
+[
+  {
+    "id": "intro",
+    "eyebrow": "VPSF LEARN MORE / ENERGY",
+    "title": "HVAC + Smart Controls",
+    "subtitle": "A better system starts with the house.",
+    "narration": "A better heating and cooling system begins with the house, not the equipment."
+  },
+  {
+    "id": "envelope",
+    "eyebrow": "01 / LOWER THE LOAD",
+    "title": "Keep conditioned air where it belongs",
+    "subtitle": "Insulation  +  air sealing  +  efficient windows",
+    "narration": "Heat moves through weak insulation, leaky windows, and air gaps. Seal and insulate first, and the home needs less heating and cooling."
+  },
+  {
+    "id": "sizing",
+    "eyebrow": "02 / SIZE FOR THE HOME",
+    "title": "Match output to real demand",
+    "subtitle": "Load calculation first. Equipment second.",
+    "narration": "Next, calculate how much heating and cooling this particular home needs in its climate. A properly sized, variable-speed heat pump can adjust its output instead of repeatedly switching on at full power."
+  },
+  {
+    "id": "controls",
+    "eyebrow": "03 / DELIVER THE COMFORT",
+    "title": "Ducts and controls complete the system",
+    "subtitle": "Airflow  +  humidity  +  smart scheduling",
+    "narration": "The rest of the system matters, too. Seal the ducts, check the airflow, and make sure the equipment is set up correctly. Smart controls can help manage temperature and humidity, while responding to occupancy and electricity prices."
+  },
+  {
+    "id": "close",
+    "eyebrow": "THE SUSTAINABLE PATH",
+    "title": "Reduce. Right-size. Verify.",
+    "subtitle": "Comfort with less wasted energy",
+    "narration": "The goal is steadier comfort with less wasted energy. Keep the model number, efficiency rating, installation date, and maintenance records so the improvement can be documented."
+  }
+]

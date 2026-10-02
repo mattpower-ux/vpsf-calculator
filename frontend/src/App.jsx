@@ -38,7 +38,11 @@ import {
   Home,
   Leaf,
   MapPin,
+  Maximize2,
+  Minimize2,
   Package,
+  Pause,
+  Play,
   PlugZap,
   Search,
   Shield,
@@ -46,6 +50,8 @@ import {
   Sparkles,
   Sun,
   Upload,
+  Volume2,
+  VolumeX,
   Wallet,
   Wind,
   Zap
@@ -2444,11 +2450,37 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
 
 function EducationDetail({ education, setScreen, returnScreen }) {
   const content = education || educationFallbacks.energy;
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
+  const [videoTime, setVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(47);
+  const videoRef = useRef(null);
+  const videoTimeRef = useRef(0);
+  const hasHvacVideo = content.title === "HVAC + Smart Controls";
   const returnLabel = returnScreen === 6 ? "Return to Recommendations" : "Return to Smart Summary";
   const howItWorks = content.howItWorks || [];
   const sustainableAspects = content.sustainableAspects || [];
   const why = content.why || [];
   const verify = content.verify || [];
+  const openVideoFullscreen = () => {
+    setIsVideoExpanded((expanded) => !expanded);
+  };
+  const toggleVideoPlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => setIsVideoPlaying(false));
+    else video.pause();
+  };
+  const formatVideoTime = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+  useEffect(() => {
+    if (!isVideoExpanded) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setIsVideoExpanded(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isVideoExpanded]);
   return (
     <div className="screen educationDetailScreen withNav">
       <header className="screenTop"><h2>Learn More</h2><BookOpen size={18} /></header>
@@ -2459,7 +2491,39 @@ function EducationDetail({ education, setScreen, returnScreen }) {
         <p>{content.intro}</p>
       </section>
 
-      {content.background ? (
+      {hasHvacVideo ? (
+        <section className={`copyCard educationVideoCard${isVideoExpanded ? " isExpanded" : ""}`} aria-label="HVAC and Smart Controls video">
+          <div className="educationVideoFrame">
+            <video
+              ref={videoRef}
+              controls={!isVideoExpanded}
+              playsInline
+              preload="metadata"
+              poster="/videos/hvac-smart-controls-poster.jpg"
+              src="/videos/hvac-smart-controls.mp4"
+              aria-label="HVAC and Smart Controls educational video"
+              onTimeUpdate={(event) => { videoTimeRef.current = event.currentTarget.currentTime; setVideoTime(event.currentTarget.currentTime); }}
+              onLoadedMetadata={(event) => { event.currentTarget.currentTime = videoTimeRef.current; setVideoDuration(event.currentTarget.duration); }}
+              onPlay={() => setIsVideoPlaying(true)}
+              onPause={() => setIsVideoPlaying(false)}
+              onVolumeChange={(event) => setIsVideoMuted(event.currentTarget.muted)}
+            />
+          </div>
+          {isVideoExpanded ? (
+            <div className="educationVideoControls">
+              <button type="button" onClick={toggleVideoPlayback} aria-label={isVideoPlaying ? "Pause video" : "Play video"} title={isVideoPlaying ? "Pause" : "Play"}>{isVideoPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
+              <span>{formatVideoTime(videoTime)} / {formatVideoTime(videoDuration)}</span>
+              <input type="range" min="0" max={videoDuration} step="0.1" value={videoTime} onChange={(event) => { if (videoRef.current) videoRef.current.currentTime = Number(event.target.value); }} aria-label="Video position" />
+              <button type="button" onClick={() => { if (videoRef.current) videoRef.current.muted = !videoRef.current.muted; }} aria-label={isVideoMuted ? "Unmute video" : "Mute video"} title={isVideoMuted ? "Unmute" : "Mute"}>{isVideoMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
+              <button type="button" onClick={openVideoFullscreen} aria-label="Exit full screen" title="Exit full screen"><Minimize2 size={20} /></button>
+            </div>
+          ) : (
+            <button type="button" className="educationVideoFullscreen" onClick={openVideoFullscreen} title="Watch full screen">
+              <Maximize2 size={17} /> Full screen
+            </button>
+          )}
+        </section>
+      ) : content.background ? (
         <section className="copyCard">
           <h3>Background</h3>
           <p>{content.background}</p>
@@ -4261,6 +4325,20 @@ export default function App() {
 
         .copyCard h3, .smartDataUpsell h3 { text-transform: none; letter-spacing: 0; font-size: 15px; margin-bottom: 8px; }
         .copyCard p, .smartDataUpsell p { color: #52657a; font-size: 13px; line-height: 1.5; margin-bottom: 0; }
+        .educationVideoFrame { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; background: #061d33; }
+        .educationVideoFrame video { display: block; width: 100%; height: 100%; object-fit: contain; }
+        .educationVideoFullscreen { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 4px 0; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
+        .educationVideoFullscreen:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+        .educationVideoCard.isExpanded { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; justify-content: center; margin: 0; padding: 0; border: 0; border-radius: 0; background: #000; }
+        .educationVideoCard.isExpanded .educationVideoFrame { flex: 1; width: 100vw; min-height: 0; aspect-ratio: auto; border-radius: 0; background: #000; }
+        .educationVideoCard.isExpanded .educationVideoFullscreen { position: absolute; right: 12px; top: 12px; z-index: 1; margin: 0; padding: 8px 10px; border-radius: 4px; background: rgba(0, 0, 0, .65); color: #fff; }
+        .educationVideoControls { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 12px; background: #000; color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
+        .educationVideoControls button { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border: 0; background: none; color: #fff; cursor: pointer; }
+        .educationVideoControls input { flex: 1; min-width: 40px; accent-color: #54c7eb; }
+        @media (orientation: portrait) {
+          .educationVideoCard.isExpanded { inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; transform: rotate(90deg); transform-origin: top left; }
+          .educationVideoCard.isExpanded .educationVideoFrame { width: 100%; }
+        }
         .smartDataUpsell { display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f4f9ff; }
         .smartDataUpsell svg { color: var(--blue); }
 

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "intro",
+    "seconds": 4.57,
+    "frames": 137
+  },
+  {
+    "id": "envelope",
+    "seconds": 8.27,
+    "frames": 248
+  },
+  {
+    "id": "sizing",
+    "seconds": 11.63,
+    "frames": 349
+  },
+  {
+    "id": "controls",
+    "seconds": 12.5,
+    "frames": 375
+  },
+  {
+    "id": "close",
+    "seconds": 10.03,
+    "frames": 301
+  }
+]

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getProductRecommendations, scoreProperty, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
+import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { getArchivePage } from "./archivePagination";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
@@ -29,6 +30,7 @@ import {
   ChevronRight,
   ClipboardList,
   Droplets,
+  Download,
   FileSearch,
   Filter,
   Flame,
@@ -38,7 +40,6 @@ import {
   MapPin,
   Package,
   PlugZap,
-  QrCode,
   Search,
   Shield,
   Share2,
@@ -62,7 +63,7 @@ const SCREEN_LABELS = {
   6: "Recommendations",
   7: "Products",
   8: "Marketing Studio",
-  9: "Score Card",
+  9: "VPSF Report Card",
   10: "Pillar Detail",
   11: "Listing Import",
   12: "Analyzing",
@@ -419,23 +420,6 @@ function resultFromDemoProperty(property) {
     total: Object.values(property.scores).reduce((sum, value) => sum + value, 0),
     property
   };
-}
-
-function classification(score) {
-  if (score >= 850) return { label: "Exceptional", meaning: "Future-proof asset", grade: "A+" };
-  if (score >= 700) return { label: "High Performance", meaning: "Low-risk, low-cost home", grade: "A" };
-  if (score >= 550) return { label: "Good / Efficient", meaning: "Above-market quality", grade: "B" };
-  if (score >= 400) return { label: "Code Plus", meaning: "Typical new home", grade: "C" };
-  return { label: "High Risk", meaning: "High operating + insurance cost", grade: "D" };
-}
-
-function gradeFor(value, max) {
-  const pct = value / max;
-  if (pct >= 0.85) return "A";
-  if (pct >= 0.72) return "B+";
-  if (pct >= 0.6) return "B";
-  if (pct >= 0.45) return "C";
-  return "D";
 }
 
 function Field({ label, value, onChange, options, wide = false }) {
@@ -2636,7 +2620,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
               onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });
               setScreen(9);
             }}>
-              Create Score Card
+              Create Report Card
             </button>
           </div>
         </section>
@@ -2752,7 +2736,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
               onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });
               setScreen(9);
             }}>
-              Create Score Card
+              Create Report Card
             </button>
           </div>
         </section>
@@ -2887,7 +2871,7 @@ function CompetingHomeComparisonScreen({ result, setScreen }) {
       </section>
 
       <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio <ArrowRight size={18} /></button>
-      <button className="secondaryButton" onClick={() => setScreen(9)}>Create VPSF Score Card</button>
+      <button className="secondaryButton" onClick={() => setScreen(9)}>Create VPSF Report Card</button>
       <BottomNav active="More" setScreen={setScreen} />
     </div>
   );
@@ -2950,33 +2934,56 @@ function MarketingStudio({ selectedProperty, setScreen }) {
         </ul>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(9)}>Generate VPSF Label <Award size={18} /></button>
+      <button className="primaryButton" onClick={() => setScreen(9)}>Generate VPSF Report Card <ClipboardList size={18} /></button>
       <BottomNav active="More" setScreen={setScreen} />
     </div>
   );
 }
 
-function LabelScreen({ result, setScreen }) {
+function LabelScreen({ result, property, setScreen }) {
   const info = classification(result.total);
+  const [shareStatus, setShareStatus] = useState("");
+  const downloadReport = () => {
+    const url = URL.createObjectURL(new Blob([reportText(result, property, PILLARS)], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "vpsf-report-card.txt";
+    link.hidden = true;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const shareReport = async () => {
+    try {
+      const text = reportText(result, property, PILLARS);
+      if (navigator.share) await navigator.share({ title: "VPSF REPORT CARD", text });
+      else {
+        await navigator.clipboard.writeText(text);
+        setShareStatus("Report copied to clipboard.");
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") setShareStatus("Sharing is unavailable. The text report is available to download.");
+    }
+  };
   return (
     <div className="screen labelScreen withNav">
-      <header className="screenTop"><h2>VPSF Home Label</h2><Share2 size={18} /></header>
+      <header className="screenTop"><h2>VPSF REPORT CARD</h2><ClipboardList size={18} /></header>
       <section className="homeLabel">
-        <div className="labelTop"><Award size={22} /><strong>VPSF CERTIFIED HOME</strong></div>
-        <img
-          src={demoOrlandoHome}
-          alt="VPSF certified home exterior"
-          className="labelHomePhoto"
-        />
-        <div className="labelScore"><strong>{result.total}</strong><div><span>{info.label}</span><em>{info.meaning}</em></div></div>
-        <p>This home outperforms 78% of homes in its market.</p>
+        <div className="labelTop"><ClipboardList size={22} /><strong>VPSF REPORT CARD</strong></div>
+        <p className="reportProperty">{reportAddress(property)}</p>
+        <div className="labelScore" data-tone={info.tone}>
+          <div className="reportTotal"><strong>{result.total}</strong><small>out of 1,000</small></div>
+          <div><span>{info.label}</span><em>Model-based rating</em></div>
+        </div>
+        <p>{Math.round(result.total / 10)}% of available VPSF points.</p>
         <h3>Pillar Scores</h3>
         {PILLARS.map((pillar) => {
           const Icon = pillar.icon;
           const value = result.scores[pillar.key];
           const pct = Math.round((value / pillar.max) * 100);
           return (
-            <div className="labelPillar" key={pillar.key}>
+            <div className="labelPillar" key={pillar.key} data-tone={pillarTone(value, pillar.max)}>
               <Icon size={14} />
               <span>{pillar.short}</span>
               <div><i style={{ width: `${pct}%` }} /></div>
@@ -2985,13 +2992,12 @@ function LabelScreen({ result, setScreen }) {
             </div>
           );
         })}
-        <div className="benefits">
-          <div><strong>$1,820</strong><span>Utility Savings</span></div>
-          <div><strong>$1,150</strong><span>Insurance Savings</span></div>
-          <div><strong>2.1 tons</strong><span>CO₂ Avoided</span></div>
+        <p className="reportLimitations">{REPORT_LIMITATIONS}</p>
+        <div className="labelActions">
+          <button onClick={downloadReport} title="Download text report"><Download size={15} />Download Report</button>
+          <button onClick={shareReport}><Share2 size={15} />Share Report</button>
         </div>
-        <div className="labelActions"><button>Download Label</button><button>Share Label</button></div>
-        <QrCode className="qrIcon" size={46} />
+        {shareStatus && <p role="status">{shareStatus}</p>}
       </section>
       <button className="secondaryButton" onClick={() => setScreen(0)}>Start New Evaluation</button>
       <BottomNav active="More" setScreen={setScreen} />
@@ -3245,7 +3251,7 @@ export default function App() {
         {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} />}
         {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
-        {screen === 9 && <LabelScreen result={result} setScreen={setScreen} />}
+        {screen === 9 && <LabelScreen result={result} property={result.property || home} setScreen={setScreen} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} autoAdvance={resultMode === "demo"} />}
@@ -4322,15 +4328,6 @@ export default function App() {
   font-size: 12px;
   line-height: 1.2;
 }
-        .labelHomePhoto {
-          width: 100%;
-          height: 118px;
-          object-fit: cover;
-          display: block;
-          border-bottom: 1px solid #e7edf3;
-          background: #eef4f8;
-        }
-
         .homeLabel {
           margin-top: 18px;
           border-radius: 14px;
@@ -4348,17 +4345,25 @@ export default function App() {
           gap: 9px;
           font-size: 16px;
         }
+        .labelTop svg { flex-shrink: 0; }
+        .homeLabel [data-tone="poor"] { --score-color: #b42318; }
+        .homeLabel [data-tone="caution"] { --score-color: #986000; }
+        .homeLabel [data-tone="positive"] { --score-color: #0b7371; }
+        .homeLabel [data-tone="good"] { --score-color: #23834b; }
         .labelScore {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: max-content minmax(0, 1fr);
           align-items: center;
           padding: 18px 18px 8px;
           gap: 15px;
         }
-        .labelScore > strong { color: var(--green); font-size: 58px; line-height: 1; letter-spacing: -0.08em; }
-        .labelScore span { color: var(--green); display: block; font-weight: 950; text-transform: uppercase; font-size: 15px; }
+        .reportTotal strong { display: block; color: var(--score-color); font-size: 50px; line-height: 1; letter-spacing: 0; }
+        .reportTotal small { display: block; font-size: 12px; color: #52657a; margin-top: 5px; }
+        .labelScore span { color: var(--score-color); display: block; font-weight: 950; text-transform: uppercase; font-size: 15px; overflow-wrap: anywhere; }
         .labelScore em { color: #52657a; font-style: normal; font-size: 12px; }
         .homeLabel > p { padding: 0 18px 14px; color: #52657a; font-size: 12px; border-bottom: 1px solid #e7edf3; }
+        .homeLabel .reportProperty { padding-top: 14px; margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+        .homeLabel .reportLimitations { padding-top: 14px; margin-top: 14px; line-height: 1.5; border-top: 1px solid #e7edf3; border-bottom: 0; }
         .homeLabel h3 { padding: 0 18px; margin: 13px 0 8px; }
         .labelPillar {
           display: grid;
@@ -4368,25 +4373,14 @@ export default function App() {
           padding: 6px 18px;
           font-size: 11px;
         }
-        .labelPillar svg { color: var(--green); }
+        .labelPillar svg { color: var(--score-color); }
         .labelPillar div { height: 7px; background: #e5ebf1; border-radius: 99px; overflow: hidden; }
-        .labelPillar i { display: block; height: 100%; background: var(--green); border-radius: 99px; }
-        .labelPillar b { background: var(--green); color: white; border-radius: 99px; text-align: center; padding: 2px 0; font-size: 10px; }
+        .labelPillar i { display: block; height: 100%; background: var(--score-color); border-radius: 99px; }
+        .labelPillar b { background: var(--score-color); color: white; border-radius: 99px; text-align: center; padding: 2px 0; font-size: 10px; }
         .labelPillar em { color: #52657a; font-style: normal; text-align: right; }
-        .benefits {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 8px;
-          margin: 14px 18px;
-          border-top: 1px solid #e7edf3;
-          padding-top: 14px;
-        }
-        .benefits div { text-align: center; }
-        .benefits strong { display: block; color: var(--ink); font-size: 14px; }
-        .benefits span { display: block; color: #52657a; font-size: 10px; }
         .labelActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 18px 14px; }
-        .labelActions button { height: 38px; border: 0; background: var(--blue); color: white; border-radius: 8px; font-size: 11px; font-weight: 900; }
-        .qrIcon { display: block; margin: 0 auto 18px; color: var(--navy); }
+        .labelActions button { min-height: 42px; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: var(--blue); color: white; border-radius: 8px; font-size: 11px; font-weight: 900; }
+        .labelActions svg { flex-shrink: 0; }
 
 
 

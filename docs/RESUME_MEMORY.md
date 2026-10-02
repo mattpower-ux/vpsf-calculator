@@ -1,6 +1,17 @@
 # VPSF Resume Memory
 
-## Latest Update: September 25, 2026
+## Latest Update: October 2, 2026
+
+The former VPSF Home Label is now VPSF REPORT CARD. Its overall score and pillar
+colors follow the actual rating instead of always appearing green. Removed the
+hardcoded 78th-percentile comparison, savings/CO2 figures, certification claim,
+sample house photo, and decorative QR code. It shows the current address and
+score out of 1,000, with a clear model limitation note. Report download/share
+uses a text snapshot of those same results. Scoring formulas and thresholds are
+unchanged; presentation helpers and regression tests are in
+`frontend/src/scorePresentation.js` and `frontend/src/scorePresentation.test.js`.
+
+## September 25, 2026
 
 The seven Know-How pillar pages now use a generated Green Builder Media article
 catalog rather than four-to-five starter links. Each has up to 100 actual blog

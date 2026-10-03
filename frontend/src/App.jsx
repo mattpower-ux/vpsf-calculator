@@ -2507,8 +2507,8 @@ function EducationDetail({ education, setScreen, returnScreen }) {
               controls={!isVideoExpanded}
               playsInline
               preload="metadata"
-              poster={`/videos/${videoId}-poster.jpg`}
-              src={`/videos/${videoId}.mp4`}
+              poster={`/videos/${videoId}-poster.jpg?v=2`}
+              src={`/videos/${videoId}.mp4?v=2`}
               aria-label={`${content.title} educational video`}
               onTimeUpdate={(event) => { videoTimeRef.current = event.currentTarget.currentTime; setVideoTime(event.currentTarget.currentTime); }}
               onLoadedMetadata={(event) => { event.currentTarget.currentTime = videoTimeRef.current; setVideoDuration(event.currentTarget.duration); }}

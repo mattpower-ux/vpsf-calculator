@@ -1,0 +1,101 @@
+[
+  {
+    "id": "energy-water-heating", "chartScene": 1,
+    "photos": [
+      { "file": "topics/energy-water-heating.jpg" },
+      { "file": "topics/energy-water-heating-2.jpg", "article": "https://www.greenbuildermedia.com/blog/why-heat-pump-water-heaters-are-unsung-heroes-of-efficient-homes" },
+      { "file": "topics/energy-water-heating-3.webp", "article": "https://www.greenbuildermedia.com/blog/why-heat-pump-water-heaters-are-unsung-heroes-of-efficient-homes", "imageUrl": "https://www.greenbuildermedia.com/hubfs/VISION%20House%20Las%20Vegas/Energy%20Efficiency%20in%20the%20Forefront%20at%20VISION%20House%20Las%20Vegas/rheem%20at%20vhlv%205X7A4361.webp" }
+    ],
+    "chart": { "title": "Water-heating energy", "unit": "INDEX: CONVENTIONAL ELECTRIC = 100", "rows": [{ "label": "Conventional electric", "value": 100, "display": "100" }, { "label": "ProTerra heat pump", "value": 25, "display": "25" }], "note": "Up to 75% less energy in manufacturer comparison; actual results vary.", "source": "Green Builder Media / Rheem", "sourceUrl": "https://www.greenbuildermedia.com/blog/why-heat-pump-water-heaters-are-unsung-heroes-of-efficient-homes" }
+  },
+  {
+    "id": "water-fixtures", "chartScene": 1,
+    "photos": [
+      { "file": "topics/water-fixtures.jpg" },
+      { "file": "topics/water-fixtures-2.jpg", "article": "https://www.greenbuildermedia.com/blog/water-wisdom-in-the-desert" },
+      { "file": "topics/water-fixtures-3.jpg", "article": "https://www.greenbuildermedia.com/blog/water-conservation-and-sustainability-simplified" }
+    ],
+    "chart": { "title": "Showerhead flow", "unit": "GALLONS PER MINUTE", "rows": [{ "label": "Standard showerhead", "value": 2.5, "display": "2.5" }, { "label": "WaterSense maximum", "value": 2, "display": "2.0" }], "note": "WaterSense requires no more than 2.0 gpm, with spray performance testing.", "source": "U.S. EPA WaterSense", "sourceUrl": "https://www.epa.gov/watersense/showerheads" }
+  },
+  {
+    "id": "water-leak-detection", "chartScene": 1,
+    "photos": [
+      { "file": "topics/water-leak-detection.jpg" },
+      { "file": "topics/water-leak-detection-2.jpg", "article": "https://www.greenbuildermedia.com/blog/how-leak-detection-and-monitoring-can-drive-net-zero-water" },
+      { "file": "topics/water-leak-detection-3.jpg", "article": "https://www.greenbuildermedia.com/blog/leak-detections-second-best-selling-point" }
+    ],
+    "chart": { "title": "How fast a leak adds up", "unit": "GALLONS AT 0.5 GPM", "rows": [{ "label": "Unnoticed for 24 hours", "value": 720, "display": "720" }, { "label": "Shut off after 1 hour", "value": 30, "display": "30" }], "note": "Illustrative calculation: 0.5 gallon/minute; not a product performance claim.", "source": "VPSF calculation", "sourceUrl": "https://www.greenbuildermedia.com/blog/how-leak-detection-and-monitoring-can-drive-net-zero-water" }
+  },
+  {
+    "id": "health-ventilation", "chartScene": 1,
+    "photos": [
+      { "file": "topics/health-ventilation.jpg" },
+      { "file": "topics/health-ventilation-2.jpg", "article": "https://www.greenbuildermedia.com/blog/review-solving-multiple-indoor-air-problems-with-a-panasonic-erv" },
+      { "file": "topics/health-ventilation-3.webp", "article": "https://www.greenbuildermedia.com/blog/why-indoor-air-quality-is-the-new-must-have-feature", "imageUrl": "https://www.greenbuildermedia.com/hubfs/Housing%202.0/Panasonic%20ERV.webp" }
+    ],
+    "chart": { "title": "Heat recovery in practice", "unit": "ANNUAL VENTILATION COST, ONE MINNESOTA HOME", "rows": [{ "label": "Without heat recovery", "value": 188, "display": "$188" }, { "label": "With HRV", "value": 86, "display": "$86" }], "note": "One published HRV example, not a universal ERV or installation-cost estimate.", "source": "Green Builder Media / John Bower", "sourceUrl": "https://www.greenbuildermedia.com/blog/key-products-for-superior-indoor-air-quality" }
+  },
+  {
+    "id": "health-filtration", "chartScene": 2,
+    "photos": [
+      { "file": "topics/health-filtration.jpg" },
+      { "file": "topics/health-filtration-2.webp", "article": "https://www.greenbuildermedia.com/blog/2026-green-builder-sustainable-products-of-the-year", "imageUrl": "https://www.greenbuildermedia.com/hubfs/2026%20Sustainable%20Product%20of%20the%20Year/3M-filtrete-refillable-filter.webp" },
+      { "file": "topics/health-filtration-3.webp", "article": "https://www.greenbuildermedia.com/blog/2026-green-builder-sustainable-products-of-the-year", "imageUrl": "https://www.greenbuildermedia.com/hubfs/2026%20Sustainable%20Product%20of%20the%20Year/BenMoore%20Eco%20Spec_Primer_1%20Gal_US.webp" }
+    ],
+    "chart": { "title": "Indoor humidity guide", "unit": "RELATIVE HUMIDITY (%)", "rows": [{ "label": "Ideal range begins", "value": 30, "display": "30%" }, { "label": "Ideal range ends", "value": 50, "display": "50%" }, { "label": "Keep below", "value": 60, "display": "60%" }], "note": "EPA guidance: ideally 30-50% RH and below 60% where possible.", "source": "U.S. EPA mold guidance", "sourceUrl": "https://www.epa.gov/mold/brief-guide-mold-moisture-and-your-home" }
+  },
+  {
+    "id": "roof-risk", "chartScene": 2,
+    "photos": [
+      { "file": "topics/roof-risk.jpg" },
+      { "file": "topics/roof-risk-2.jpg", "article": "https://www.greenbuildermedia.com/blog/extreme-durability-helps-make-metal-roofs-sustainable" },
+      { "file": "topics/roof-risk-3.jpg", "article": "https://www.greenbuildermedia.com/blog/resilience-rising-optimized-roof-attic-assemblies" }
+    ],
+    "chart": { "title": "Durability changes replacement", "unit": "ROOF INSTALLATIONS OVER 60 YEARS", "rows": [{ "label": "20-year service life", "value": 3, "display": "3" }, { "label": "60-year service life", "value": 1, "display": "1" }], "note": "Illustrative lifecycle math; actual roof life depends on material and site.", "source": "VPSF calculation", "sourceUrl": "https://www.greenbuildermedia.com/blog/extreme-durability-helps-make-metal-roofs-sustainable" }
+  },
+  {
+    "id": "resilience-backup-power", "chartScene": 1,
+    "photos": [
+      { "file": "topics/resilience-backup-power.jpg" },
+      { "file": "topics/resilience-backup-power-2.jpg", "article": "https://www.greenbuildermedia.com/blog/why-waste-money-on-a-gas-generator-when-battery-options-abound" },
+      { "file": "topics/resilience-backup-power-3.jpg", "article": "https://www.greenbuildermedia.com/blog/powering-the-future-with-solar-storage-systems" }
+    ],
+    "chart": { "title": "Keep essentials running longer", "unit": "IDEAL HOURS FROM 10 KWH USABLE STORAGE", "rows": [{ "label": "250 W critical loads", "value": 40, "display": "40 h" }, { "label": "1,000 W loads", "value": 10, "display": "10 h" }], "note": "Illustrative energy / power calculation; inverter losses and reserve excluded.", "source": "VPSF calculation", "sourceUrl": "https://www.greenbuildermedia.com/blog/why-waste-money-on-a-gas-generator-when-battery-options-abound" }
+  },
+  {
+    "id": "carbon-materials", "chartScene": 2,
+    "photos": [
+      { "file": "topics/carbon-materials.jpg" },
+      { "file": "topics/carbon-materials-2.jpg", "article": "https://www.greenbuildermedia.com/blog/bringing-comfort-and-quiet-to-vision-house-las-vegas" },
+      { "file": "topics/carbon-materials-3.webp", "article": "https://www.greenbuildermedia.com/blog/epds-at-the-core-of-fiberons-decarbonization-strategy", "imageUrl": "https://www.greenbuildermedia.com/hs-fs/hubfs/Fiberon/BST_RAIL_HavenViewCitySide_02_750x.webp?height=500&name=BST_RAIL_HavenViewCitySide_02_750x.webp&width=750" }
+    ],
+    "chart": { "title": "Compare verified EPDs", "unit": "EXAMPLE KG CO2E, SAME FUNCTIONAL UNIT", "rows": [{ "label": "Illustrative product A", "value": 100, "display": "100" }, { "label": "Illustrative product B", "value": 70, "display": "70" }], "note": "Hypothetical numbers only; compare real EPDs with matching boundaries.", "source": "Illustrative EPD comparison", "sourceUrl": "https://www.greenbuildermedia.com/blog/epds-are-the-conversation-starter" }
+  },
+  {
+    "id": "tree-risk", "chartScene": 1,
+    "photos": [
+      { "file": "topics/tree-risk.jpg" },
+      { "file": "topics/tree-risk-2.jpg", "article": "https://www.greenbuildermedia.com/blog/maximize-your-home-investment-reduce-expenses-on-roofs-decks-and-trees" },
+      { "file": "topics/tree-risk-3.jpg", "article": "https://www.greenbuildermedia.com/blog/resilience-rising-focused-landscaping-for-tighter-budgets" }
+    ],
+    "chart": { "title": "The value of useful shade", "unit": "HOUSEHOLD ENERGY INDEX", "rows": [{ "label": "Without strategic shade", "value": 100, "display": "100" }, { "label": "Potential with shade", "value": 75, "display": "75" }], "note": "DOE describes up to 25% savings from carefully positioned trees; illustrative upper bound.", "source": "U.S. DOE Energy Saver", "sourceUrl": "https://www.energy.gov/sites/prod/files/2013/06/f2/energy_savers.pdf" }
+  },
+  {
+    "id": "community-connectivity", "chartScene": 1,
+    "photos": [
+      { "file": "topics/community-connectivity.jpg" },
+      { "file": "topics/community-connectivity-2.jpg", "article": "https://www.greenbuildermedia.com/blog/why-walkable-neighborhoods-and-green-spaces-win-with-homebuyers" },
+      { "file": "topics/community-connectivity-3.jpg", "article": "https://www.greenbuildermedia.com/blog/creating-a-vision-of-resilient-living" }
+    ],
+    "chart": { "title": "A short trip, two choices", "unit": "DIRECT CO2 PER MILE", "rows": [{ "label": "Walking", "value": 0, "display": "0 g" }, { "label": "Average gasoline vehicle", "value": 411, "display": "411 g" }], "note": "Vehicle figure is a U.S. average; excludes vehicle and infrastructure lifecycle.", "source": "U.S. EPA", "sourceUrl": "https://19january2017snapshot.epa.gov/sites/production/files/2016-02/documents/420f14040a.pdf" }
+  },
+  {
+    "id": "ownership-insurance", "chartScene": 2,
+    "photos": [
+      { "file": "topics/ownership-insurance.jpg" },
+      { "file": "topics/ownership-insurance-2.jpg", "article": "https://www.greenbuildermedia.com/blog/rising-insurance-costs-make-resiliency-a-key-builder-selling-point" },
+      { "file": "topics/ownership-insurance-3.jpg", "article": "https://www.greenbuildermedia.com/blog/cancelled-how-to-make-sure-your-home-insurance-gets-renewed" }
+    ],
+    "chart": { "title": "Look beyond the mortgage", "unit": "ILLUSTRATIVE ANNUAL COST", "rows": [{ "label": "Mortgage payments", "value": 24000, "display": "$24k" }, { "label": "Plus tax, insurance, upkeep", "value": 33400, "display": "$33.4k" }], "note": "Example only: adds $4k tax, $2.4k insurance, $3k maintenance.", "source": "VPSF illustrative budget", "sourceUrl": "https://www.greenbuildermedia.com/blog/rising-insurance-costs-make-resiliency-a-key-builder-selling-point" }
+  }
+]

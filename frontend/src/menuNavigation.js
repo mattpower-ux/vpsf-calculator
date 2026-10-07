@@ -9,6 +9,18 @@ const entryScreens = new Set([0, 1, 2, 3, 14]);
 
 export const hasEntryNavigation = (screen) => entryScreens.has(screen);
 
+export function getResultsMenuItems() {
+  return [
+    item("score", "VPSF Score Overview", 4),
+    item("takeaways", "Key Takeaway", 5),
+    item("recommendations", "Recommendations", 6),
+    item("path", "Path to 700 VPSF", 17),
+    item("cost", "Future Cost Exposure", 18),
+    item("comparison", "Competing Home Comparison", 19),
+    item("report", "VPSF Report Card", 9)
+  ];
+}
+
 export function buildMenuGroups(pillars, recommendations) {
   return [
     {
@@ -24,15 +36,7 @@ export function buildMenuGroups(pillars, recommendations) {
     },
     {
       title: "Results",
-      items: [
-        item("score", "VPSF Score Overview", 4),
-        item("takeaways", "Key Takeaway", 5),
-        item("recommendations", "Recommendations", 6),
-        item("path", "Path to 700 VPSF", 17),
-        item("cost", "Future Cost Exposure", 18),
-        item("comparison", "Competing Home Comparison", 19),
-        item("report", "VPSF Report Card", 9)
-      ]
+      items: getResultsMenuItems()
     },
     {
       title: "The Seven Pillars",

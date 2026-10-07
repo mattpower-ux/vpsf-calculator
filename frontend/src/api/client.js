@@ -126,6 +126,14 @@ export async function getProductRecommendations() {
   }));
 }
 
+export function getHelpGuide() {
+  return optionalRequest("/api/help/guide");
+}
+
+export function searchHelpGuide(query) {
+  return optionalRequest(`/api/help/search?${new URLSearchParams({ q: query })}`);
+}
+
 export async function submitLead(lead) {
   return request("/api/leads", {
     method: "POST",

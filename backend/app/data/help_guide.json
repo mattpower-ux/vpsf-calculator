@@ -1,0 +1,164 @@
+[
+  {
+    "id": "value-per-square-foot",
+    "title": "What VPSF means",
+    "question": "What is Value Per Square Foot?",
+    "category": "Getting Started",
+    "body": "VPSF stands for Value Per Square Foot. In this calculator it is a home-performance score out of 1,000, not a dollar-per-square-foot appraisal or a promise of resale value. It brings together energy, water, health, resilience, carbon and materials, financial risk, and community and mobility. The score helps you see strengths, missing evidence, and useful upgrades in one place. Treat it as a decision aid: a result based on the information currently available for the home, not a certification or an estimate of market price.",
+    "keywords": ["VPSF", "definition", "meaning", "score", "appraisal", "value per square foot"],
+    "screen": 4,
+    "faq": true
+  },
+  {
+    "id": "calculator-workflow",
+    "title": "How the calculator works",
+    "question": "How does the VPSF calculator work?",
+    "category": "Getting Started",
+    "body": "Start with a home address. If the property is already in the VPSF archive, the calculator loads its saved facts; otherwise it can try available public property records and location-risk sources. Review the address and property summary, then add or correct key systems such as HVAC, water heating, roofing, ventilation, solar, and storage. Select Generate VPSF Score to evaluate the available evidence across seven pillars. My Scores opens the results pages; the Menu also links to recommendations, building-science explanations, product options, and sharing. More complete and verified details make the report more useful, but they do not guarantee a higher score.",
+    "keywords": ["how", "calculator", "workflow", "start", "steps", "generate", "scan"],
+    "screen": 0,
+    "faq": true
+  },
+  {
+    "id": "product-recommendations",
+    "title": "Finding relevant products",
+    "question": "Where can I get more information on the best products to raise my home's VPSF score?",
+    "category": "Improvements",
+    "body": "Open Recommended Products to see options related to the home's improvement opportunities. You can also start with Recommendations, choose Product Options, and compare product categories before opening a specific product. Read Learn More for the building-science explanation behind an upgrade. A product can support a stronger score only when it suits the home and its installation and performance are documented; a product listing alone does not add points. Ask a qualified professional to confirm fit, local requirements, and pricing.",
+    "keywords": ["best products", "recommended products", "product recommendations", "upgrades", "buy", "pricing"],
+    "screen": 7,
+    "faq": true
+  },
+  {
+    "id": "correct-details",
+    "title": "Correcting or adding home details",
+    "question": "What if a home detail is missing or wrong?",
+    "category": "Property Data",
+    "body": "Use Edit/Add Details from Review & Confirm to update the property summary or key systems. Include equipment type and age where known, especially HVAC, water heating, roof age and material, ventilation or ERV, solar panels, and battery storage. You can add other specs in All Home Specs. Review the address carefully before scoring, because location affects climate and hazard context. When possible, support your changes with permits, invoices, equipment labels, photos, or inspection documents. The calculator saves appended property details to its archive so they can be loaded on later visits.",
+    "keywords": ["edit", "add details", "wrong", "missing", "HVAC", "roof", "water heater", "ERV"],
+    "screen": 3,
+    "faq": true
+  },
+  {
+    "id": "saved-property",
+    "title": "Revisiting a saved property",
+    "question": "Will rescanning a saved property use another data pull?",
+    "category": "Property Data",
+    "body": "When a previously scanned address is recognized, VPSF loads the property's archived details instead of repeating the property-data API pull. Common street and state abbreviations can identify the same address, and the saved-address suggestion can complete an address you have begun typing. New details you append are added to the saved property version. Check the address and ZIP before continuing so an unrelated property is not mistaken for the archived home. A new or changed address may require new location and property lookups.",
+    "keywords": ["saved property", "rescanning", "rescan", "archive", "API pull", "autofill", "address"],
+    "screen": 0,
+    "faq": true
+  },
+  {
+    "id": "address-and-records",
+    "title": "Address and public records",
+    "category": "Property Data",
+    "body": "The address is the starting point for matching a home to saved scans and available public records. Street abbreviations such as St, St., and Street, plus state abbreviations such as ME and Maine, are normalized for matching. Public data may cover basic property facts or permits but rarely proves equipment efficiency, ventilation quality, water fixtures, or resilience upgrades. If a public record is absent or appears to describe the wrong home, correct the details before scoring. A precise ZIP and location also help the calculator select the right climate and hazard context.",
+    "keywords": ["address", "street", "state", "records", "permits", "matching", "ZIP"],
+    "screen": 0
+  },
+  {
+    "id": "key-systems",
+    "title": "Documenting key systems",
+    "category": "Property Data",
+    "body": "Key Systems is the place to record the systems that strongly influence a home's performance: heating and cooling type and age, water-heating type and age, roof material and age, ventilation such as an ERV or HRV, solar capacity, and battery storage. Use the most specific information you can verify rather than guessing. The broader All Home Specs page can capture additional measures. If something is unknown, leave it unknown until you have evidence; the calculator should not treat a missing detail as proof that an upgrade exists.",
+    "keywords": ["key systems", "HVAC", "water heating", "roof", "ventilation", "ERV", "solar", "battery"],
+    "screen": 2
+  },
+  {
+    "id": "evidence-and-documents",
+    "title": "What counts as evidence",
+    "category": "Property Data",
+    "body": "An invoice, permit, inspection report, equipment label, specification sheet, or clear photo can help verify a feature. For example, a heat pump water heater label can establish its model, while an installation invoice can establish when it was added. Keep records for major upgrades and review extracted or inferred details before accepting them. If the document and public record disagree, prefer the verified current condition of the home and keep the source available for later review. Better evidence makes the report easier to explain to a buyer, contractor, or appraiser.",
+    "keywords": ["evidence", "documents", "upload", "photos", "permit", "invoice", "verification"],
+    "screen": 0
+  },
+  {
+    "id": "score-interpretation",
+    "title": "Reading the VPSF score",
+    "category": "Results",
+    "body": "The VPSF total is the sum of seven pillar scores, with 1,000 points available in the current model. The score overview shows the total and performance label; pillar pages show where points were earned and where information or upgrades may be missing. A low pillar score can reveal a high-priority opportunity even when another pillar performs well. A percentage of available points is not a market percentile. The report card is based on current inputs and is not a certification, an insurance quote, or a guarantee of future savings.",
+    "keywords": ["my scores", "score", "points", "1000", "percentile", "label", "report card"],
+    "screen": 24
+  },
+  {
+    "id": "seven-pillars",
+    "title": "The seven scoring pillars",
+    "category": "Results",
+    "body": "Energy considers efficiency, electrification, and energy exposure. Water looks at conservation and water-damage risk. Health covers indoor conditions such as ventilation and moisture. Resilience considers hazards and the home's ability to withstand them. Carbon & Materials looks at material impacts and documentation. Financial Risk addresses ownership-cost exposure. Community & Mobility considers the surrounding context and transportation. Open The Seven Pillars in Menu for each detailed score and explanation; each pillar has a different maximum number of points.",
+    "keywords": ["pillars", "energy", "water", "health", "resilience", "carbon", "financial", "community"],
+    "screen": 23
+  },
+  {
+    "id": "climate-and-risk",
+    "title": "How location affects the report",
+    "category": "Results",
+    "body": "A property's location can provide climate-zone and hazard context, including public flood and wildfire layers when suitable coordinates are available. These are area-level screening signals, not a site inspection or a guarantee that an individual house is safe or unsafe. Risk data can be unavailable, imprecise, or updated by its source. If you correct an address, review its risk context again before relying on the score. Local hazards should guide which resilience upgrades matter most for that home.",
+    "keywords": ["climate", "location", "flood", "fire", "wildfire", "risk", "FEMA"],
+    "screen": 3
+  },
+  {
+    "id": "recommendations",
+    "title": "Using recommendations",
+    "category": "Improvements",
+    "body": "Recommendations describe improvements that may address weaknesses in the current home record. Each one includes a short summary, Learn More for background building science, and Product Options for relevant categories. Impact points are estimates within the VPSF model, not a guaranteed gain or savings quote. Compare the recommendation with the home's current equipment, climate, budget, and documentation. After work is completed, update the saved property details and generate a new score to see how the recorded changes affect the report.",
+    "keywords": ["recommendations", "impact", "upgrade", "learn more", "product options"],
+    "screen": 6
+  },
+  {
+    "id": "learn-more",
+    "title": "Learning the building science",
+    "category": "Improvements",
+    "body": "Learn More pages explain why an improvement matters, how it works, and which choices are more sustainable. Some topics include a short video; the written sections remain available for deeper reading. Open Learn More from a recommendation, or find a topic in Building Science Basics through the Menu. Use this information to frame questions for a contractor, then verify the proposed product and installation against the home's actual conditions.",
+    "keywords": ["learn more", "video", "building science", "education", "background"],
+    "screen": 23
+  },
+  {
+    "id": "know-how-archive",
+    "title": "Finding Green Builder know-how",
+    "category": "Improvements",
+    "body": "The Know-How Archives collect Green Builder Media articles by VPSF pillar. Open a pillar's archive from Building Science Basics in the Menu or from its Key Takeaway. Article titles lead to a clean reading view when an individual article is available; a topic collection opens as another list of linked articles. Archive material offers background and examples, but it is not a substitute for a project-specific design, inspection, or local code review.",
+    "keywords": ["know-how", "archive", "articles", "Green Builder", "research"],
+    "screen": 23
+  },
+  {
+    "id": "path-to-700",
+    "title": "Planning a path to 700",
+    "category": "Results",
+    "body": "Path to 700 VPSF organizes potential improvements toward the High Performance threshold. It is a planning aid, not a promise that every listed action will add the displayed points. Start with missing or low-scoring systems, choose upgrades that fit the home's climate and condition, and retain proof of installation and performance. Recalculate after updating the saved property to see the score produced by the new facts.",
+    "keywords": ["700", "plan", "path", "high performance", "improvements"],
+    "screen": 17
+  },
+  {
+    "id": "cost-exposure",
+    "title": "Understanding future cost exposure",
+    "category": "Results",
+    "body": "Future Cost Exposure highlights ownership risks such as aging systems, utility costs, maintenance, and insurance pressure. It is a comparative planning view, not a personalized quote or prediction of actual bills. Check the age and condition of major equipment, ask for local prices, and consider climate-specific hazards before deciding what to replace first. Improving one risk may also affect other pillars, but the calculator's points remain separate from real-world dollars.",
+    "keywords": ["future cost", "utility", "insurance", "maintenance", "ownership", "risk"],
+    "screen": 18
+  },
+  {
+    "id": "report-card",
+    "title": "Using the VPSF Report Card",
+    "category": "Results",
+    "body": "The VPSF Report Card summarizes the current total, seven pillar scores, performance label, and property address. Check it for missing or incorrect details before sharing. You can download a text version or use the available share action. The report is based on the details currently entered and should not be presented as a certified home label, market percentile, guaranteed savings figure, or appraisal.",
+    "keywords": ["report card", "download", "share", "label", "certified"],
+    "screen": 9
+  },
+  {
+    "id": "share-score",
+    "title": "Sharing your score",
+    "category": "Results",
+    "body": "Share Your Score turns the home's current report into a clearer summary of strengths, improvement opportunities, and supporting information. Review the address, photos, score, and statements before sending it to anyone else. For a portable score summary, use the VPSF Report Card. Sharing a score is most useful when the underlying system details and upgrade records are current and can be checked.",
+    "keywords": ["share", "marketing", "score", "report", "send"],
+    "screen": 8
+  },
+  {
+    "id": "privacy-and-limitations",
+    "title": "Data, privacy, and limits",
+    "category": "Getting Started",
+    "body": "The calculator combines information you provide with available public or partner data and keeps saved property details for later scans. Only add documents and personal details you are comfortable storing for this purpose. Public records may be incomplete, and modeled scores are not a substitute for an inspection, energy audit, insurance underwriting, or an appraisal. Confirm important decisions with the appropriate professional and current local information.",
+    "keywords": ["privacy", "data", "limitations", "personal", "inspection", "audit"],
+    "screen": 0
+  }
+]

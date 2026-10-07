@@ -5,12 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.db import init_db
-from app.routers import admin, articles, integrations, leads, products, properties, scoring, tracking
+from app.routers import admin, articles, help, integrations, leads, products, properties, scoring, tracking
 
 settings = get_settings()
 default_cors_origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
+    "http://127.0.0.1:5174",
+    "http://localhost:5174",
     "https://vpsf-calculator.onrender.com",
     "https://vpsf-frontend.onrender.com",
 ]
@@ -40,6 +42,7 @@ app.include_router(admin.router)
 app.include_router(integrations.router)
 app.include_router(tracking.router)
 app.include_router(articles.router)
+app.include_router(help.router)
 
 
 @app.get("/api/health")

@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 let buildMenuGroups;
+let getResultsMenuItems;
 let hasEntryNavigation;
 try {
-  ({ buildMenuGroups, hasEntryNavigation } = await import("./menuNavigation.js"));
+  ({ buildMenuGroups, getResultsMenuItems, hasEntryNavigation } = await import("./menuNavigation.js"));
 } catch {
   // The first run records the missing menu behavior before implementation.
 }
@@ -48,6 +49,10 @@ test("the seven pillar links sit together after Results, not in Building Science
   assert.deepEqual(pillarGroup.items.map(({ id }) => id), pillars.map(({ key }) => `pillar-${key}`));
   assert.deepEqual(pillarGroup.items.map(({ target }) => target), pillars.map(({ key }) => ({ screen: 10, pillar: key })));
   assert.ok(!groups.find(({ title }) => title === "Building Science Basics").items.some(({ id }) => id.startsWith("pillar-")));
+});
+
+test("My Scores uses the same links and destinations as Menu Results", () => {
+  assert.deepEqual(getResultsMenuItems(pillars, recommendations), buildMenuGroups(pillars, recommendations).find(({ title }) => title === "Results").items);
 });
 
 test("sharing is a direct top-level destination, separate from products", () => {

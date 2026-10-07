@@ -6,6 +6,7 @@ import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
+import { assessedHomeAddress } from "./assessedHomeAddress";
 import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
 import { themeFromSearch } from "./theme";
 import knowHowCatalog from "./data/knowHowArticles.json";
@@ -2303,7 +2304,7 @@ function recommendationMatchesPillar(recommendation, pillarKey) {
 
 
 
-function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar }) {
+function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, propertyAddress }) {
   const filteredRecommendations = demoRecommendationDetails.filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
@@ -2316,6 +2317,7 @@ function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEduc
   return (
     <div className="screen recommendations withNav">
       <header className="screenTop"><h2>{activeLabel ? `${activeLabel} Recommendations` : "Recommendations"}</h2></header>
+      {propertyAddress && <p className="assessedAddress">For <strong>{propertyAddress}</strong></p>}
 
       {activeLabel && (
         <section className="contextBanner">
@@ -2718,13 +2720,14 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
   );
 }
 
-function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar, onProductClick }) {
+function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar, onProductClick, propertyAddress }) {
   const filteredProducts = products.filter((product) => productMatchesPillar(product, activePillar));
   const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
   return (
     <div className="screen products withNav">
       <header className="screenTop"><h2>{activeLabel ? `${activeLabel} Products` : "Recommended Products"}</h2><Filter size={18} /></header>
+      {propertyAddress && <p className="assessedAddress">For <strong>{propertyAddress}</strong></p>}
 
       {activeLabel && (
         <section className="contextBanner">
@@ -3309,6 +3312,7 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
+  const [hasAssessedHome, setHasAssessedHome] = useState(false);
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
   const [products, setProducts] = useState(demoProducts);
@@ -3319,6 +3323,7 @@ export default function App() {
   const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
+  const propertyAddress = assessedHomeAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const navigateFromUI = (target) => {
     if (target === 23) {
       if (screen !== 23) {
@@ -3360,6 +3365,7 @@ export default function App() {
   }, [queryId]);
 
   const handleQueryStarted = async (property, source) => {
+    setHasAssessedHome(true);
     const record = await trackPropertyQuery({
       sessionId,
       address: property.address,
@@ -3619,8 +3625,8 @@ export default function App() {
         )}
         {screen === 4 && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} />}
         {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} />}
-        {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} />}
-        {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
+        {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} propertyAddress={propertyAddress} />}
+        {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
         {screen === 9 && <LabelScreen result={result} property={result.property || home} setScreen={navigateFromUI} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
@@ -3787,6 +3793,8 @@ export default function App() {
         .scoreLinks button svg { flex: 0 0 auto; color: var(--blue); }
         .scoreLinks button:hover { color: var(--blue); }
         .scoreLinks button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .assessedAddress { margin: 7px 0 0; color: var(--body-muted); text-align: center; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+        .assessedAddress strong { color: var(--ink); font-weight: 700; }
         .helpSearchLabel { display: block; margin: 22px 0 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
         .helpSearchBox { display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--blue); }
         .helpSearchBox:focus-within { border-color: var(--blue); outline: 2px solid var(--blue); outline-offset: 1px; }

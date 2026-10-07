@@ -40,7 +40,7 @@ export function buildMenuGroups(pillars, recommendations) {
     },
     {
       title: "The Seven Pillars",
-      items: pillars.map(({ key, label }) => ({ id: `pillar-${key}`, label, target: { screen: 10, pillar: key } }))
+      items: pillars.map(({ key, label }) => ({ id: `pillar-${key}`, label, target: { screen: 26, pillar: key } }))
     },
     {
       title: "Building Science Basics",

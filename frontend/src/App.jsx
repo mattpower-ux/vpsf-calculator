@@ -8,6 +8,7 @@ import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menu
 import { bottomNavigationItems } from "./bottomNavigation";
 import { assessedHomeAddress } from "./assessedHomeAddress";
 import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
+import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { themeFromSearch } from "./theme";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
@@ -95,7 +96,8 @@ const SCREEN_LABELS = {
   22: "Know-How Archive",
   23: "Menu",
   24: "My Scores",
-  25: "Help"
+  25: "Help",
+  26: "Pillar Definition"
 };
 
 function getOrCreateSessionId() {
@@ -1479,6 +1481,29 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
   );
 }
 
+function PillarDefinitionScreen({ selectedPillar, setScreen, onOpenArchive }) {
+  const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
+  const content = pillarDefinitionTopics[pillar.key];
+  const Icon = pillar.icon;
+
+  return (
+    <div className="screen pillarDefinitionScreen withNav">
+      <header className="screenTop"><h2>{PILLAR_DETAILS[pillar.key].title}</h2><Icon size={19} /></header>
+      <p className="pillarDefinitionIntro">{content.intro}</p>
+      <section className="pillarDefinitionTopics">
+        <h3>What This Pillar Covers</h3>
+        <ul>
+          {content.topics.map((topic) => <li key={topic}><Check size={17} aria-hidden="true" /><span>{topic}</span></li>)}
+        </ul>
+      </section>
+      <button className="secondaryButton" type="button" onClick={() => onOpenArchive(pillar.key)}>
+        Explore {pillar.label} Know-How <ArrowRight size={18} />
+      </button>
+      <BottomNav active="Menu" setScreen={setScreen} />
+    </div>
+  );
+}
+
 function PillarBreakdown({ result, selectedPillar, setScreen, setSelectedKnowHowPillar, setKnowHowReturnScreen }) {
   const pillarPriority = {
     health: 1,
@@ -2465,8 +2490,10 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
       </section>
 
       {listing.pageCount > 1 && <ArchivePagination listing={listing} onChange={changePage} position="bottom" />}
-      <button className="secondaryButton" onClick={() => setScreen(returnScreen)}>Return to Key Takeaway</button>
-      <BottomNav active="Pillars" setScreen={setScreen} />
+      <button className="secondaryButton" onClick={() => setScreen(returnScreen)}>
+        {returnScreen === 26 ? `Return to ${PILLAR_DETAILS[pillarKey]?.title || "Pillar"}` : returnScreen === 23 ? "Return to Menu" : "Return to Key Takeaway"}
+      </button>
+      <BottomNav active={[23, 26].includes(returnScreen) ? "Menu" : "Pillars"} setScreen={setScreen} />
     </div>
   );
 }
@@ -3597,6 +3624,12 @@ export default function App() {
     navigateFromUI(target.screen);
   };
 
+  const openPillarArchive = (pillarKey) => {
+    setSelectedKnowHowPillar(pillarKey);
+    setKnowHowReturnScreen(26);
+    navigateFromUI(22);
+  };
+
   const handleScoresNavigate = (target) => {
     scoresDestinationScreenRef.current = target;
     if ([6, 7].includes(target)) setActivePillar(null);
@@ -3645,6 +3678,7 @@ export default function App() {
         {screen === 23 && <MenuScreen key={menuVisit} onNavigate={handleMenuNavigate} setScreen={navigateFromUI} tip={ecoTipForVisit(menuVisit)} />}
         {screen === 24 && <MyScoresScreen onNavigate={handleScoresNavigate} setScreen={navigateFromUI} />}
         {screen === 25 && <HelpScreen onNavigate={handleHelpNavigate} setScreen={navigateFromUI} />}
+        {screen === 26 && <PillarDefinitionScreen selectedPillar={selectedPillar} setScreen={navigateFromUI} onOpenArchive={openPillarArchive} />}
       </AppChrome>
 
       <style>{`
@@ -4369,6 +4403,29 @@ export default function App() {
           line-height: 1.4;
           margin: 0;
         }
+        .pillarDefinitionScreen .screenTop h2 { font-size: 20px; }
+        .pillarDefinitionIntro {
+          margin: 28px 0 24px;
+          color: var(--ink);
+          font-size: 16px;
+          line-height: 1.5;
+        }
+        .pillarDefinitionTopics { border-top: 1px solid var(--line); padding-top: 20px; }
+        .pillarDefinitionTopics h3 { margin: 0 0 8px; color: var(--ink); font-size: 17px; line-height: 1.3; }
+        .pillarDefinitionTopics ul { list-style: none; padding: 0; margin: 0; }
+        .pillarDefinitionTopics li {
+          display: grid;
+          grid-template-columns: 18px minmax(0, 1fr);
+          gap: 10px;
+          align-items: start;
+          padding: 12px 0;
+          border-bottom: 1px solid var(--line);
+          color: var(--body-muted);
+          font-size: 14px;
+          line-height: 1.45;
+        }
+        .pillarDefinitionTopics li svg { color: var(--green); margin-top: 2px; }
+        .pillarDefinitionScreen .secondaryButton { min-height: 50px; height: auto; padding: 12px; text-align: center; }
         .prosConsGrid {
           display: grid;
           gap: 14px;

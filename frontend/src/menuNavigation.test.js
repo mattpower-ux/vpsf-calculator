@@ -38,7 +38,7 @@ test("menu gives direct routes to the main calculator sections", () => {
 test("knowledge buttons preserve their selected pillar or recommendation", () => {
   const groups = buildMenuGroups(pillars, recommendations);
   const items = groups.flatMap(({ items = [] }) => items);
-  assert.deepEqual(items.find(({ id }) => id === "pillar-energy").target, { screen: 10, pillar: "energy" });
+  assert.deepEqual(items.find(({ id }) => id === "pillar-energy").target, { screen: 26, pillar: "energy" });
   assert.deepEqual(items.find(({ id }) => id === "archive-water").target, { screen: 22, pillar: "water" });
   assert.deepEqual(items.find(({ id }) => id === "learn-water-heater").target, { screen: 21, recommendationId: "water-heater" });
 });
@@ -47,7 +47,8 @@ test("the seven pillar links sit together after Your Custom Results, not in Buil
   const groups = buildMenuGroups(pillars, recommendations);
   const pillarGroup = groups.find(({ title }) => title === "The Seven Pillars");
   assert.deepEqual(pillarGroup.items.map(({ id }) => id), pillars.map(({ key }) => `pillar-${key}`));
-  assert.deepEqual(pillarGroup.items.map(({ target }) => target), pillars.map(({ key }) => ({ screen: 10, pillar: key })));
+  assert.deepEqual(pillarGroup.items.map(({ target }) => target), pillars.map(({ key }) => ({ screen: 26, pillar: key })));
+  assert.ok(!pillarGroup.items.some(({ target }) => target.screen === 10), "menu definitions must not open a home's score detail");
   assert.ok(!groups.find(({ title }) => title === "Building Science Basics").items.some(({ id }) => id.startsWith("pillar-")));
 });
 

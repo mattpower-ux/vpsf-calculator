@@ -5,6 +5,7 @@ import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups } from "./menuNavigation";
+import { themeFromSearch } from "./theme";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
@@ -3389,7 +3390,7 @@ export default function App() {
   };
 
   return (
-    <main className="app">
+    <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
         {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} />}
@@ -3439,6 +3440,50 @@ export default function App() {
           --line: #dfe6ee;
           --soft: #f6f8fb;
           --card: #ffffff;
+          --body-muted: #52657a;
+          --body-copy: #40556c;
+          --surface-tint: #f7fbff;
+          --surface-tint-2: #fbfdff;
+          --accent-line: #cfe0f1;
+          --accent-line-soft: #d9e7f3;
+          --back-color: #0a7faa;
+          --icon-ink: #42627e;
+          --surface-selected: #e9f4fe;
+          --selection-tint: #eef7ff;
+        }
+
+        .app[data-theme="greenpro"] {
+          --navy: #244449;
+          --navy-2: #315b5a;
+          --blue: #315b5a;
+          --bright-blue: #3d8177;
+          --green: #18843e;
+          --green-2: #3e9d5a;
+          --gold: #ab762d;
+          --ink: #263d3e;
+          --muted: #526763;
+          --line: #d3d9cf;
+          --soft: #f4f5ee;
+          --card: #fffefa;
+          --body-muted: #536760;
+          --body-copy: #485d57;
+          --surface-tint: #f4f7f1;
+          --surface-tint-2: #fafbf7;
+          --accent-line: #cad8ce;
+          --accent-line-soft: #dce5db;
+          --back-color: #315b5a;
+          --icon-ink: #476963;
+          --surface-selected: #e6f0e6;
+          --selection-tint: #eaf3ea;
+          background: #f8f7f1;
+        }
+
+        .app[data-theme="greenpro"] .bannerWrap img {
+          filter: hue-rotate(-34deg) saturate(.8);
+        }
+
+        .app[data-theme="greenpro"] .primaryButton {
+          box-shadow: 0 10px 22px rgba(36, 68, 73, .18);
         }
 
         * { box-sizing: border-box; }
@@ -3523,9 +3568,9 @@ export default function App() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid #0a7faa;
+          border: 2px solid var(--back-color);
           border-radius: 999px;
-          background: #0a7faa;
+          background: var(--back-color);
           color: #ffffff;
           box-shadow: 0 6px 16px rgba(10, 127, 170, 0.22);
         }
@@ -3560,12 +3605,12 @@ export default function App() {
         h1 { font-size: 25px; letter-spacing: -0.04em; margin-bottom: 8px; }
         h2 { font-size: 18px; letter-spacing: -0.03em; text-align: center; margin-bottom: 8px; }
         h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink); }
-        .centerCopy, .subhead { color: #40556c; line-height: 1.45; font-size: 14px; text-align: center; }
+        .centerCopy, .subhead { color: var(--body-copy); line-height: 1.45; font-size: 14px; text-align: center; }
         .sourceNote {
-          border: 1px solid #d9e7f3;
-          background: #f7fbff;
+          border: 1px solid var(--accent-line-soft);
+          background: var(--surface-tint);
           border-radius: 10px;
-          color: #40556c;
+          color: var(--body-copy);
           font-size: 12px;
           line-height: 1.4;
           padding: 10px 12px;
@@ -3575,8 +3620,8 @@ export default function App() {
         .startScreen { padding-top: 28px; }
         .startScreen h1 { text-align: center; font-size: 24px; }
         .existingHomeCard {
-          border: 1px solid #cfe0f1;
-          background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+          border: 1px solid var(--accent-line);
+          background: linear-gradient(180deg, #ffffff 0%, var(--surface-tint) 100%);
           border-radius: 14px;
           padding: 14px;
           margin-top: 18px;
@@ -3588,7 +3633,7 @@ export default function App() {
           grid-template-columns: 22px 1fr;
           gap: 9px;
           align-items: center;
-          border: 1px solid #cfe0f1;
+          border: 1px solid var(--accent-line);
           background: #fff;
           border-radius: 10px;
           padding: 0 12px;
@@ -3611,7 +3656,7 @@ export default function App() {
         }
         .addressScanNote {
           margin: 8px 0 0;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
           line-height: 1.35;
           text-align: center;
@@ -3619,10 +3664,10 @@ export default function App() {
         .savedAddressAutofill {
           width: 100%;
           margin-top: 8px;
-          border: 1px solid #cfe0f1;
+          border: 1px solid var(--accent-line);
           border-radius: 9px;
-          background: #f7fbff;
-          color: #126fd2;
+          background: var(--surface-tint);
+          color: var(--blue);
           cursor: pointer;
           font-size: 11px;
           font-weight: 850;
@@ -3671,11 +3716,11 @@ export default function App() {
           border-radius: 12px;
           display: grid;
           place-items: center;
-          background: #e9f4fe;
+          background: var(--surface-selected);
           color: var(--blue);
         }
         .startActions strong { display: block; font-size: 14px; }
-        .startActions em { display: block; margin-top: 4px; color: #52657a; font-style: normal; font-size: 12px; line-height: 1.35; }
+        .startActions em { display: block; margin-top: 4px; color: var(--body-muted); font-style: normal; font-size: 12px; line-height: 1.35; }
         .captureStrip {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -3687,11 +3732,11 @@ export default function App() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          border: 1px solid #d9e7f3;
-          background: #fbfdff;
+          border: 1px solid var(--accent-line-soft);
+          background: var(--surface-tint-2);
           border-radius: 10px;
           padding: 8px 10px;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
           line-height: 1.15;
         }
@@ -3726,8 +3771,8 @@ export default function App() {
           grid-template-columns: 20px 1fr;
           gap: 6px;
           align-items: center;
-          border: 1px solid #d9e7f3;
-          background: #f7fbff;
+          border: 1px solid var(--accent-line-soft);
+          background: var(--surface-tint);
           border-radius: 9px;
           padding: 8px;
           color: var(--ink);
@@ -3833,7 +3878,7 @@ export default function App() {
           width: 100%;
           height: 42px;
           color: var(--ink);
-          background: #fbfdff;
+          background: var(--surface-tint-2);
           border: 1px solid #d9e3ec;
           border-radius: 8px;
           padding: 0 10px;
@@ -3841,7 +3886,7 @@ export default function App() {
           font-size: 12px;
           font-weight: 650;
         }
-        .field input:focus, .field select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(18, 111, 210, .12); }
+        .field input:focus, .field select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 12%, transparent); }
 
         .primaryButton, .secondaryButton {
           width: 100%;
@@ -3884,9 +3929,9 @@ export default function App() {
           margin-top: 13px;
           font-size: 12px;
         }
-        .summaryRow svg { color: #42627e; }
+        .summaryRow svg { color: var(--icon-ink); }
         .summaryRow strong { display: block; color: var(--ink); }
-        .summaryRow span { color: #52657a; }
+        .summaryRow span { color: var(--body-muted); }
         .summaryRow.compact { grid-template-columns: 24px 1fr 1fr; align-items: center; }
 
         .scoreGauge {
@@ -3908,9 +3953,9 @@ export default function App() {
         }
         .scoreGauge strong { font-size: 46px; letter-spacing: -0.07em; color: #1e5c32; line-height: .9; }
         .scoreGauge span { font-size: 11px; font-weight: 900; color: var(--ink); }
-        .scoreGauge em { font-style: normal; font-size: 10px; color: #52657a; margin-top: -14px; }
+        .scoreGauge em { font-style: normal; font-size: 10px; color: var(--body-muted); margin-top: -14px; }
         .scoreTitle { color: var(--green); text-align: center; font-size: 15px; margin: 0; }
-        .scoreMeaning { text-align: center; color: #52657a; font-size: 13px; margin: 4px 0 12px; }
+        .scoreMeaning { text-align: center; color: var(--body-muted); font-size: 13px; margin: 4px 0 12px; }
         .meaningButton {
           height: 34px;
           display: block;
@@ -3924,7 +3969,7 @@ export default function App() {
           font-weight: 800;
         }
         .pillarPanel h3 { margin-bottom: 2px; }
-        .pillarPanel p { color: #52657a; font-size: 12px; margin-bottom: 10px; }
+        .pillarPanel p { color: var(--body-muted); font-size: 12px; margin-bottom: 10px; }
         .pillarGrid {
           display: grid;
           grid-template-columns: 1fr 1fr 1fr;
@@ -3985,7 +4030,7 @@ export default function App() {
         .miniScore em { 
           font-size: 8px; 
           line-height: 1;
-          color: #52657a; 
+          color: var(--body-muted);
           font-style: normal; 
           flex: 0 0 auto;
         }
@@ -4020,9 +4065,9 @@ export default function App() {
           box-shadow: inset 0 0 0 1px #e4ebf2;
         }
         .smallGauge strong { font-size: 22px; line-height: .9; }
-        .smallGauge span { font-size: 10px; color: #52657a; margin-top: -8px; }
+        .smallGauge span { font-size: 10px; color: var(--body-muted); margin-top: -8px; }
         .pillarHero h3 { color: var(--green); margin-bottom: 4px; }
-        .pillarHero p { color: #52657a; font-size: 12px; line-height: 1.4; margin: 4px 0 0; }
+        .pillarHero p { color: var(--body-muted); font-size: 12px; line-height: 1.4; margin: 4px 0 0; }
 
         .pillarDetailHero {
           --takeaway-ring: var(--green);
@@ -4048,7 +4093,7 @@ export default function App() {
           margin-bottom: 6px;
         }
         .pillarDetailHero p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.4;
           margin: 0;
@@ -4128,10 +4173,10 @@ export default function App() {
         }
         .takeawayGauge svg { color: var(--takeaway-ring); margin-bottom: 1px; }
         .takeawayGauge strong { font-size: 20px; line-height: .9; color: var(--ink); }
-        .takeawayGauge span { font-size: 9px; color: #52657a; margin-top: 1px; }
+        .takeawayGauge span { font-size: 9px; color: var(--body-muted); margin-top: 1px; }
         .takeawayText em {
           display: block;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           font-style: normal;
           font-weight: 850;
@@ -4150,7 +4195,7 @@ export default function App() {
         }
         .takeawayCard.weak .takeawayText strong { color: #c68200; }
         .takeawayText p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.38;
           margin: 0;
@@ -4204,7 +4249,7 @@ export default function App() {
           padding: 4px 0;
         }
         .archiveSearch svg { flex-shrink: 0; }
-        .archiveCount { font-size: 12px; color: #52657a; scroll-margin-top: 16px; }
+        .archiveCount { font-size: 12px; color: var(--body-muted); scroll-margin-top: 16px; }
         .archivePagination {
           display: flex;
           align-items: center;
@@ -4252,7 +4297,7 @@ export default function App() {
           text-decoration: none;
           overflow-wrap: anywhere;
         }
-        .knowHowArticleCard time { font-size: 11px; color: #52657a; }
+        .knowHowArticleCard time { font-size: 11px; color: var(--body-muted); }
         .knowHowArticleCard:hover strong { text-decoration: underline; }
         .knowHowArticleCard strong {
           color: var(--blue);
@@ -4260,7 +4305,7 @@ export default function App() {
           line-height: 1.25;
         }
         .knowHowArticleCard p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.45;
           margin: 0;
@@ -4275,7 +4320,7 @@ export default function App() {
           font-size: 13px;
         }
         .detailRow.total { border-bottom: 0; font-weight: 900; }
-        .detailCard p { color: #52657a; font-size: 13px; line-height: 1.45; margin-bottom: 0; }
+        .detailCard p { color: var(--body-muted); font-size: 13px; line-height: 1.45; margin-bottom: 0; }
 
         .tabs { display: flex; gap: 8px; margin: 18px 0; }
         .tabs button {
@@ -4294,7 +4339,7 @@ export default function App() {
         .recHead span { text-transform: uppercase; color: var(--blue); font-size: 10px; font-weight: 950; flex: 1; }
         .recHead strong { color: var(--red); font-size: 12px; }
         .recommendationCard h3 { text-transform: none; letter-spacing: 0; font-size: 14px; margin: 10px 0 4px; }
-        .recommendationCard p { color: #52657a; line-height: 1.45; font-size: 13px; }
+        .recommendationCard p { color: var(--body-muted); line-height: 1.45; font-size: 13px; }
         .recommendationCardActions {
           display: flex;
           flex-wrap: wrap;
@@ -4434,7 +4479,7 @@ export default function App() {
         }
 
         .copyCard h3, .smartDataUpsell h3 { text-transform: none; letter-spacing: 0; font-size: 15px; margin-bottom: 8px; }
-        .copyCard p, .smartDataUpsell p { color: #52657a; font-size: 13px; line-height: 1.5; margin-bottom: 0; }
+        .copyCard p, .smartDataUpsell p { color: var(--body-muted); font-size: 13px; line-height: 1.5; margin-bottom: 0; }
         .educationVideoFrame { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; background: #061d33; }
         .educationVideoFrame video { display: block; width: 100%; height: 100%; object-fit: contain; }
         .educationVideoFullscreen { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 4px 0; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; }
@@ -4476,7 +4521,7 @@ export default function App() {
           margin-bottom: 5px;
         }
         .marketingHeroContent p {
-  color: #52657a;
+  color: var(--body-muted);
   font-size: 12px;
   line-height: 1.25;
   margin: 0 0 4px;
@@ -4546,10 +4591,10 @@ export default function App() {
           gap: 15px;
         }
         .reportTotal strong { display: block; color: var(--score-color); font-size: 50px; line-height: 1; letter-spacing: 0; }
-        .reportTotal small { display: block; font-size: 12px; color: #52657a; margin-top: 5px; }
+        .reportTotal small { display: block; font-size: 12px; color: var(--body-muted); margin-top: 5px; }
         .labelScore span { color: var(--score-color); display: block; font-weight: 950; text-transform: uppercase; font-size: 15px; overflow-wrap: anywhere; }
-        .labelScore em { color: #52657a; font-style: normal; font-size: 12px; }
-        .homeLabel > p { padding: 0 18px 14px; color: #52657a; font-size: 12px; border-bottom: 1px solid #e7edf3; }
+        .labelScore em { color: var(--body-muted); font-style: normal; font-size: 12px; }
+        .homeLabel > p { padding: 0 18px 14px; color: var(--body-muted); font-size: 12px; border-bottom: 1px solid #e7edf3; }
         .homeLabel .reportProperty { padding-top: 14px; margin: 0; font-weight: 700; overflow-wrap: anywhere; }
         .homeLabel .reportLimitations { padding-top: 14px; margin-top: 14px; line-height: 1.5; border-top: 1px solid #e7edf3; border-bottom: 0; }
         .homeLabel h3 { padding: 0 18px; margin: 13px 0 8px; }
@@ -4565,7 +4610,7 @@ export default function App() {
         .labelPillar div { height: 7px; background: #e5ebf1; border-radius: 99px; overflow: hidden; }
         .labelPillar i { display: block; height: 100%; background: var(--score-color); border-radius: 99px; }
         .labelPillar b { background: var(--score-color); color: white; border-radius: 99px; text-align: center; padding: 2px 0; font-size: 10px; }
-        .labelPillar em { color: #52657a; font-style: normal; text-align: right; }
+        .labelPillar em { color: var(--body-muted); font-style: normal; text-align: right; }
         .labelActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 18px 14px; }
         .labelActions button { min-height: 42px; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: var(--blue); color: white; border-radius: 8px; font-size: 11px; font-weight: 900; }
         .labelActions svg { flex-shrink: 0; }
@@ -4599,7 +4644,7 @@ export default function App() {
         .demoPropertyCards button {
           text-align: left;
           border: 1px solid #dbe6ef;
-          background: #fbfdff;
+          background: var(--surface-tint-2);
           border-radius: 12px;
           padding: 11px 12px;
           display: grid;
@@ -4609,15 +4654,15 @@ export default function App() {
         }
         .demoPropertyCards button.active {
           border-color: var(--blue);
-          background: #eef7ff;
-          box-shadow: 0 0 0 3px rgba(18, 111, 210, .10);
+          background: var(--selection-tint);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 10%, transparent);
         }
         .demoPropertyCards strong {
           color: var(--ink);
           font-size: 13px;
         }
         .demoPropertyCards span {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
         }
         .demoPropertyCards em {
@@ -4658,7 +4703,7 @@ export default function App() {
         }
         .importOptionsHelp {
           grid-column: 1 / -1;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.35;
           margin: -2px 0 2px;
@@ -4683,7 +4728,7 @@ export default function App() {
           margin-bottom: 5px;
         }
         .mlsPropertyPreview p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.35;
           margin: 0 0 9px;
@@ -4691,7 +4736,7 @@ export default function App() {
         .uploadDropZone {
           min-height: 76px;
           border-width: 2px;
-          background: #f7fbff;
+          background: var(--surface-tint);
         }
         .uploadDropZone strong {
           font-size: 13px;
@@ -4749,13 +4794,13 @@ export default function App() {
           align-items: center;
           min-height: 54px;
           border: 1px dashed #b9c8d6;
-          background: #fbfdff;
+          background: var(--surface-tint-2);
           border-radius: 10px;
           padding: 10px;
         }
         .fakeUpload > svg { color: var(--blue); }
         .fakeUpload strong { display: block; font-size: 12px; color: var(--ink); }
-        .fakeUpload em { display: block; font-size: 11px; color: #52657a; font-style: normal; margin-top: 2px; }
+        .fakeUpload em { display: block; font-size: 11px; color: var(--body-muted); font-style: normal; margin-top: 2px; }
         .demoParsePreview {
           border: 1px solid var(--line);
           background: #fff;
@@ -4798,7 +4843,7 @@ export default function App() {
           border: 1px solid var(--line);
         }
         .demoModal strong { display: block; font-size: 16px; color: var(--ink); }
-        .demoModal p { color: #52657a; font-size: 13px; line-height: 1.45; margin: 8px 0 14px; }
+        .demoModal p { color: var(--body-muted); font-size: 13px; line-height: 1.45; margin: 8px 0 14px; }
 
 
         .scanReportButton {
@@ -4868,7 +4913,7 @@ export default function App() {
           margin-bottom: 10px;
         }
         .analyzingStage p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 13px;
           line-height: 1.5;
           margin-bottom: 18px;
@@ -4968,7 +5013,7 @@ export default function App() {
           border: 2px solid #f2cf82;
         }
         .affordableUpgradeCard h3 {
-          color: #071a2c;
+          color: var(--ink);
           font-weight: 950;
           letter-spacing: .02em;
         }
@@ -4982,7 +5027,7 @@ export default function App() {
           padding: 8px 0;
         }
         .affordableUpgradeCard .detailRow strong {
-          color: #2f9b4d;
+          color: var(--green);
           font-weight: 950;
           font-size: 1.05rem;
         }
@@ -5111,14 +5156,14 @@ export default function App() {
           margin: 12px 0 6px;
         }
         .recommendationSummaryHero p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 13px;
           line-height: 1.4;
           margin: 0;
         }
         .educationHero {
-          border-color: #cfe0f1;
-          background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+          border-color: var(--accent-line);
+          background: linear-gradient(180deg, var(--surface-tint) 0%, #ffffff 100%);
         }
         .educationHero span {
           color: var(--blue);
@@ -5129,8 +5174,8 @@ export default function App() {
           text-transform: uppercase;
         }
         .vpsfEducationNote {
-          background: #f7fbff;
-          border-color: #cfe0f1;
+          background: var(--surface-tint);
+          border-color: var(--accent-line);
         }
         .smartSummaryList {
           list-style: none;
@@ -5179,7 +5224,7 @@ export default function App() {
           border-radius: 14px;
           display: grid;
           place-items: center;
-          background: #eef7ff;
+          background: var(--selection-tint);
           color: var(--bright-blue);
           border: 1px solid #d7eafa;
         }
@@ -5199,7 +5244,7 @@ export default function App() {
           margin-bottom: 4px;
         }
         .matchProductCard p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.35;
           margin-bottom: 5px;
@@ -5249,7 +5294,7 @@ export default function App() {
           border-radius: 14px;
           overflow: hidden;
           border: 1px solid #d7eafa;
-          background: #eef7ff;
+          background: var(--selection-tint);
         }
         .matchImage img {
           width: 100%;
@@ -5277,7 +5322,7 @@ export default function App() {
         .pathHeroCard p,
         .costIntroCard p,
         .comparisonCard p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 13px;
           line-height: 1.45;
           margin-bottom: 14px;
@@ -5303,7 +5348,7 @@ export default function App() {
           color: var(--green);
         }
         .pathScoreRow span {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
           font-weight: 850;
         }
@@ -5333,7 +5378,7 @@ export default function App() {
           display: flex;
           justify-content: space-between;
           margin-top: 6px;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 10px;
           font-weight: 850;
         }
@@ -5383,7 +5428,7 @@ export default function App() {
           font-size: 13px;
         }
         .costItem span {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
         }
         .costItem em {
@@ -5403,7 +5448,7 @@ export default function App() {
         }
         .costTotal span {
           display: block;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
           margin-bottom: 5px;
         }
@@ -5441,17 +5486,17 @@ export default function App() {
         .comparisonBar i {
           width: 100%;
           display: block;
-          background: linear-gradient(180deg, #29aef5, #126fd2);
+          background: linear-gradient(180deg, var(--bright-blue), var(--blue));
           border-radius: 999px;
         }
         .comparisonBar:first-child i {
-          background: linear-gradient(180deg, #5fc16f, #2f9b4d);
+          background: linear-gradient(180deg, var(--green-2), var(--green));
         }
         .comparisonBar:last-child i {
           background: linear-gradient(180deg, #8d5cf6, #5c36c9);
         }
         .comparisonBar span {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 10px;
           line-height: 1.15;
           text-align: center;
@@ -5478,7 +5523,7 @@ export default function App() {
           margin-top: 18px;
         }
         .leadFormIntro {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.35;
           margin: -4px 0 12px;
@@ -5490,7 +5535,7 @@ export default function App() {
           grid-template-columns: 28px 1fr;
           min-height: 72px;
           border-style: dashed;
-          background: #f7fbff;
+          background: var(--surface-tint);
         }
         .homePhotoUpload strong {
           font-size: 12px;
@@ -5537,7 +5582,7 @@ export default function App() {
           letter-spacing: .04em;
         }
         .contextBanner span {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.3;
         }
@@ -5585,7 +5630,7 @@ export default function App() {
         .demoPropertyCards button {
           text-align: left;
           border: 1px solid #dbe6ef;
-          background: #fbfdff;
+          background: var(--surface-tint-2);
           border-radius: 12px;
           padding: 11px 12px;
           display: grid;
@@ -5595,15 +5640,15 @@ export default function App() {
         }
         .demoPropertyCards button.active {
           border-color: var(--blue);
-          background: #eef7ff;
-          box-shadow: 0 0 0 3px rgba(18, 111, 210, .10);
+          background: var(--selection-tint);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 10%, transparent);
         }
         .demoPropertyCards strong {
           color: var(--ink);
           font-size: 13px;
         }
         .demoPropertyCards span {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 11px;
         }
         .demoPropertyCards em {
@@ -5644,7 +5689,7 @@ export default function App() {
         }
         .importOptionsHelp {
           grid-column: 1 / -1;
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.35;
           margin: -2px 0 2px;
@@ -5669,7 +5714,7 @@ export default function App() {
           margin-bottom: 5px;
         }
         .mlsPropertyPreview p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 12px;
           line-height: 1.35;
           margin: 0 0 9px;
@@ -5677,7 +5722,7 @@ export default function App() {
         .uploadDropZone {
           min-height: 76px;
           border-width: 2px;
-          background: #f7fbff;
+          background: var(--surface-tint);
         }
         .uploadDropZone strong {
           font-size: 13px;
@@ -5735,13 +5780,13 @@ export default function App() {
           align-items: center;
           min-height: 54px;
           border: 1px dashed #b9c8d6;
-          background: #fbfdff;
+          background: var(--surface-tint-2);
           border-radius: 10px;
           padding: 10px;
         }
         .fakeUpload > svg { color: var(--blue); }
         .fakeUpload strong { display: block; font-size: 12px; color: var(--ink); }
-        .fakeUpload em { display: block; font-size: 11px; color: #52657a; font-style: normal; margin-top: 2px; }
+        .fakeUpload em { display: block; font-size: 11px; color: var(--body-muted); font-style: normal; margin-top: 2px; }
         .demoParsePreview {
           border: 1px solid var(--line);
           background: #fff;
@@ -5784,7 +5829,7 @@ export default function App() {
           border: 1px solid var(--line);
         }
         .demoModal strong { display: block; font-size: 16px; color: var(--ink); }
-        .demoModal p { color: #52657a; font-size: 13px; line-height: 1.45; margin: 8px 0 14px; }
+        .demoModal p { color: var(--body-muted); font-size: 13px; line-height: 1.45; margin: 8px 0 14px; }
 
 
         .scanReportButton {
@@ -5854,7 +5899,7 @@ export default function App() {
           margin-bottom: 10px;
         }
         .analyzingStage p {
-          color: #52657a;
+          color: var(--body-muted);
           font-size: 13px;
           line-height: 1.5;
           margin-bottom: 18px;

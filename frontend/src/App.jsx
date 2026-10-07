@@ -4,7 +4,7 @@ import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enr
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { getArchivePage } from "./archivePagination";
-import { buildMenuGroups } from "./menuNavigation";
+import { buildMenuGroups, hasEntryNavigation } from "./menuNavigation";
 import { themeFromSearch } from "./theme";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
@@ -71,7 +71,7 @@ const SCREEN_LABELS = {
   5: "Pillar Breakdown",
   6: "Recommendations",
   7: "Products",
-  8: "Marketing Studio",
+  8: "Share Your Score",
   9: "VPSF Report Card",
   10: "Pillar Detail",
   11: "Listing Import",
@@ -463,9 +463,10 @@ function AppChrome({ children, screen, setScreen, onBack }) {
   const shellRef = useRef(null);
   useEffect(() => {
     shellRef.current?.scrollTo(0, 0);
+    shellRef.current?.querySelector(".screen")?.scrollTo(0, 0);
   }, [screen]);
   return (
-    <div className="phoneShell" ref={shellRef}>
+    <div className={`phoneShell${hasEntryNavigation(screen) ? " entryNavShell" : ""}`} ref={shellRef}>
       <div className="bannerWrap">
         <img src={VPSF_BANNER} alt="VPSF Value Per Square Foot" />
       </div>
@@ -475,6 +476,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
         </button>
       )}
       {children}
+      {hasEntryNavigation(screen) && <BottomNav active="Menu" setScreen={setScreen} />}
     </div>
   );
 }
@@ -2750,7 +2752,7 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
           </article>
         ))}
       </div>
-      <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio</button>
+      <button className="primaryButton" onClick={() => setScreen(8)}>Share Your Score</button>
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
@@ -2951,7 +2953,7 @@ function CompetingHomeComparisonScreen({ result, setScreen }) {
         <p>Higher VPSF scores signal better performance, lower operating costs, stronger documentation, and a clearer value story for buyers.</p>
       </section>
 
-      <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio <ArrowRight size={18} /></button>
+      <button className="primaryButton" onClick={() => setScreen(8)}>Share Your Score <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(9)}>Create VPSF Report Card</button>
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
@@ -2986,7 +2988,7 @@ function marketingOverviewForProperty(property) {
 function MarketingStudio({ selectedProperty, setScreen }) {
   return (
     <div className="screen marketing withNav">
-      <header className="screenTop"><h2>COGNITION Marketing Studio</h2></header>
+      <header className="screenTop"><h2>Share Your Score</h2></header>
 
       <section className="marketingHero realHomeHero">
         <img
@@ -3024,8 +3026,9 @@ function MarketingStudio({ selectedProperty, setScreen }) {
 const MENU_ICONS = {
   Evaluate: Home,
   Results: ClipboardList,
-  Explore: BookOpen,
-  "Products & Value": Package
+  "Building Science Basics": BookOpen,
+  "Products & Value": Package,
+  "Share Your Score": Share2
 };
 
 function MenuScreen({ onNavigate, setScreen }) {
@@ -3036,8 +3039,17 @@ function MenuScreen({ onNavigate, setScreen }) {
       <div className="menuGroups">
         {groups.map((group) => {
           const Icon = MENU_ICONS[group.title];
+          if (group.target) {
+            return (
+              <div className="menuGroup" key={group.title}>
+                <button className="menuDirect" type="button" onClick={() => onNavigate(group.target)}>
+                  <Icon size={20} /><span>{group.title}</span><ChevronRight className="menuChevron" size={18} />
+                </button>
+              </div>
+            );
+          }
           return (
-            <details className="menuGroup" key={group.title} open={group.title === "Results"}>
+            <details className="menuGroup" key={group.title}>
               <summary><Icon size={20} /><span>{group.title}</span><ChevronRight className="menuChevron" size={18} /></summary>
               <div className="menuItems">
                 {group.items.map((item, index) => (
@@ -3539,24 +3551,33 @@ export default function App() {
           padding-top: 34px;
         }
 
+        .entryNavShell { display: flex; flex-direction: column; overflow: hidden; }
+        .entryNavShell .bannerWrap { flex: 0 0 72px; }
+        .entryNavShell > .screen { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px; scrollbar-width: thin; }
+        .entryNavShell > .bottomNav { position: static; flex: 0 0 62px; width: 100%; margin: 0; }
+        .entryNavShell .stickyButton { position: static; }
+
         .withNav { display: flex; flex-direction: column; padding-bottom: 82px; }
         .withNav > .bottomNav { margin-top: auto; }
 
-        .menuGroups { display: grid; gap: 4px; margin-top: 8px; }
+        .menuGroups { display: grid; gap: 2px; margin-top: 14px; }
         .menuGroup { border-top: 1px solid var(--line); }
         .menuGroup:last-child { border-bottom: 1px solid var(--line); }
-        .menuGroup summary { display: flex; align-items: center; gap: 12px; min-height: 58px; list-style: none; color: var(--ink); font-size: 16px; font-weight: 850; cursor: pointer; }
+        .menuGroup summary, .menuDirect { display: flex; align-items: center; gap: 12px; min-height: 64px; list-style: none; color: var(--ink); font-size: 17px; font-weight: 800; line-height: 1.2; cursor: pointer; }
+        .menuDirect { width: 100%; padding: 0; border: 0; background: transparent; text-align: left; }
+        .menuGroup summary span, .menuDirect span { flex: 1; min-width: 0; }
         .menuGroup summary::-webkit-details-marker { display: none; }
-        .menuGroup summary > svg:first-child { color: var(--blue); }
+        .menuGroup summary > svg:first-child, .menuDirect > svg:first-child { flex: 0 0 auto; color: var(--blue); }
         .menuGroup .menuChevron { margin-left: auto; color: var(--muted); transition: transform .2s ease; }
+        .menuDirect .menuChevron { flex: 0 0 auto; margin-left: auto; color: var(--muted); }
         .menuGroup[open] .menuChevron { transform: rotate(90deg); }
         .menuItems { margin: 0 0 10px 10px; padding-left: 22px; border-left: 1px solid var(--line); }
-        .menuItems h3 { margin: 17px 0 4px; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
-        .menuItems button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 48px; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font-size: 15px; font-weight: 650; }
+        .menuItems h3 { margin: 20px 0 6px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .menuItems button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 48px; padding: 11px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font-size: 14px; font-weight: 550; line-height: 1.35; }
         .menuItems button span { min-width: 0; }
         .menuItems button svg { flex: 0 0 auto; color: var(--blue); }
         .menuItems button:hover { color: var(--blue); }
-        .menuGroup summary:focus-visible, .menuItems button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .menuGroup summary:focus-visible, .menuDirect:focus-visible, .menuItems button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
         .backButton {
           position: absolute;

@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 let buildMenuGroups;
+let hasEntryNavigation;
 try {
-  ({ buildMenuGroups } = await import("./menuNavigation.js"));
+  ({ buildMenuGroups, hasEntryNavigation } = await import("./menuNavigation.js"));
 } catch {
   // The first run records the missing menu behavior before implementation.
 }
@@ -20,8 +21,8 @@ const recommendations = [
 test("menu gives direct routes to the main calculator sections", () => {
   assert.equal(typeof buildMenuGroups, "function");
   const groups = buildMenuGroups(pillars, recommendations);
-  assert.deepEqual(groups.map(({ title }) => title), ["Evaluate", "Results", "Explore", "Products & Value"]);
-  const routes = groups.flatMap(({ items }) => items).map(({ target }) => target.screen);
+  assert.deepEqual(groups.map(({ title }) => title), ["Evaluate", "Results", "Building Science Basics", "Products & Value", "Share Your Score"]);
+  const routes = groups.flatMap(({ items = [], target }) => target ? [{ target }] : items).map(({ target }) => target.screen);
   for (const screen of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 17, 18, 19]) {
     assert.ok(routes.includes(screen), `missing section ${screen}`);
   }
@@ -30,8 +31,20 @@ test("menu gives direct routes to the main calculator sections", () => {
 
 test("knowledge buttons preserve their selected pillar or recommendation", () => {
   const groups = buildMenuGroups(pillars, recommendations);
-  const items = groups.flatMap(({ items }) => items);
+  const items = groups.flatMap(({ items = [] }) => items);
   assert.deepEqual(items.find(({ id }) => id === "pillar-energy").target, { screen: 10, pillar: "energy" });
   assert.deepEqual(items.find(({ id }) => id === "archive-water").target, { screen: 22, pillar: "water" });
   assert.deepEqual(items.find(({ id }) => id === "learn-water-heater").target, { screen: 21, recommendationId: "water-heater" });
+});
+
+test("sharing is a direct top-level destination, separate from products", () => {
+  const groups = buildMenuGroups(pillars, recommendations);
+  assert.deepEqual(groups.find(({ title }) => title === "Share Your Score").target, { screen: 8 });
+  assert.ok(!groups.find(({ title }) => title === "Products & Value").items.some(({ target }) => target.screen === 8));
+});
+
+test("entry and edit screens keep the bottom navigation available", () => {
+  assert.equal(typeof hasEntryNavigation, "function");
+  for (const screen of [0, 1, 2, 3, 14]) assert.equal(hasEntryNavigation(screen), true);
+  for (const screen of [4, 11, 12, 23]) assert.equal(hasEntryNavigation(screen), false);
 });

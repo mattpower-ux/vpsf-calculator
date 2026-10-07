@@ -5,6 +5,10 @@ const item = (id, label, screen, subsection) => ({
   ...(subsection ? { subsection } : {})
 });
 
+const entryScreens = new Set([0, 1, 2, 3, 14]);
+
+export const hasEntryNavigation = (screen) => entryScreens.has(screen);
+
 export function buildMenuGroups(pillars, recommendations) {
   return [
     {
@@ -31,7 +35,7 @@ export function buildMenuGroups(pillars, recommendations) {
       ]
     },
     {
-      title: "Explore",
+      title: "Building Science Basics",
       items: [
         ...pillars.map(({ key, label }) => ({ id: `pillar-${key}`, label, subsection: "Pillar Details", target: { screen: 10, pillar: key } })),
         ...pillars.map(({ key, label }) => ({ id: `archive-${key}`, label, subsection: "Know-How Archives", target: { screen: 22, pillar: key } })),
@@ -42,9 +46,12 @@ export function buildMenuGroups(pillars, recommendations) {
       title: "Products & Value",
       items: [
         item("categories", "Product Categories", 16),
-        item("products", "Recommended Products", 7),
-        item("marketing", "COGNITION Marketing Studio", 8)
+        item("products", "Recommended Products", 7)
       ]
+    },
+    {
+      title: "Share Your Score",
+      target: { screen: 8 }
     }
   ];
 }

@@ -3585,7 +3585,7 @@ export default function App() {
         .menuGroups { display: grid; gap: 2px; margin-top: 14px; }
         .menuGroup { border-top: 1px solid var(--line); }
         .menuGroup:last-child { border-bottom: 1px solid var(--line); }
-        .menuGroup summary, .menuDirect { display: flex; align-items: center; gap: 12px; min-height: 64px; list-style: none; color: var(--ink); font-size: 17px; font-weight: 800; line-height: 1.2; cursor: pointer; }
+        .menuGroup summary, .menuDirect { display: flex; align-items: center; gap: 12px; min-height: 58px; list-style: none; color: var(--ink); font-size: 17px; font-weight: 800; line-height: 1.2; cursor: pointer; }
         .menuDirect { width: 100%; padding: 0; border: 0; background: transparent; text-align: left; }
         .menuGroup summary span, .menuDirect span { flex: 1; min-width: 0; }
         .menuGroup summary::-webkit-details-marker { display: none; }
@@ -3600,7 +3600,7 @@ export default function App() {
         .menuItems button svg { flex: 0 0 auto; color: var(--blue); }
         .menuItems button:hover { color: var(--blue); }
         .menuGroup summary:focus-visible, .menuDirect:focus-visible, .menuItems button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-        .ecoTip { display: grid; grid-template-columns: 108px minmax(0, 1fr); align-items: start; gap: 13px; margin-top: 18px; padding: 0 0 8px; }
+        .ecoTip { display: grid; grid-template-columns: 108px minmax(0, 1fr); align-items: start; gap: 13px; margin-top: 14px; padding: 0 0 8px; }
         .ecoTipImage { display: block; width: 108px; height: 118px; object-fit: cover; border-radius: 6px; }
         .ecoTipCopy { min-width: 0; }
         .ecoTipCopy h3 { display: flex; flex-wrap: wrap; gap: 3px 6px; margin: 0 0 5px; color: var(--blue); font-size: 11px; line-height: 1.2; font-weight: 900; }

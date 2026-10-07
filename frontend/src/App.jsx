@@ -3823,10 +3823,10 @@ export default function App() {
         .ecoTip { display: grid; grid-template-columns: 108px minmax(0, 1fr); align-items: start; gap: 13px; margin-top: 14px; padding: 0 0 8px; }
         .ecoTipImage { display: block; width: 108px; height: 118px; object-fit: cover; border-radius: 6px; }
         .ecoTipCopy { min-width: 0; }
-        .ecoTipCopy h3 { display: flex; flex-wrap: wrap; gap: 3px 6px; margin: 0 0 5px; color: var(--blue); font-size: 11px; line-height: 1.2; font-weight: 900; }
-        .ecoTipCopy h3 span { color: var(--ink); font-size: 14px; font-weight: 800; text-transform: none; }
-        .ecoTipCopy p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.35; }
-        .ecoTipCopy a { display: inline-block; margin-top: 7px; color: var(--blue); font-size: 11px; line-height: 1.25; text-decoration: underline; text-underline-offset: 2px; }
+        .ecoTipCopy h3 { margin: 0 0 7px; color: var(--blue); font-size: 14px; line-height: 1.2; font-weight: 900; }
+        .ecoTipCopy h3 span { display: block; margin-top: 3px; color: var(--ink); font-size: 17px; font-weight: 800; text-transform: none; }
+        .ecoTipCopy p { margin: 0; color: var(--ink); font-size: 14px; line-height: 1.4; }
+        .ecoTipCopy a { display: inline-block; margin-top: 8px; color: var(--blue); font-size: 12px; line-height: 1.3; text-decoration: underline; text-underline-offset: 2px; }
         .ecoTipCopy a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
         .backButton {

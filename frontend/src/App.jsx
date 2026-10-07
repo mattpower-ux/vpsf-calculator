@@ -41,6 +41,7 @@ import {
   Flame,
   HeartPulse,
   Home,
+  Layers,
   Leaf,
   MapPin,
   Menu,
@@ -3029,6 +3030,7 @@ function MarketingStudio({ selectedProperty, setScreen }) {
 const MENU_ICONS = {
   Evaluate: Home,
   Results: ClipboardList,
+  "The Seven Pillars": Layers,
   "Building Science Basics": BookOpen,
   "Products & Value": Package,
   "Share Your Score": Share2

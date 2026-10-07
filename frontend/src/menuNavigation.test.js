@@ -11,7 +11,12 @@ try {
 
 const pillars = [
   { key: "energy", label: "Energy" },
-  { key: "water", label: "Water" }
+  { key: "water", label: "Water" },
+  { key: "health", label: "Health" },
+  { key: "resilience", label: "Resilience" },
+  { key: "carbon", label: "Carbon & Materials" },
+  { key: "financial", label: "Financial Risk" },
+  { key: "community", label: "Community & Mobility" }
 ];
 const recommendations = [
   { id: "hvac", title: "Upgrade HVAC" },
@@ -21,7 +26,7 @@ const recommendations = [
 test("menu gives direct routes to the main calculator sections", () => {
   assert.equal(typeof buildMenuGroups, "function");
   const groups = buildMenuGroups(pillars, recommendations);
-  assert.deepEqual(groups.map(({ title }) => title), ["Evaluate", "Results", "Building Science Basics", "Products & Value", "Share Your Score"]);
+  assert.deepEqual(groups.map(({ title }) => title), ["Evaluate", "Results", "The Seven Pillars", "Building Science Basics", "Products & Value", "Share Your Score"]);
   const routes = groups.flatMap(({ items = [], target }) => target ? [{ target }] : items).map(({ target }) => target.screen);
   for (const screen of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 17, 18, 19]) {
     assert.ok(routes.includes(screen), `missing section ${screen}`);
@@ -35,6 +40,14 @@ test("knowledge buttons preserve their selected pillar or recommendation", () =>
   assert.deepEqual(items.find(({ id }) => id === "pillar-energy").target, { screen: 10, pillar: "energy" });
   assert.deepEqual(items.find(({ id }) => id === "archive-water").target, { screen: 22, pillar: "water" });
   assert.deepEqual(items.find(({ id }) => id === "learn-water-heater").target, { screen: 21, recommendationId: "water-heater" });
+});
+
+test("the seven pillar links sit together after Results, not in Building Science Basics", () => {
+  const groups = buildMenuGroups(pillars, recommendations);
+  const pillarGroup = groups.find(({ title }) => title === "The Seven Pillars");
+  assert.deepEqual(pillarGroup.items.map(({ id }) => id), pillars.map(({ key }) => `pillar-${key}`));
+  assert.deepEqual(pillarGroup.items.map(({ target }) => target), pillars.map(({ key }) => ({ screen: 10, pillar: key })));
+  assert.ok(!groups.find(({ title }) => title === "Building Science Basics").items.some(({ id }) => id.startsWith("pillar-")));
 });
 
 test("sharing is a direct top-level destination, separate from products", () => {

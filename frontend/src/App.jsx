@@ -5,6 +5,7 @@ import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, hasEntryNavigation } from "./menuNavigation";
+import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
 import { themeFromSearch } from "./theme";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
@@ -18,6 +19,8 @@ import moenShowerThumb from "./assets/moen-shower.jpg";
 import niagaraToiletThumb from "./assets/Niagara-toilet.jpg";
 import arboristThumb from "./assets/ARBORIST1.jpg";
 import rachioThumb from "./assets/rachio.jpg";
+import sprinklerTipImage from "./assets/eco-tip-sprinkler.jpg";
+import waterHeaterTipImage from "./assets/products/rheem-proterra.jpg";
 import { demoProperties } from "./demo/demoProperties";
 import { demoProducts } from "./demo/demoProducts";
 import {
@@ -3031,7 +3034,13 @@ const MENU_ICONS = {
   "Share Your Score": Share2
 };
 
-function MenuScreen({ onNavigate, setScreen }) {
+const ECO_TIP_IMAGES = {
+  sprinkler: sprinklerTipImage,
+  "water-heater": waterHeaterTipImage,
+  "cool-roof": certainteedSolarisThumb
+};
+
+function MenuScreen({ onNavigate, setScreen, tip }) {
   const groups = buildMenuGroups(PILLARS, demoRecommendationDetails);
   return (
     <div className="screen menuScreen withNav">
@@ -3065,6 +3074,14 @@ function MenuScreen({ onNavigate, setScreen }) {
           );
         })}
       </div>
+      <aside className="ecoTip" aria-label="Eco tip">
+        <img className="ecoTipImage" src={ECO_TIP_IMAGES[tip.image]} alt={tip.alt} />
+        <div className="ecoTipCopy">
+          <h3>ECO-TIP <span>Did you know?</span></h3>
+          <p>{tip.text}</p>
+          <a href={tip.source} target="_blank" rel="noreferrer">Source: {tip.sourceLabel}</a>
+        </div>
+      </aside>
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
@@ -3141,6 +3158,7 @@ export default function App() {
   }
 
   const [screen, setScreen] = useState(0);
+  const [menuVisit, setMenuVisit] = useState(-1);
   const menuReturnScreenRef = useRef(4);
   const menuDestinationScreenRef = useRef(null);
   const [selectedPillar, setSelectedPillar] = useState("energy");
@@ -3166,9 +3184,12 @@ export default function App() {
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
   const navigateFromUI = (target) => {
-    if (target === 23 && screen !== 23) {
-      menuReturnScreenRef.current = screen;
-      menuDestinationScreenRef.current = null;
+    if (target === 23) {
+      if (screen !== 23) {
+        menuReturnScreenRef.current = screen;
+        menuDestinationScreenRef.current = null;
+      }
+      setMenuVisit(nextMenuVisit);
     }
     setScreen(target);
   };
@@ -3350,6 +3371,7 @@ export default function App() {
     }
     if (screen === menuDestinationScreenRef.current) {
       menuDestinationScreenRef.current = null;
+      setMenuVisit(nextMenuVisit);
       setScreen(23);
       return;
     }
@@ -3434,7 +3456,7 @@ export default function App() {
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
         {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
-        {screen === 23 && <MenuScreen onNavigate={handleMenuNavigate} setScreen={navigateFromUI} />}
+        {screen === 23 && <MenuScreen key={menuVisit} onNavigate={handleMenuNavigate} setScreen={navigateFromUI} tip={ecoTipForVisit(menuVisit)} />}
       </AppChrome>
 
       <style>{`
@@ -3578,6 +3600,14 @@ export default function App() {
         .menuItems button svg { flex: 0 0 auto; color: var(--blue); }
         .menuItems button:hover { color: var(--blue); }
         .menuGroup summary:focus-visible, .menuDirect:focus-visible, .menuItems button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .ecoTip { display: grid; grid-template-columns: 108px minmax(0, 1fr); align-items: start; gap: 13px; margin-top: 18px; padding: 0 0 8px; }
+        .ecoTipImage { display: block; width: 108px; height: 118px; object-fit: cover; border-radius: 6px; }
+        .ecoTipCopy { min-width: 0; }
+        .ecoTipCopy h3 { display: flex; flex-wrap: wrap; gap: 3px 6px; margin: 0 0 5px; color: var(--blue); font-size: 11px; line-height: 1.2; font-weight: 900; }
+        .ecoTipCopy h3 span { color: var(--ink); font-size: 14px; font-weight: 800; text-transform: none; }
+        .ecoTipCopy p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.35; }
+        .ecoTipCopy a { display: inline-block; margin-top: 7px; color: var(--blue); font-size: 11px; line-height: 1.25; text-decoration: underline; text-underline-offset: 2px; }
+        .ecoTipCopy a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
         .backButton {
           position: absolute;

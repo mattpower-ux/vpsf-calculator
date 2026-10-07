@@ -27,7 +27,7 @@ const recommendations = [
 test("menu gives direct routes to the main calculator sections", () => {
   assert.equal(typeof buildMenuGroups, "function");
   const groups = buildMenuGroups(pillars, recommendations);
-  assert.deepEqual(groups.map(({ title }) => title), ["Evaluate", "Results", "The Seven Pillars", "Building Science Basics", "Products & Value", "Share Your Score"]);
+  assert.deepEqual(groups.map(({ title }) => title), ["Evaluate", "Your Custom Results", "The Seven Pillars", "Building Science Basics", "Products & Value", "Share Your Score"]);
   const routes = groups.flatMap(({ items = [], target }) => target ? [{ target }] : items).map(({ target }) => target.screen);
   for (const screen of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 17, 18, 19]) {
     assert.ok(routes.includes(screen), `missing section ${screen}`);
@@ -43,7 +43,7 @@ test("knowledge buttons preserve their selected pillar or recommendation", () =>
   assert.deepEqual(items.find(({ id }) => id === "learn-water-heater").target, { screen: 21, recommendationId: "water-heater" });
 });
 
-test("the seven pillar links sit together after Results, not in Building Science Basics", () => {
+test("the seven pillar links sit together after Your Custom Results, not in Building Science Basics", () => {
   const groups = buildMenuGroups(pillars, recommendations);
   const pillarGroup = groups.find(({ title }) => title === "The Seven Pillars");
   assert.deepEqual(pillarGroup.items.map(({ id }) => id), pillars.map(({ key }) => `pillar-${key}`));
@@ -51,8 +51,8 @@ test("the seven pillar links sit together after Results, not in Building Science
   assert.ok(!groups.find(({ title }) => title === "Building Science Basics").items.some(({ id }) => id.startsWith("pillar-")));
 });
 
-test("My Scores uses the same links and destinations as Menu Results", () => {
-  assert.deepEqual(getResultsMenuItems(pillars, recommendations), buildMenuGroups(pillars, recommendations).find(({ title }) => title === "Results").items);
+test("My Scores uses the same links and destinations as Your Custom Results", () => {
+  assert.deepEqual(getResultsMenuItems(pillars, recommendations), buildMenuGroups(pillars, recommendations).find(({ title }) => title === "Your Custom Results").items);
 });
 
 test("sharing is a direct top-level destination, separate from products", () => {

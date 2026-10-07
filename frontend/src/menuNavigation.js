@@ -35,7 +35,7 @@ export function buildMenuGroups(pillars, recommendations) {
       ]
     },
     {
-      title: "Results",
+      title: "Your Custom Results",
       items: getResultsMenuItems()
     },
     {

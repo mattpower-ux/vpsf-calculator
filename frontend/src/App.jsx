@@ -3032,7 +3032,7 @@ function MarketingStudio({ selectedProperty, setScreen }) {
 
 const MENU_ICONS = {
   Evaluate: Home,
-  Results: ClipboardList,
+  "Your Custom Results": ClipboardList,
   "The Seven Pillars": Layers,
   "Building Science Basics": BookOpen,
   "Products & Value": Package,

@@ -4,6 +4,7 @@ import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enr
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { getArchivePage } from "./archivePagination";
+import { buildMenuGroups } from "./menuNavigation";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
@@ -38,6 +39,7 @@ import {
   Home,
   Leaf,
   MapPin,
+  Menu,
   Maximize2,
   Minimize2,
   Package,
@@ -82,7 +84,8 @@ const SCREEN_LABELS = {
   19: "Comparison",
   20: "Matching Product Detail",
   21: "Learn More",
-  22: "Know-How Archive"
+  22: "Know-How Archive",
+  23: "Menu"
 };
 
 function getOrCreateSessionId() {
@@ -456,8 +459,12 @@ function ProgressDots({ step }) {
 }
 
 function AppChrome({ children, screen, setScreen, onBack }) {
+  const shellRef = useRef(null);
+  useEffect(() => {
+    shellRef.current?.scrollTo(0, 0);
+  }, [screen]);
   return (
-    <div className="phoneShell">
+    <div className="phoneShell" ref={shellRef}>
       <div className="bannerWrap">
         <img src={VPSF_BANNER} alt="VPSF Value Per Square Foot" />
       </div>
@@ -476,7 +483,7 @@ function BottomNav({ active, setScreen }) {
     ["Restart", Home, 0],
     ["Pillars", Zap, 5],
     ["Recommendations", HeartPulse, 6],
-    ["More", Sparkles, 8]
+    ["Menu", Menu, 23]
   ];
   return (
     <nav className="bottomNav">
@@ -1113,7 +1120,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
       <button className="secondaryButton" onClick={() => setScreen(0)}>
         Back to Start
       </button>
-      <BottomNav active="More" setScreen={setScreen} />
+      <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
 }
@@ -1344,6 +1351,7 @@ function Dashboard({ result, setScreen, setSelectedPillar }) {
       <button className="primaryButton diveButton" onClick={() => setScreen(5)}>
         Next — Learn More <ArrowRight size={18} />
       </button>
+      <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );
 }
@@ -2742,7 +2750,7 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
         ))}
       </div>
       <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio</button>
-      <BottomNav active="More" setScreen={setScreen} />
+      <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
 }
@@ -2814,7 +2822,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
         </section>
       )}
 
-      <BottomNav active="More" setScreen={setScreen} />
+      <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
 }
@@ -2944,7 +2952,7 @@ function CompetingHomeComparisonScreen({ result, setScreen }) {
 
       <button className="primaryButton" onClick={() => setScreen(8)}>Open Marketing Studio <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(9)}>Create VPSF Report Card</button>
-      <BottomNav active="More" setScreen={setScreen} />
+      <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
 }
@@ -3007,7 +3015,44 @@ function MarketingStudio({ selectedProperty, setScreen }) {
       </section>
 
       <button className="primaryButton" onClick={() => setScreen(9)}>Generate VPSF Report Card <ClipboardList size={18} /></button>
-      <BottomNav active="More" setScreen={setScreen} />
+      <BottomNav active="Menu" setScreen={setScreen} />
+    </div>
+  );
+}
+
+const MENU_ICONS = {
+  Evaluate: Home,
+  Results: ClipboardList,
+  Explore: BookOpen,
+  "Products & Value": Package
+};
+
+function MenuScreen({ onNavigate, setScreen }) {
+  const groups = buildMenuGroups(PILLARS, demoRecommendationDetails);
+  return (
+    <div className="screen menuScreen withNav">
+      <header className="screenTop"><h2>Menu</h2><Menu size={18} /></header>
+      <div className="menuGroups">
+        {groups.map((group) => {
+          const Icon = MENU_ICONS[group.title];
+          return (
+            <details className="menuGroup" key={group.title} open={group.title === "Results"}>
+              <summary><Icon size={20} /><span>{group.title}</span><ChevronRight className="menuChevron" size={18} /></summary>
+              <div className="menuItems">
+                {group.items.map((item, index) => (
+                  <React.Fragment key={item.id}>
+                    {item.subsection && item.subsection !== group.items[index - 1]?.subsection && <h3>{item.subsection}</h3>}
+                    <button type="button" onClick={() => onNavigate(item.target)} aria-label={item.subsection ? `${item.subsection}: ${item.label}` : item.label}>
+                      <span>{item.label}</span><ChevronRight size={17} />
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
+            </details>
+          );
+        })}
+      </div>
+      <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
 }
@@ -3072,7 +3117,7 @@ function LabelScreen({ result, property, setScreen }) {
         {shareStatus && <p role="status">{shareStatus}</p>}
       </section>
       <button className="secondaryButton" onClick={() => setScreen(0)}>Start New Evaluation</button>
-      <BottomNav active="More" setScreen={setScreen} />
+      <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
 }
@@ -3083,6 +3128,8 @@ export default function App() {
   }
 
   const [screen, setScreen] = useState(0);
+  const menuReturnScreenRef = useRef(4);
+  const menuDestinationScreenRef = useRef(null);
   const [selectedPillar, setSelectedPillar] = useState("energy");
   const [activePillar, setActivePillar] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
@@ -3105,6 +3152,13 @@ export default function App() {
   const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
+  const navigateFromUI = (target) => {
+    if (target === 23 && screen !== 23) {
+      menuReturnScreenRef.current = screen;
+      menuDestinationScreenRef.current = null;
+    }
+    setScreen(target);
+  };
   const update = (key, value) => {
     setApiResult(null);
     setHome((current) => {
@@ -3277,6 +3331,15 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
+    if (screen === 23) {
+      setScreen(menuReturnScreenRef.current);
+      return;
+    }
+    if (screen === menuDestinationScreenRef.current) {
+      menuDestinationScreenRef.current = null;
+      setScreen(23);
+      return;
+    }
     if (screen === 22) {
       setScreen(knowHowReturnScreen);
       return;
@@ -3304,39 +3367,61 @@ export default function App() {
     setScreen(Math.max(0, screen - 1));
   };
 
+  const handleMenuNavigate = (target) => {
+    menuDestinationScreenRef.current = [0, 11].includes(target.screen) ? null : target.screen;
+    if (target.pillar) {
+      if (target.screen === 22) {
+        setSelectedKnowHowPillar(target.pillar);
+        setKnowHowReturnScreen(23);
+      } else {
+        setSelectedPillar(target.pillar);
+      }
+    }
+    if (target.recommendationId) {
+      const recommendation = demoRecommendationDetails.find(({ id }) => id === target.recommendationId);
+      if (!recommendation) return;
+      setSelectedRecommendation(recommendation);
+      openEducationForRecommendation(recommendation, navigateFromUI, setSelectedEducation, setEducationReturnScreen, 23);
+      return;
+    }
+    if ([6, 7].includes(target.screen)) setActivePillar(null);
+    navigateFromUI(target.screen);
+  };
+
   return (
     <main className="app">
-      <AppChrome screen={screen} setScreen={setScreen} onBack={handleBack}>
-        {screen === 0 && <StartScreen setScreen={setScreen} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
-        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={setScreen} />}
-        {screen === 2 && <HomeSpecs home={home} update={update} setScreen={setScreen} />}
+      <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
+        {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
+        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} />}
+        {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} />}
         {screen === 3 && (
           <ReviewScreen
             home={home}
-            setScreen={setScreen}
+            setScreen={navigateFromUI}
             onGenerateScore={resultMode === "demo" ? () => setScreen(12) : handleGenerateScore}
             isScoring={isScoring}
           />
         )}
-        {screen === 4 && <Dashboard result={result} setScreen={setScreen} setSelectedPillar={setSelectedPillar} />}
-        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={setScreen} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} />}
-        {screen === 6 && <Recommendations setScreen={setScreen} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} />}
-        {screen === 7 && <Products products={products} setScreen={setScreen} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
-        {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={setScreen} />}
-        {screen === 9 && <LabelScreen result={result} property={result.property || home} setScreen={setScreen} />}
-        {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={setScreen} setActivePillar={setActivePillar} />}
-        {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={setScreen} />}
-        {screen === 12 && <DemoAnalyzingScreen setScreen={setScreen} autoAdvance={resultMode === "demo"} />}
-        {screen === 13 && <ProductDetail product={selectedProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
-        {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={setScreen} />}
-        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={setScreen} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
-        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={setScreen} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
-        {screen === 17 && <PathTo700Screen result={result} setScreen={setScreen} />}
-        {screen === 18 && <FutureCostExposureScreen setScreen={setScreen} />}
-        {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={setScreen} />}
-        {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={setScreen} onSubmitLead={handleSubmitLead} />}
-        {screen === 21 && <EducationDetail education={selectedEducation} setScreen={setScreen} returnScreen={educationReturnScreen} />}
-        {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={setScreen} returnScreen={knowHowReturnScreen} />}
+        {screen === 4 && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} />}
+        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} />}
+        {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} />}
+        {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} />}
+        {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
+        {screen === 9 && <LabelScreen result={result} property={result.property || home} setScreen={navigateFromUI} />}
+        {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
+        {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
+        {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
+        {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
+        {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} />}
+        {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
+        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
+        {screen === 17 && <PathTo700Screen result={result} setScreen={navigateFromUI} />}
+        {screen === 18 && <FutureCostExposureScreen setScreen={navigateFromUI} />}
+        {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} />}
+        {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
+        {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
+        {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
+        {screen === 23 && <MenuScreen onNavigate={handleMenuNavigate} setScreen={navigateFromUI} />}
       </AppChrome>
 
       <style>{`
@@ -3362,25 +3447,24 @@ export default function App() {
         button { cursor: pointer; }
 
         .app {
-          min-height: 100vh;
+          height: 100vh;
+          height: 100dvh;
           display: flex;
           align-items: flex-start;
           justify-content: center;
           padding: 28px;
-          background:
-            radial-gradient(circle at top, rgba(41, 174, 245, 0.16), transparent 34%),
-            linear-gradient(180deg, #071a2c 0%, #0b2d4c 100%);
+          background: #fff;
           color: var(--ink);
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         }
 
         .phoneShell {
           width: 390px;
-          min-height: 820px;
-          max-height: calc(100vh - 56px);
+          height: min(820px, calc(100dvh - 56px));
           overflow-y: auto;
+          overscroll-behavior: contain;
           background: var(--card);
-          border: 1px solid var(--line);
+          border: 3pt solid var(--blue);
           border-radius: 28px;
           box-shadow: 0 24px 72px rgba(11, 37, 65, 0.14);
           position: relative;
@@ -3403,13 +3487,31 @@ export default function App() {
         }
 
         .screen {
+          min-height: calc(100% - 72px);
           padding: 26px 22px 88px;
         }
         .phoneShell:has(.backButton) .screen {
           padding-top: 34px;
         }
 
-        .withNav { padding-bottom: 82px; }
+        .withNav { display: flex; flex-direction: column; padding-bottom: 82px; }
+        .withNav > .bottomNav { margin-top: auto; }
+
+        .menuGroups { display: grid; gap: 4px; margin-top: 8px; }
+        .menuGroup { border-top: 1px solid var(--line); }
+        .menuGroup:last-child { border-bottom: 1px solid var(--line); }
+        .menuGroup summary { display: flex; align-items: center; gap: 12px; min-height: 58px; list-style: none; color: var(--ink); font-size: 16px; font-weight: 850; cursor: pointer; }
+        .menuGroup summary::-webkit-details-marker { display: none; }
+        .menuGroup summary > svg:first-child { color: var(--blue); }
+        .menuGroup .menuChevron { margin-left: auto; color: var(--muted); transition: transform .2s ease; }
+        .menuGroup[open] .menuChevron { transform: rotate(90deg); }
+        .menuItems { margin: 0 0 10px 10px; padding-left: 22px; border-left: 1px solid var(--line); }
+        .menuItems h3 { margin: 17px 0 4px; color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .menuItems button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 48px; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font-size: 15px; font-weight: 650; }
+        .menuItems button span { min-width: 0; }
+        .menuItems button svg { flex: 0 0 auto; color: var(--blue); }
+        .menuItems button:hover { color: var(--blue); }
+        .menuGroup summary:focus-visible, .menuItems button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
         .backButton {
           position: absolute;
@@ -5451,8 +5553,8 @@ export default function App() {
         }
 
         @media (max-width: 540px) {
-          .app { padding: 0; background: #fff; }
-          .phoneShell { width: 100%; min-height: 100vh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+          .app { padding: 0; }
+          .phoneShell { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; }
           .bannerWrap { border-radius: 0; }
   
 

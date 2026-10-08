@@ -3402,7 +3402,6 @@ function LabelScreen({ result, property, products, setScreen, streetAddress }) {
         </div>
         {shareStatus && <p role="status">{shareStatus}</p>}
       </section>
-      <button className="secondaryButton" onClick={() => setScreen(0)}>Start New Evaluation</button>
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );

@@ -14,3 +14,14 @@ test("every custom result page shows the current street below its heading", asyn
   assert.match(source, /streetAddress=\{streetAddress\}/);
   assert.match(source, /className="reportProperty"/);
 });
+
+test("Report Card has one restart route in the bottom navigation", async () => {
+  const source = await readFile(new URL("./App.jsx", import.meta.url), "utf8");
+  const start = source.indexOf("function LabelScreen(");
+  const end = source.indexOf("\nexport default function App()", start);
+  const reportCard = source.slice(start, end);
+  assert.doesNotMatch(reportCard, /Start New Evaluation/);
+  assert.match(reportCard, /<BottomNav/);
+  const nav = await readFile(new URL("./bottomNavigation.js", import.meta.url), "utf8");
+  assert.match(nav, /Restart/);
+});

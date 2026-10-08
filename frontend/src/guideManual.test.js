@@ -45,3 +45,28 @@ test("saved-property data-pull question is absent from Help and the manual", asy
   assert.ok(data.every(({ id, question }) => id !== "saved-property" && question !== "Will rescanning a saved property use another data pull?"));
   assert.ok(manualChapters({ topics: data }).every(({ id }) => id !== "saved-property"));
 });
+
+test("every Help entry has a concise lead and scannable points", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const entries = JSON.parse(await readFile(new URL("../../backend/app/data/help_guide.json", import.meta.url), "utf8"));
+  assert.equal(entries.length, 19);
+  for (const entry of entries) {
+    assert.ok(entry.body.split(/\s+/).length <= 30, `${entry.id} lead is too long`);
+    assert.ok(entry.sections?.length >= 2, `${entry.id} needs entry points`);
+    assert.ok(entry.sections.every(({ heading, text }) => heading && text && text.split(/\s+/).length <= 30), `${entry.id} has an overly long point`);
+    const totalWords = [entry.body, ...entry.sections.map(({ heading, text }) => `${heading} ${text}`)].join(" ").split(/\s+/).length;
+    assert.ok(totalWords <= (entry.id === "seven-pillars" ? 90 : 80), `${entry.id} is too wordy`);
+  }
+  assert.deepEqual(entries.find(({ id }) => id === "seven-pillars").sections.slice(0, 7).map(({ heading }) => heading), [
+    "Energy", "Water", "Health", "Resilience", "Carbon & Materials", "Financial Risk", "Community & Mobility"
+  ]);
+});
+
+test("Help answers, search results, and manual chapters render the same structured points", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("./App.jsx", import.meta.url), "utf8");
+  assert.match(source, /function GuideEntryBody\(/);
+  assert.match(source, /<GuideEntryBody entry=\{entry\}/);
+  assert.match(source, /<GuideEntryBody entry=\{results\[0\]\}/);
+  assert.match(source, /<GuideEntryBody entry=\{chapter\}/);
+});

@@ -14,7 +14,14 @@ def _tokens(value: str) -> set[str]:
 
 _INDEX: dict[str, dict[int, int]] = defaultdict(dict)
 for position, topic in enumerate(_TOPICS):
-    fields = ((topic["title"], 6), (topic.get("question", ""), 6), (" ".join(topic["keywords"]), 4), (topic["body"], 1))
+    fields = [
+        (topic["title"], 6),
+        (topic.get("question", ""), 6),
+        (" ".join(topic["keywords"]), 4),
+        (topic["body"], 1),
+    ]
+    for section in topic.get("sections", []):
+        fields.extend(((section["heading"], 4), (section["text"], 1)))
     for content, weight in fields:
         for token in _tokens(content):
             _INDEX[token][position] = _INDEX[token].get(position, 0) + weight

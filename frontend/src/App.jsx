@@ -3100,11 +3100,29 @@ const HELP_ACTION_LABELS = {
   24: "My Scores"
 };
 
+function GuideEntryBody({ entry }) {
+  return (
+    <div className="guideEntryBody">
+      <p className="guideLead">{entry.body}</p>
+      {entry.sections?.length > 0 && (
+        <dl className="guidePoints">
+          {entry.sections.map(({ heading, text }) => (
+            <div className="guidePoint" key={heading}>
+              <dt>{heading}</dt>
+              <dd>{text}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
+
 function HelpAnswer({ entry, onNavigate }) {
   return (
     <details className="helpEntry">
       <summary><span>{entry.question || entry.title}</span><ChevronRight size={17} /></summary>
-      <p>{entry.body}</p>
+      <GuideEntryBody entry={entry} />
       {Number.isInteger(entry.screen) && (
         <button type="button" className="helpAction" onClick={() => onNavigate(entry.screen)}>
           Open {HELP_ACTION_LABELS[entry.screen] || SCREEN_LABELS[entry.screen]} <ArrowRight size={16} />
@@ -3170,7 +3188,7 @@ function HelpScreen({ onNavigate, onOpenGuide, setScreen }) {
             <>
               <article className="helpTopResult">
                 <h4>{results[0].question || results[0].title}</h4>
-                <p>{results[0].body}</p>
+                <GuideEntryBody entry={results[0]} />
                 {Number.isInteger(results[0].screen) && <button type="button" className="helpAction" onClick={() => onNavigate(results[0].screen)}>Open {HELP_ACTION_LABELS[results[0].screen] || SCREEN_LABELS[results[0].screen]} <ArrowRight size={16} /></button>}
               </article>
               {results.slice(1).map((entry) => <HelpAnswer key={entry.id} entry={entry} onNavigate={onNavigate} />)}
@@ -3220,7 +3238,7 @@ function FullGuideScreen({ guide, chapterIndex, setChapterIndex, onExit, onNavig
           <article className="manualArticle">
             <div className="manualArticleMeta"><span>{chapter.category}</span><span>{String(chapter.number).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}</span></div>
             <h3>{chapter.title}</h3>
-            <p>{chapter.body}</p>
+            <GuideEntryBody entry={chapter} />
             {Number.isInteger(chapter.screen) && (
               <div className="manualRelated">
                 <strong>Related screen</strong>
@@ -3937,7 +3955,11 @@ export default function App() {
         .helpEntry summary::-webkit-details-marker, .helpBrowse > summary::-webkit-details-marker { display: none; }
         .helpEntry summary svg, .helpBrowse > summary svg { flex: 0 0 auto; color: var(--blue); transition: transform .2s ease; }
         .helpEntry[open] summary svg, .helpBrowse[open] > summary svg { transform: rotate(90deg); }
-        .helpEntry p, .helpTopResult p { margin: 2px 0 11px; color: var(--ink); font-size: 13px; line-height: 1.55; }
+        .guideLead { margin: 0 0 13px; color: var(--ink); font-size: 13px; line-height: 1.55; }
+        .guidePoints { margin: 0 0 16px; }
+        .guidePoint { padding: 11px 0; border-top: 1px solid var(--line); }
+        .guidePoint dt { color: var(--blue); font-size: 12px; font-weight: 800; line-height: 1.3; }
+        .guidePoint dd { margin: 3px 0 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
         .helpEntry .helpAction { margin: 0 0 16px; }
         .helpAction { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: var(--blue); font-size: 13px; font-weight: 800; text-align: left; cursor: pointer; }
         .helpAction svg { flex: 0 0 auto; }
@@ -3968,7 +3990,9 @@ export default function App() {
         .manualArticleMeta { display: flex; justify-content: space-between; gap: 10px; margin-top: 17px; color: var(--blue); font-size: 11px; font-weight: 850; text-transform: uppercase; font-variant-numeric: tabular-nums; }
         .manualArticleMeta span:last-child { color: var(--muted); white-space: nowrap; }
         .manualArticle h3 { margin: 16px 0 19px; color: var(--ink); font-size: 22px; line-height: 1.2; }
-        .manualArticle > p { margin: 0; color: var(--ink); font-size: 14px; line-height: 1.65; }
+        .manualArticle .guideLead { font-size: 14px; line-height: 1.6; }
+        .manualArticle .guidePoint { padding: 13px 0; }
+        .manualArticle .guidePoint dd { font-size: 14px; line-height: 1.55; }
         .manualRelated { margin-top: 28px; padding-top: 15px; border-top: 1px solid var(--line); }
         .manualRelated strong { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; text-transform: uppercase; }
         .manualRelated button { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; background: transparent; color: var(--blue); font-size: 13px; font-weight: 800; }

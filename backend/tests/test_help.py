@@ -14,8 +14,11 @@ def test_help_guide_has_five_faqs_and_detailed_topics():
     assert products["screen"] == 7
     assert all(topic["body"] for topic in guide_entries())
     pillars = next(topic for topic in guide_entries() if topic["id"] == "seven-pillars")
-    assert "definitions" in pillars["body"].lower()
-    assert "My Scores" in pillars["body"]
+    assert [section["heading"] for section in pillars["sections"][:7]] == [
+        "Energy", "Water", "Health", "Resilience", "Carbon & Materials", "Financial Risk", "Community & Mobility"
+    ]
+    assert "general definitions" in pillars["sections"][-1]["text"]
+    assert "My Scores" in pillars["sections"][-1]["text"]
     assert {"/api/help/guide", "/api/help/search"}.issubset({route.path for route in app.routes})
 
 
@@ -24,3 +27,7 @@ def test_help_search_ranks_relevant_guide_answers():
     assert "saved-property" not in {entry["id"] for entry in search_guide("saved property rescanning API pull")}
     assert search_guide("guarantee performance increases")[0]["id"] == "performance-guarantee"
     assert search_guide("") == []
+
+
+def test_help_search_indexes_scannable_point_text():
+    assert search_guide("recheck")[0]["id"] == "recommendations"

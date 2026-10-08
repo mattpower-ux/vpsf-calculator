@@ -1493,7 +1493,7 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
       </button>
 
       <button className="secondaryButton" onClick={() => setScreen(5)}>
-        Skip to Key Insights <Sparkles size={18} />
+        Skip to Key Takeaway <Sparkles size={18} />
       </button>
 
       <BottomNav active="Pillars" setScreen={setScreen} />

@@ -12,6 +12,7 @@ import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { manualChapters, manualChapterAt } from "./guideManual";
 import { themeFromSearch } from "./theme";
+import { resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
@@ -1284,7 +1285,7 @@ function HomeSpecsMore({ home, update, setScreen }) {
   );
 }
 
-function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
+function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError }) {
   const propertyRows = [
     [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
     [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
@@ -1331,7 +1332,19 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
       <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>
         {isScoring ? "Generating VPSF Score..." : "Generate VPSF Score"} <ArrowRight size={18} />
       </button>
+      {scoreError && <p className="sourceNote" role="alert">{scoreError}</p>}
       <p className="privacy small">Your data is secure and private.</p>
+    </div>
+  );
+}
+
+function ScoreUnavailable({ setScreen }) {
+  return (
+    <div className="screen withNav">
+      <header className="screenTop"><h2>Results need updating</h2><ClipboardList size={18} /></header>
+      <p className="subhead">Review this home's details and generate its VPSF score to see results for this property.</p>
+      <button className="primaryButton" onClick={() => setScreen(3)}>Review &amp; Generate Score <ArrowRight size={18} /></button>
+      <BottomNav active="My Scores" setScreen={setScreen} />
     </div>
   );
 }
@@ -3438,14 +3451,14 @@ export default function App() {
   const [hasAssessedHome, setHasAssessedHome] = useState(false);
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
+  const [scoreError, setScoreError] = useState("");
   const [products, setProducts] = useState(demoProducts);
   const sessionId = useMemo(() => getOrCreateSessionId(), []);
   const [queryId, setQueryId] = useState(null);
   const queryIdRef = useRef(null);
   const previousArchivedHomeRef = useRef(defaultHome);
-  const manualResult = useMemo(() => scoreHome(home), [home]);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
-  const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
+  const result = resultForCurrentAssessment(resultMode, demoResult, apiResult);
   const propertyAddress = assessedHomeAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const streetAddress = assessedHomeStreetAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const navigateFromUI = (target) => {
@@ -3472,6 +3485,7 @@ export default function App() {
   };
   const update = (key, value) => {
     setApiResult(null);
+    setScoreError("");
     setHome((current) => {
       const locationChanged = ["address", "city", "state", "zip"].includes(key) && current[key] !== value;
       return {
@@ -3490,6 +3504,8 @@ export default function App() {
 
   const handleQueryStarted = async (property, source) => {
     setHasAssessedHome(true);
+    setApiResult(null);
+    setScoreError("");
     const record = await trackPropertyQuery({
       sessionId,
       address: property.address,
@@ -3512,17 +3528,19 @@ export default function App() {
     setResultMode("manual");
     setScreen(12);
     setIsScoring(true);
+    setApiResult(null);
+    setScoreError("");
     const startedAt = Date.now();
-    let finalScore = manualResult;
+    let finalScore = null;
     try {
       const score = await scoreProperty(home);
       finalScore = score;
       setApiResult(score);
     } catch (error) {
-      setApiResult(manualResult);
+      setScoreError("We couldn't generate a score right now. Please try again; your home details are still here.");
     } finally {
-      if (queryId) {
-        await trackProgress({
+      if (queryId && finalScore) {
+        trackProgress({
           sessionId,
           queryId,
           screen: 4,
@@ -3531,7 +3549,7 @@ export default function App() {
           vpsfScore: finalScore.total,
           scoreLabel: finalScore.label,
           scoreRunId: finalScore.scoreRunId
-        });
+        }).catch((error) => console.warn("Score progress tracking unavailable.", error));
       }
       const minimumDelay = 3200;
       const elapsed = Date.now() - startedAt;
@@ -3539,7 +3557,7 @@ export default function App() {
         await new Promise((resolve) => window.setTimeout(resolve, minimumDelay - elapsed));
       }
       setIsScoring(false);
-      setScreen(4);
+      setScreen(finalScore ? 4 : 3);
     }
   };
 
@@ -3777,24 +3795,26 @@ export default function App() {
             setScreen={navigateFromUI}
             onGenerateScore={resultMode === "demo" ? () => setScreen(12) : handleGenerateScore}
             isScoring={isScoring}
+            scoreError={scoreError}
           />
         )}
-        {screen === 4 && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
-        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
-        {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
+        {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
+        {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
+        {screen === 5 && result && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
+        {screen === 6 && result && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
-        {screen === 9 && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
+        {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
-        {screen === 17 && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 18 && <FutureCostExposureScreen setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 18 && result && <FutureCostExposureScreen setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 19 && result && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
         {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
@@ -3886,7 +3906,9 @@ export default function App() {
         .phoneShell {
           width: 390px;
           height: min(820px, calc(100dvh - 56px));
-          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
           overscroll-behavior: contain;
           background: var(--card);
           border: 3pt solid var(--blue);
@@ -3899,6 +3921,7 @@ export default function App() {
         .bannerWrap {
           width: 100%;
           height: 72px;
+          flex: 0 0 72px;
           background: var(--navy);
           overflow: hidden;
           border-radius: 28px 28px 0 0;
@@ -3912,7 +3935,11 @@ export default function App() {
         }
 
         .screen {
-          min-height: calc(100% - 72px);
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          scrollbar-width: thin;
           padding: 26px 22px 88px;
         }
         .phoneShell:has(.backButton) .screen {

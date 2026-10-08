@@ -7,7 +7,7 @@ import { buildReportModel } from "./reportModel";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
-import { assessedHomeAddress } from "./assessedHomeAddress";
+import { assessedHomeAddress, assessedHomeStreetAddress } from "./assessedHomeAddress";
 import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { manualChapters, manualChapterAt } from "./guideManual";
@@ -1336,12 +1336,17 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring }) {
   );
 }
 
-function Dashboard({ result, setScreen, setSelectedPillar }) {
+function ResultStreetAddress({ streetAddress }) {
+  return streetAddress ? <p className="resultStreetAddress">{streetAddress}</p> : null;
+}
+
+function Dashboard({ result, setScreen, setSelectedPillar, streetAddress }) {
   const scoreInfo = classification(result.total);
   const pct = Math.min(100, Math.round((result.total / 1000) * 100));
   return (
     <div className="screen dashboardScreen withNav">
       <header className="screenTop"><h2>VPSF Score Overview</h2><Share2 size={18} /></header>
+      <ResultStreetAddress streetAddress={streetAddress} />
       <div className="scoreGauge" style={{ background: `conic-gradient(#54b96b ${pct * 3.6}deg, #dfe7ed 0)` }}>
         <div>
           <strong>{result.total}</strong>
@@ -1508,7 +1513,7 @@ function PillarDefinitionScreen({ selectedPillar, setScreen, onOpenArchive }) {
   );
 }
 
-function PillarBreakdown({ result, selectedPillar, setScreen, setSelectedKnowHowPillar, setKnowHowReturnScreen }) {
+function PillarBreakdown({ result, selectedPillar, setScreen, setSelectedKnowHowPillar, setKnowHowReturnScreen, streetAddress }) {
   const pillarPriority = {
     health: 1,
     resilience: 2,
@@ -1547,6 +1552,7 @@ function PillarBreakdown({ result, selectedPillar, setScreen, setSelectedKnowHow
   return (
     <div className="screen pillarBreakdown keyTakeawayScreen withNav">
       <header className="screenTop keyHeader"><h2>Key Takeaway</h2></header>
+      <ResultStreetAddress streetAddress={streetAddress} />
 
       <TakeawayCard
         title="Key Strength"
@@ -2333,7 +2339,7 @@ function recommendationMatchesPillar(recommendation, pillarKey) {
 
 
 
-function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, propertyAddress }) {
+function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
   const filteredRecommendations = demoRecommendationDetails.filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
@@ -2346,7 +2352,7 @@ function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEduc
   return (
     <div className="screen recommendations withNav">
       <header className="screenTop"><h2>{activeLabel ? `${activeLabel} Recommendations` : "Recommendations"}</h2></header>
-      {propertyAddress && <p className="assessedAddress">For <strong>{propertyAddress}</strong></p>}
+      <ResultStreetAddress streetAddress={streetAddress} />
 
       {activeLabel && (
         <section className="contextBanner">
@@ -2869,7 +2875,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
 }
 
 
-function PathTo700Screen({ result, setScreen }) {
+function PathTo700Screen({ result, setScreen, streetAddress }) {
   const current = result.total;
   const goal = 700;
   const steps = [
@@ -2887,6 +2893,7 @@ function PathTo700Screen({ result, setScreen }) {
   return (
     <div className="screen path700Screen withNav">
       <header className="screenTop"><h2>Path to 700 VPSF</h2><Sparkles size={18} /></header>
+      <ResultStreetAddress streetAddress={streetAddress} />
 
       <section className="pathHeroCard">
         <p>A practical upgrade path that moves this home toward a stronger VPSF ranking without rebuilding the whole property.</p>
@@ -2922,7 +2929,7 @@ function PathTo700Screen({ result, setScreen }) {
   );
 }
 
-function FutureCostExposureScreen({ setScreen }) {
+function FutureCostExposureScreen({ setScreen, streetAddress }) {
   const costs = [
     { item: "Roof Replacement", timing: "3 years", cost: "$12,000", icon: Home },
     { item: "HVAC Replacement", timing: "7 years", cost: "$6,800", icon: Wind },
@@ -2932,6 +2939,7 @@ function FutureCostExposureScreen({ setScreen }) {
   return (
     <div className="screen futureCostScreen withNav">
       <header className="screenTop"><h2>Future Cost Exposure</h2><Wallet size={18} /></header>
+      <ResultStreetAddress streetAddress={streetAddress} />
 
       <section className="costIntroCard">
         <h3>Potential Major Expenses</h3>
@@ -2959,7 +2967,7 @@ function FutureCostExposureScreen({ setScreen }) {
   );
 }
 
-function CompetingHomeComparisonScreen({ result, setScreen }) {
+function CompetingHomeComparisonScreen({ result, setScreen, streetAddress }) {
   const comparisons = [
     { label: "This Home", value: result.total },
     { label: "Typical Existing", value: 480 },
@@ -2971,6 +2979,7 @@ function CompetingHomeComparisonScreen({ result, setScreen }) {
   return (
     <div className="screen comparisonScreen withNav">
       <header className="screenTop"><h2>Competing Home Comparison</h2><BarChartIcon /></header>
+      <ResultStreetAddress streetAddress={streetAddress} />
 
       <section className="comparisonCard">
         <h3>VPSF Score Context</h3>
@@ -3325,7 +3334,7 @@ function MenuScreen({ onNavigate, setScreen, tip }) {
   );
 }
 
-function LabelScreen({ result, property, products, setScreen }) {
+function LabelScreen({ result, property, products, setScreen, streetAddress }) {
   const info = classification(result.total);
   const [shareStatus, setShareStatus] = useState("");
   const downloadReport = async () => {
@@ -3362,6 +3371,7 @@ function LabelScreen({ result, property, products, setScreen }) {
   return (
     <div className="screen labelScreen withNav">
       <header className="screenTop"><h2>VPSF REPORT CARD</h2><ClipboardList size={18} /></header>
+      <ResultStreetAddress streetAddress={streetAddress} />
       <section className="homeLabel">
         <div className="labelTop"><ClipboardList size={22} /><strong>VPSF REPORT CARD</strong></div>
         <p className="reportProperty">{reportAddress(property)}</p>
@@ -3438,6 +3448,7 @@ export default function App() {
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultMode === "demo" ? demoResult : apiResult || manualResult;
   const propertyAddress = assessedHomeAddress({ resultMode, selectedProperty, home, hasAssessedHome });
+  const streetAddress = assessedHomeStreetAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const navigateFromUI = (target) => {
     if (target === 23) {
       if (screen !== 23) {
@@ -3769,12 +3780,12 @@ export default function App() {
             isScoring={isScoring}
           />
         )}
-        {screen === 4 && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} />}
-        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} />}
-        {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} propertyAddress={propertyAddress} />}
+        {screen === 4 && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
+        {screen === 5 && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
+        {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
-        {screen === 9 && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} />}
+        {screen === 9 && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
@@ -3782,9 +3793,9 @@ export default function App() {
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
-        {screen === 17 && <PathTo700Screen result={result} setScreen={navigateFromUI} />}
-        {screen === 18 && <FutureCostExposureScreen setScreen={navigateFromUI} />}
-        {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} />}
+        {screen === 17 && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 18 && <FutureCostExposureScreen setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 19 && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
         {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
@@ -3943,6 +3954,7 @@ export default function App() {
         .scoreLinks button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
         .assessedAddress { margin: 7px 0 0; color: var(--body-muted); text-align: center; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
         .assessedAddress strong { color: var(--ink); font-weight: 700; }
+        .resultStreetAddress { margin: 5px 0 16px; color: var(--body-muted); text-align: center; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
         .helpSearchLabel { display: block; margin: 22px 0 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
         .helpSearchBox { display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--blue); }
         .helpSearchBox:focus-within { border-color: var(--blue); outline: 2px solid var(--blue); outline-offset: 1px; }
@@ -4610,10 +4622,7 @@ export default function App() {
         .prosCard svg { color: var(--green); margin-top: 1px; }
         .consCard svg { color: var(--gold); margin-top: 1px; }
 
-        .keyHeader h2 {
-          font-size: 22px;
-          margin-bottom: 18px;
-        }
+        .keyHeader h2 { font-size: 22px; }
         .takeawayCard {
           --takeaway-ring: var(--green);
           display: grid;

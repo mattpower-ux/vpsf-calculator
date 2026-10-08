@@ -38,3 +38,10 @@ test("Help opens a dedicated manual screen instead of expanding an inline list",
   assert.match(source, /onOpenGuide\(guide\)/);
   assert.doesNotMatch(source, /<details className="helpBrowse">/);
 });
+
+test("saved-property data-pull question is absent from Help and the manual", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const data = JSON.parse(await readFile(new URL("../../backend/app/data/help_guide.json", import.meta.url), "utf8"));
+  assert.ok(data.every(({ id, question }) => id !== "saved-property" && question !== "Will rescanning a saved property use another data pull?"));
+  assert.ok(manualChapters({ topics: data }).every(({ id }) => id !== "saved-property"));
+});

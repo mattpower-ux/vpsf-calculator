@@ -49,15 +49,6 @@
     "faq": true
   },
   {
-    "id": "saved-property",
-    "title": "Revisiting a saved property",
-    "question": "Will rescanning a saved property use another data pull?",
-    "category": "Property Data",
-    "body": "When a previously scanned address is recognized, VPSF loads the property's archived details instead of repeating the property-data API pull. Common street and state abbreviations can identify the same address, and the saved-address suggestion can complete an address you have begun typing. New details you append are added to the saved property version. Check the address and ZIP before continuing so an unrelated property is not mistaken for the archived home. A new or changed address may require new location and property lookups.",
-    "keywords": ["saved property", "rescanning", "rescan", "archive", "API pull", "autofill", "address"],
-    "screen": 0
-  },
-  {
     "id": "address-and-records",
     "title": "Address and public records",
     "category": "Property Data",

@@ -1028,7 +1028,6 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         </div>
       </aside>
 
-      <p className="privacy">Your data is secure and private.</p>
     </div>
   );
 }
@@ -1333,7 +1332,6 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
         {isScoring ? "Generating VPSF Score..." : "Generate VPSF Score"} <ArrowRight size={18} />
       </button>
       {scoreError && <p className="sourceNote" role="alert">{scoreError}</p>}
-      <p className="privacy small">Your data is secure and private.</p>
     </div>
   );
 }
@@ -4311,8 +4309,6 @@ export default function App() {
         .sourcePublic { background: var(--green); }
         .sourceInferred { background: var(--gold); }
         .sourceMissing { background: #9ba8b9; }
-        .privacy { margin: 28px 0 0; text-align: center; color: #7a8795; font-size: 11px; }
-        .privacy.small { margin-top: 14px; }
 
         .progressDots {
           display: flex;

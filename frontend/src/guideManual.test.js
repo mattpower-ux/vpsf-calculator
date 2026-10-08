@@ -7,15 +7,17 @@ const guide = {
   topics: [
     { id: "faq", title: "A question", faq: true, category: "Getting Started" },
     { id: "address", title: "Address and public records", category: "Property Data" },
+    { id: "improve", title: "Using recommendations", category: "Improvements" },
     { id: "systems", title: "Documenting key systems", category: "Property Data" },
-    { id: "score", title: "Reading the VPSF score", category: "Results" }
+    { id: "score", title: "Reading the VPSF score", category: "Results" },
+    { id: "limits", title: "Data, privacy, and limits", category: "Getting Started" }
   ]
 };
 
-test("manual contains the existing non-FAQ guide chapters in source order", () => {
+test("manual groups chapters in reading order and numbers them to match the contents", () => {
   const chapters = manualChapters(guide);
   assert.deepEqual(chapters.map(({ id, number }) => [id, number]), [
-    ["address", 1], ["systems", 2], ["score", 3]
+    ["limits", 1], ["address", 2], ["systems", 3], ["score", 4], ["improve", 5]
   ]);
   assert.deepEqual(manualChapters(null), []);
 });
@@ -23,9 +25,9 @@ test("manual contains the existing non-FAQ guide chapters in source order", () =
 test("manual navigation stays within the first and last chapter", () => {
   const chapters = manualChapters(guide);
   assert.equal(manualChapterAt(chapters, -1), null);
-  assert.equal(manualChapterAt(chapters, 0)?.id, "address");
-  assert.equal(manualChapterAt(chapters, 2)?.id, "score");
-  assert.equal(manualChapterAt(chapters, 3), null);
+  assert.equal(manualChapterAt(chapters, 0)?.id, "limits");
+  assert.equal(manualChapterAt(chapters, 4)?.id, "improve");
+  assert.equal(manualChapterAt(chapters, 5), null);
 });
 
 test("Help opens a dedicated manual screen instead of expanding an inline list", async () => {

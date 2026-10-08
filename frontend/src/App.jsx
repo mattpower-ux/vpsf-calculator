@@ -10,6 +10,7 @@ import { bottomNavigationItems } from "./bottomNavigation";
 import { assessedHomeAddress } from "./assessedHomeAddress";
 import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
+import { manualChapters, manualChapterAt } from "./guideManual";
 import { themeFromSearch } from "./theme";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
@@ -66,6 +67,7 @@ import {
   VolumeX,
   Wallet,
   Wind,
+  X,
   Zap
 } from "lucide-react";
 
@@ -98,7 +100,8 @@ const SCREEN_LABELS = {
   23: "Menu",
   24: "My Scores",
   25: "Help",
-  26: "Pillar Definition"
+  26: "Pillar Definition",
+  27: "VPSF Field Guide"
 };
 
 function getOrCreateSessionId() {
@@ -3111,7 +3114,7 @@ function HelpAnswer({ entry, onNavigate }) {
   );
 }
 
-function HelpScreen({ onNavigate, setScreen }) {
+function HelpScreen({ onNavigate, onOpenGuide, setScreen }) {
   const [guide, setGuide] = useState(null);
   const [guideError, setGuideError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -3152,11 +3155,6 @@ function HelpScreen({ onNavigate, setScreen }) {
     return () => { active = false; clearTimeout(timer); };
   }, [query, hasQuery, retry]);
 
-  const topicsByCategory = (guide?.topics || []).filter((entry) => !entry.faq).reduce((groups, entry) => {
-    (groups[entry.category] ||= []).push(entry);
-    return groups;
-  }, {});
-
   return (
     <div className="screen helpScreen withNav">
       <header className="screenTop"><h2>Help</h2><CircleHelp size={18} /></header>
@@ -3185,19 +3183,78 @@ function HelpScreen({ onNavigate, setScreen }) {
             <h3>Frequently Asked Questions</h3>
             {guide.faqs.map((entry) => <HelpAnswer key={entry.id} entry={entry} onNavigate={onNavigate} />)}
           </section>
-          <details className="helpBrowse">
-            <summary><span>Browse the full guide</span><ChevronRight size={18} /></summary>
-            {Object.entries(topicsByCategory).map(([category, entries]) => (
-              <section key={category}>
-                <h3>{category}</h3>
-                {entries.map((entry) => <HelpAnswer key={entry.id} entry={entry} onNavigate={onNavigate} />)}
-              </section>
-            ))}
-          </details>
+          <button type="button" className="helpBrowseLink" onClick={() => onOpenGuide(guide)}>
+            <BookOpen size={19} /><span>Browse the full guide</span><ChevronRight size={18} />
+          </button>
         </>
       ) : guideError ? (
         <div className="helpUnavailable"><p>Help is unavailable right now.</p><button type="button" onClick={() => setRetry((value) => value + 1)}>Retry</button></div>
       ) : <p className="helpStatus">Loading guide...</p>}
+      <BottomNav active="Help?" setScreen={setScreen} />
+    </div>
+  );
+}
+
+function FullGuideScreen({ guide, chapterIndex, setChapterIndex, onExit, onNavigate, setScreen }) {
+  const topRef = useRef(null);
+  const chapters = manualChapters(guide);
+  const chapter = manualChapterAt(chapters, chapterIndex);
+  const groups = chapters.reduce((grouped, entry) => {
+    (grouped[entry.category] ||= []).push(entry);
+    return grouped;
+  }, {});
+
+  useEffect(() => {
+    topRef.current?.closest(".phoneShell")?.scrollTo(0, 0);
+  }, [chapterIndex]);
+
+  return (
+    <div className="screen fullGuideScreen withNav" ref={topRef}>
+      <header className="screenTop manualScreenTop">
+        <h2>VPSF Field Guide</h2>
+        <button type="button" onClick={onExit} aria-label="Close guide" title="Close guide"><X size={20} /></button>
+      </header>
+      {chapter ? (
+        <>
+          <button type="button" className="manualContentsButton" onClick={() => setChapterIndex(null)}><BookOpen size={16} /> Contents</button>
+          <article className="manualArticle">
+            <div className="manualArticleMeta"><span>{chapter.category}</span><span>{String(chapter.number).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}</span></div>
+            <h3>{chapter.title}</h3>
+            <p>{chapter.body}</p>
+            {Number.isInteger(chapter.screen) && (
+              <div className="manualRelated">
+                <strong>Related screen</strong>
+                <button type="button" onClick={() => onNavigate(chapter.screen)}>
+                  {HELP_ACTION_LABELS[chapter.screen] || SCREEN_LABELS[chapter.screen]} <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
+          </article>
+          <nav className="manualPager" aria-label="Guide chapter navigation">
+            <button type="button" onClick={() => setChapterIndex(chapterIndex - 1)} disabled={chapterIndex === 0}><ChevronLeft size={18} /> Previous</button>
+            <button type="button" onClick={() => setChapterIndex(chapterIndex + 1)} disabled={chapterIndex === chapters.length - 1}>Next <ChevronRight size={18} /></button>
+          </nav>
+        </>
+      ) : (
+        <>
+          <div className="manualContentsHeader"><h3>Contents</h3><span>{chapters.length} chapters</span></div>
+          <p className="manualIntro">Property data, score interpretation, and improvement decisions.</p>
+          <nav className="manualContents" aria-label="Guide chapters">
+            {Object.entries(groups).map(([category, entries]) => (
+              <section key={category}>
+                <h4>{category}</h4>
+                {entries.map((entry) => (
+                  <button type="button" key={entry.id} onClick={() => setChapterIndex(entry.number - 1)}>
+                    <span className="manualChapterNumber">{String(entry.number).padStart(2, "0")}</span>
+                    <span>{entry.title}</span>
+                    <ChevronRight size={17} />
+                  </button>
+                ))}
+              </section>
+            ))}
+          </nav>
+        </>
+      )}
       <BottomNav active="Help?" setScreen={setScreen} />
     </div>
   );
@@ -3336,7 +3393,10 @@ export default function App() {
   const scoresDestinationScreenRef = useRef(null);
   const helpReturnScreenRef = useRef(4);
   const helpDestinationScreenRef = useRef(null);
+  const guideDestinationScreenRef = useRef(null);
   const [selectedPillar, setSelectedPillar] = useState("energy");
+  const [manualGuide, setManualGuide] = useState(null);
+  const [manualChapterIndex, setManualChapterIndex] = useState(null);
   const [activePillar, setActivePillar] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
@@ -3555,6 +3615,15 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
+    if (screen === 27) {
+      setScreen(25);
+      return;
+    }
+    if (screen === guideDestinationScreenRef.current) {
+      guideDestinationScreenRef.current = null;
+      setScreen(27);
+      return;
+    }
     if (screen === 23) {
       setScreen(menuReturnScreenRef.current);
       return;
@@ -3651,6 +3720,23 @@ export default function App() {
     navigateFromUI(target);
   };
 
+  const openFullGuide = (guide) => {
+    setManualGuide(guide);
+    setManualChapterIndex(null);
+    guideDestinationScreenRef.current = null;
+    setScreen(27);
+  };
+
+  const exitFullGuide = () => {
+    guideDestinationScreenRef.current = null;
+    setScreen(25);
+  };
+
+  const handleGuideNavigate = (target) => {
+    guideDestinationScreenRef.current = target;
+    navigateFromUI(target);
+  };
+
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
@@ -3686,8 +3772,9 @@ export default function App() {
         {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
         {screen === 23 && <MenuScreen key={menuVisit} onNavigate={handleMenuNavigate} setScreen={navigateFromUI} tip={ecoTipForVisit(menuVisit)} />}
         {screen === 24 && <MyScoresScreen onNavigate={handleScoresNavigate} setScreen={navigateFromUI} />}
-        {screen === 25 && <HelpScreen onNavigate={handleHelpNavigate} setScreen={navigateFromUI} />}
+        {screen === 25 && <HelpScreen onNavigate={handleHelpNavigate} onOpenGuide={openFullGuide} setScreen={navigateFromUI} />}
         {screen === 26 && <PillarDefinitionScreen selectedPillar={selectedPillar} setScreen={navigateFromUI} onOpenArchive={openPillarArchive} />}
+        {screen === 27 && <FullGuideScreen guide={manualGuide} chapterIndex={manualChapterIndex} setChapterIndex={setManualChapterIndex} onExit={exitFullGuide} onNavigate={handleGuideNavigate} setScreen={navigateFromUI} />}
       </AppChrome>
 
       <style>{`
@@ -3858,9 +3945,36 @@ export default function App() {
         .helpEntry summary:focus-visible, .helpBrowse > summary:focus-visible, .helpAction:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
         .helpTopResult { padding: 2px 0 18px; border-bottom: 1px solid var(--line); }
         .helpTopResult h4 { margin: 0 0 8px; color: var(--ink); font-size: 16px; line-height: 1.3; }
-        .helpBrowse { margin-top: 20px; border-top: 1px solid var(--line); }
-        .helpBrowse section { margin: 12px 0 22px; }
-        .helpBrowse h3 { color: var(--blue); font-size: 13px; }
+        .helpBrowseLink { display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 20px; padding: 18px 0; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font-size: 14px; font-weight: 800; }
+        .helpBrowseLink span { flex: 1; }
+        .helpBrowseLink svg { color: var(--blue); flex: 0 0 auto; }
+        .helpBrowseLink:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .manualScreenTop { padding-bottom: 16px; border-bottom: 2px solid var(--ink); }
+        .manualScreenTop h2 { font-size: 19px; }
+        .manualScreenTop button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--ink); }
+        .manualScreenTop button:focus-visible, .manualContentsButton:focus-visible, .manualContents button:focus-visible, .manualPager button:focus-visible, .manualRelated button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .manualContentsHeader { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 25px; }
+        .manualContentsHeader h3 { margin: 0; color: var(--ink); font-size: 22px; line-height: 1.15; }
+        .manualContentsHeader span { color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .manualIntro { margin: 8px 0 20px; color: var(--body-copy); font-size: 13px; line-height: 1.45; }
+        .manualContents section { margin: 21px 0 0; }
+        .manualContents h4 { margin: 0 0 7px; color: var(--blue); font-size: 11px; font-weight: 850; text-transform: uppercase; }
+        .manualContents button { display: grid; grid-template-columns: 26px minmax(0, 1fr) 18px; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 0; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 13px; font-weight: 700; line-height: 1.25; text-align: left; }
+        .manualContents button:last-child { border-bottom: 1px solid var(--line); }
+        .manualContents button svg { color: var(--blue); }
+        .manualChapterNumber { color: var(--muted); font-size: 11px; font-weight: 850; font-variant-numeric: tabular-nums; }
+        .manualContentsButton { display: inline-flex; align-items: center; gap: 7px; margin-top: 19px; padding: 6px 0; border: 0; background: transparent; color: var(--blue); font-size: 12px; font-weight: 800; }
+        .manualArticle { margin-top: 17px; border-top: 1px solid var(--line); }
+        .manualArticleMeta { display: flex; justify-content: space-between; gap: 10px; margin-top: 17px; color: var(--blue); font-size: 11px; font-weight: 850; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+        .manualArticleMeta span:last-child { color: var(--muted); white-space: nowrap; }
+        .manualArticle h3 { margin: 16px 0 19px; color: var(--ink); font-size: 22px; line-height: 1.2; }
+        .manualArticle > p { margin: 0; color: var(--ink); font-size: 14px; line-height: 1.65; }
+        .manualRelated { margin-top: 28px; padding-top: 15px; border-top: 1px solid var(--line); }
+        .manualRelated strong { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+        .manualRelated button { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; background: transparent; color: var(--blue); font-size: 13px; font-weight: 800; }
+        .manualPager { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 28px; }
+        .manualPager button { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--blue); font-size: 13px; font-weight: 800; }
+        .manualPager button:disabled { color: var(--muted); opacity: .5; cursor: default; }
         .helpStatus, .helpUnavailable p { margin: 16px 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
         .helpUnavailable button { border: 0; background: transparent; color: var(--blue); padding: 0; font-weight: 800; cursor: pointer; }
         .ecoTip { display: grid; grid-template-columns: 108px minmax(0, 1fr); align-items: start; gap: 13px; margin-top: 14px; padding: 0 0 8px; }

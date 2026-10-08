@@ -93,7 +93,7 @@
     "id": "seven-pillars",
     "title": "The seven scoring pillars",
     "category": "Results",
-    "body": "Energy considers efficiency, electrification, and energy exposure. Water looks at conservation and water-damage risk. Health covers indoor conditions such as ventilation and moisture. Resilience considers hazards and the home's ability to withstand them. Carbon & Materials looks at material impacts and documentation. Financial Risk addresses ownership-cost exposure. Community & Mobility considers the surrounding context and transportation. Open The Seven Pillars in Menu for each detailed score and explanation; each pillar has a different maximum number of points.",
+    "body": "Energy considers efficiency, electrification, and energy exposure. Water looks at conservation and water-damage risk. Health covers indoor conditions such as ventilation and moisture. Resilience considers hazards and the home's ability to withstand them. Carbon & Materials looks at material impacts and documentation. Financial Risk addresses ownership-cost exposure. Community & Mobility considers the surrounding context and transportation. Open The Seven Pillars in Menu for general definitions independent of any property search. Open My Scores for a home's assessed results; each pillar has a different maximum number of points.",
     "keywords": ["pillars", "energy", "water", "health", "resilience", "carbon", "financial", "community"],
     "screen": 23
   },

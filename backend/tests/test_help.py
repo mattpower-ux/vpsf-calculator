@@ -13,6 +13,9 @@ def test_help_guide_has_five_faqs_and_detailed_topics():
     assert "best products" in products["question"].lower()
     assert products["screen"] == 7
     assert all(topic["body"] for topic in guide_entries())
+    pillars = next(topic for topic in guide_entries() if topic["id"] == "seven-pillars")
+    assert "definitions" in pillars["body"].lower()
+    assert "My Scores" in pillars["body"]
     assert {"/api/help/guide", "/api/help/search"}.issubset({route.path for route in app.routes})
 
 

@@ -3,6 +3,7 @@ import AdminDemo from "./admin/AdminDemo";
 import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
+import { buildReportModel } from "./reportModel";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
@@ -3249,19 +3250,27 @@ function MenuScreen({ onNavigate, setScreen, tip }) {
   );
 }
 
-function LabelScreen({ result, property, setScreen }) {
+function LabelScreen({ result, property, products, setScreen }) {
   const info = classification(result.total);
   const [shareStatus, setShareStatus] = useState("");
-  const downloadReport = () => {
-    const url = URL.createObjectURL(new Blob([reportText(result, property, PILLARS)], { type: "text/plain;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "vpsf-report-card.txt";
-    link.hidden = true;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const downloadReport = async () => {
+    try {
+      setShareStatus("Preparing printable PDF...");
+      const { createReportPdf } = await import("./reportPdf");
+      const pdf = createReportPdf(buildReportModel(result, property, PILLARS, products));
+      const url = URL.createObjectURL(pdf.output("blob"));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "vpsf-home-evaluation-report.pdf";
+      link.hidden = true;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      setShareStatus("PDF downloaded.");
+    } catch (error) {
+      setShareStatus("Could not create the PDF. Please try again.");
+    }
   };
   const shareReport = async () => {
     try {
@@ -3272,7 +3281,7 @@ function LabelScreen({ result, property, setScreen }) {
         setShareStatus("Report copied to clipboard.");
       }
     } catch (error) {
-      if (error.name !== "AbortError") setShareStatus("Sharing is unavailable. The text report is available to download.");
+      if (error.name !== "AbortError") setShareStatus("Sharing is unavailable. You can download the PDF instead.");
     }
   };
   return (
@@ -3303,7 +3312,7 @@ function LabelScreen({ result, property, setScreen }) {
         })}
         <p className="reportLimitations">{REPORT_LIMITATIONS}</p>
         <div className="labelActions">
-          <button onClick={downloadReport} title="Download text report"><Download size={15} />Download Report</button>
+          <button onClick={downloadReport} title="Download printable PDF report"><Download size={15} />Download Report</button>
           <button onClick={shareReport}><Share2 size={15} />Share Report</button>
         </div>
         {shareStatus && <p role="status">{shareStatus}</p>}
@@ -3661,7 +3670,7 @@ export default function App() {
         {screen === 6 && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} propertyAddress={propertyAddress} />}
         {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
-        {screen === 9 && <LabelScreen result={result} property={result.property || home} setScreen={navigateFromUI} />}
+        {screen === 9 && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} />}
         {screen === 10 && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}

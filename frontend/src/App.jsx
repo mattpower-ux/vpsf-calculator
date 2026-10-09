@@ -8,6 +8,7 @@ import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
 import { assessedHomeAddress, assessedHomeStreetAddress } from "./assessedHomeAddress";
+import { climateZoneOptionsFor } from "./climateZoneOptions";
 import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { manualChapters, manualChapterAt } from "./guideManual";
@@ -264,7 +265,7 @@ const defaultHome = {
   bathrooms: "3.5",
   garage: "2 Car Garage",
   lotSize: "0.18 acres",
-  climateZone: "2A – Hot Humid",
+  climateZone: "2A - Hot Humid",
   occupancy: "Owner Occupied",
   hvac: "Heat Pump (Electric)",
   hvacAge: "Unknown",
@@ -307,7 +308,6 @@ const defaultHome = {
 const selectOptions = {
   homeType: ["Single Family Detached", "Townhome", "Condo", "Multifamily", "Manufactured Home"],
   stories: ["1", "1.5", "2", "3+"],
-  climateZone: ["1A – Very Hot Humid", "2A – Hot Humid", "3A – Warm Humid", "3C – Marine", "4A – Mixed Humid", "5A – Cool Humid"],
   occupancy: ["Owner Occupied", "Rental", "Builder Spec", "For Sale"],
   hvac: ["Heat Pump (Electric)", "Geothermal", "Gas Furnace", "Electric Resistance", "Unknown"],
   waterHeater: ["Heat Pump Water Heater", "Tank Electric", "Tank Gas", "Tankless Gas", "Solar Thermal", "Unknown"],
@@ -886,14 +886,22 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         : await findSavedProperty(parsedAddress);
       if (savedResult?.found && savedResult.property) {
         let savedHome = savedPropertyToHomeForEnteredAddress(savedResult.property, address);
-        if (Number.isFinite(savedHome.latitude) && Number.isFinite(savedHome.longitude)
-          && !["available", "no_data"].includes(savedHome.wildfire?.status)) {
-          try {
-            const risk = await enrichPropertyRisk(savedHome);
-            savedHome = { ...savedHome, wildfire: risk.wildfire ?? null };
-          } catch (error) {
-            console.warn("Saved location risk lookup unavailable.", error);
-          }
+        try {
+          const geocode = await geocodeProperty(formatSavedAddress(savedResult.property));
+          const risk = await enrichPropertyRisk({
+            state: geocode.state,
+            zip: geocode.zip,
+            county: geocode.county,
+            latitude: savedHome.latitude ?? geocode.latitude,
+            longitude: savedHome.longitude ?? geocode.longitude
+          });
+          savedHome = {
+            ...savedHome,
+            climateZone: risk.climateZone !== "Unknown" ? risk.climateZone : savedHome.climateZone,
+            wildfire: risk.wildfire ?? savedHome.wildfire
+          };
+        } catch (error) {
+          console.warn("Saved location risk lookup unavailable.", error);
         }
         setHome(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
@@ -924,8 +932,9 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         riskEnrichment = await enrichPropertyRisk({
           latitude: geocode.latitude,
           longitude: geocode.longitude,
-          state: rentcastProperty?.state || attomProperty?.state || geocode.state,
-          zip: rentcastProperty?.zip || attomProperty?.zip || geocode.zip,
+          state: geocode.state || rentcastProperty?.state || attomProperty?.state,
+          zip: geocode.zip || rentcastProperty?.zip || attomProperty?.zip,
+          county: geocode.county,
         });
       } catch (riskError) {
         console.warn("Risk enrichment unavailable.", riskError);
@@ -1189,7 +1198,7 @@ function PropertyDetails({ home, update, setScreen }) {
         <Field label="Year Built" value={home.yearBuilt} onChange={(v) => update("yearBuilt", v)} />
         <Field label="Square Footage" value={home.squareFeet} onChange={(v) => update("squareFeet", v)} />
         <Field label="Stories" value={home.stories} onChange={(v) => update("stories", v)} options={selectOptions.stories} />
-        <Field label="Climate Zone" value={home.climateZone} onChange={(v) => update("climateZone", v)} options={selectOptions.climateZone} />
+        <Field label="Climate Zone" value={home.climateZone} onChange={(v) => update("climateZone", v)} options={climateZoneOptionsFor(home.climateZone)} />
         <Field label="Zip Code" value={home.zip} onChange={(v) => update("zip", v)} />
         <Field label="Lot Size" value={home.lotSize} onChange={(v) => update("lotSize", v)} />
       </section>

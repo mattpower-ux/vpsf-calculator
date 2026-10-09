@@ -93,6 +93,7 @@ class GeocodeResponse(BaseModel):
     address: str = ""
     city: str = ""
     state: str = ""
+    county: str = ""
     zip: str = ""
     latitude: float | None = None
     longitude: float | None = None
@@ -105,6 +106,7 @@ class RiskEnrichmentRequest(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
     state: str = ""
     zip: str = ""
+    county: str = ""
 
 
 class RiskEnrichmentResponse(BaseModel):

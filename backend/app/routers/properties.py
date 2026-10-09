@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.adapters import get_listing_adapter
 from app.config import Settings, get_settings
+from app.address_normalization import normalize_state
 from app.db import get_db
 from app.integrations.attom import AttomClient
 from app.integrations.climate import estimate_climate_zone
@@ -51,7 +52,8 @@ def geocode_response_from_mapbox(query: str, data: dict) -> GeocodeResponse:
         normalizedAddress=properties.get("full_address") or properties.get("name") or query,
         address=properties.get("address") or properties.get("name") or "",
         city=mapbox_context_value(context, "place"),
-        state=mapbox_context_value(context, "region"),
+        state=normalize_state(mapbox_context_value(context, "region")),
+        county=mapbox_context_value(context, "district"),
         zip=mapbox_context_value(context, "postcode"),
         latitude=latitude,
         longitude=longitude,
@@ -570,7 +572,7 @@ async def enrich_property_with_rentcast(
 
 @router.post("/risk", response_model=RiskEnrichmentResponse)
 async def enrich_property_risk(request: RiskEnrichmentRequest, db: Session = Depends(get_db)) -> RiskEnrichmentResponse:
-    climate_zone = estimate_climate_zone(request.state, request.zip)
+    climate_zone = estimate_climate_zone(request.state, request.zip, request.county)
 
     async def lookup_flood():
         if request.latitude is None or request.longitude is None:
@@ -595,7 +597,8 @@ async def enrich_property_risk(request: RiskEnrichmentRequest, db: Session = Dep
         flood=flood,
         fema=fema_attributes,
         wildfire=wildfire,
-        sourceNote="Climate zone is estimated from location. FEMA flood lookup is based on mapped public flood-hazard layers when coordinates are available. " + wildfire_note,
+        sourceNote=("IECC 2021 climate zone is matched from PNNL county data. " if climate_zone != "Unknown" else "Climate zone could not be verified without a matched county. ")
+        + "FEMA flood lookup is based on mapped public flood-hazard layers when coordinates are available. " + wildfire_note,
     )
 
 

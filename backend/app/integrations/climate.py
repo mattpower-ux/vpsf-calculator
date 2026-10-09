@@ -1,30 +1,43 @@
-HOT_HUMID_STATES = {"FL", "LA", "MS", "AL", "GA", "SC", "HI"}
-MIXED_HUMID_STATES = {"NC", "TN", "AR", "KY", "VA", "MD", "DE", "NJ", "MO", "IL", "IN", "OH", "WV", "PA", "DC"}
-MARINE_STATES = {"CA", "OR", "WA"}
-COLD_STATES = {"ME", "NH", "VT", "MA", "RI", "CT", "NY", "MI", "WI", "MN", "ND", "SD", "MT", "WY", "ID"}
-DRY_STATES = {"AZ", "NM", "NV", "UT", "CO"}
+import csv
+import re
+from functools import lru_cache
+from pathlib import Path
+
+from app.address_normalization import normalize_state
 
 
-def estimate_climate_zone(state: str, zip_code: str = "") -> str:
-    state = (state or "").upper()
-    zip_code = zip_code or ""
+DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "iecc_2021_counties.csv"
+THERMAL_LABELS = {
+    "1": "Very Hot", "2": "Hot", "3": "Warm", "4": "Mixed",
+    "5": "Cool", "6": "Cold", "7": "Very Cold", "8": "Subarctic",
+}
+MOISTURE_LABELS = {"A": "Humid", "B": "Dry", "C": "Marine"}
 
-    if state == "FL":
-        return "2A - Hot Humid"
-    if state == "TX":
-        if zip_code.startswith(("75", "76", "79")):
-            return "3A - Warm Humid"
-        if zip_code.startswith(("77", "78")):
-            return "2A - Hot Humid"
-        return "3A - Warm Humid"
-    if state in HOT_HUMID_STATES:
-        return "3A - Warm Humid"
-    if state in MIXED_HUMID_STATES:
-        return "4A - Mixed Humid"
-    if state in MARINE_STATES:
-        return "3C - Marine"
-    if state in COLD_STATES:
-        return "5A - Cool Humid"
-    if state in DRY_STATES:
-        return "3B - Warm Dry"
-    return "Unknown"
+
+def _county_key(value: str) -> str:
+    name = re.sub(r"\bst[.]?\b", "saint", (value or "").strip().lower())
+    name = re.sub(r"\s+(city and borough|census area|county|parish|borough|municipality)$", "", name)
+    return re.sub(r"[^a-z0-9]", "", name)
+
+
+@lru_cache(maxsize=1)
+def _county_zones() -> dict[tuple[str, str], str]:
+    with DATA_PATH.open(encoding="utf-8", newline="") as source:
+        rows = csv.DictReader(line for line in source if not line.startswith("#"))
+        return {
+            (row["state"], _county_key(row["county"])): row["zone"]
+            for row in rows
+        }
+
+
+def estimate_climate_zone(state: str, zip_code: str = "", county: str = "") -> str:
+    if not state or not county:
+        return "Unknown"
+    zone = _county_zones().get((normalize_state(state), _county_key(county)))
+    if not zone:
+        return "Unknown"
+    thermal = THERMAL_LABELS.get(zone[0])
+    if not thermal:
+        return "Unknown"
+    moisture = MOISTURE_LABELS.get(zone[1:], "")
+    return f"{zone} - {thermal}{f' {moisture}' if moisture else ''}"

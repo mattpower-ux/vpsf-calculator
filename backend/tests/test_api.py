@@ -81,7 +81,7 @@ def test_attom_requires_api_key():
 
 
 def test_risk_endpoint_estimates_climate_without_coordinates():
-    response = client.post("/api/properties/risk", json={"state": "FL", "zip": "32101"})
+    response = client.post("/api/properties/risk", json={"state": "FL", "zip": "32101", "county": "Orange County"})
 
     assert response.status_code == 200
     body = response.json()

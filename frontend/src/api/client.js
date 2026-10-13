@@ -40,11 +40,11 @@ async function request(path, options = {}) {
   return response.json();
 }
 
-function adminOptions(passcode, options = {}) {
+function adminOptions(token, options = {}) {
   return {
     ...options,
     headers: {
-      "X-Admin-Passcode": passcode,
+      Authorization: `Bearer ${token}`,
       ...(options.headers || {})
     }
   };
@@ -162,20 +162,24 @@ export async function trackProductClick(payload) {
   });
 }
 
-export async function getAdminProducts(passcode) {
-  return request("/api/admin/products", adminOptions(passcode));
+export async function loginAdmin(password) {
+  return request("/api/admin/session", { method: "POST", body: JSON.stringify({ password }) });
 }
 
-export async function getAdminPropertyQueries(passcode) {
-  return request("/api/admin/property-queries", adminOptions(passcode));
+export async function getAdminProducts(token) {
+  return request("/api/admin/products", adminOptions(token));
 }
 
-export async function getAdminProductClicks(passcode) {
-  return request("/api/admin/product-clicks", adminOptions(passcode));
+export async function getAdminPropertyQueries(token) {
+  return request("/api/admin/property-queries", adminOptions(token));
 }
 
-export async function updateProductWeighting(productId, weight, passcode) {
-  return request(`/api/admin/products/${productId}/weighting?weight=${encodeURIComponent(weight)}`, adminOptions(passcode, {
+export async function getAdminProductClicks(token) {
+  return request("/api/admin/product-clicks", adminOptions(token));
+}
+
+export async function updateProductWeighting(productId, weight, token) {
+  return request(`/api/admin/products/${productId}/weighting?weight=${encodeURIComponent(weight)}`, adminOptions(token, {
     method: "PATCH"
   }));
 }

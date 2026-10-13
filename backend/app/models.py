@@ -11,6 +11,23 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class AdminSessionRecord(Base):
+    __tablename__ = "admin_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AdminLoginAttemptRecord(Base):
+    __tablename__ = "admin_login_attempts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    client_key: Mapped[str] = mapped_column(String(128), index=True)
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class PropertyRecord(Base):
     __tablename__ = "properties"
 

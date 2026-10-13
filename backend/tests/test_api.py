@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from uuid import uuid4
+import os
 
 from app.db import init_db
 from app.main import app
@@ -8,6 +9,12 @@ from app.schemas import PropertyInput
 
 init_db()
 client = TestClient(app)
+
+
+def admin_headers():
+    os.environ["ADMIN_PASSWORD"] = "test-admin-password"
+    token = client.post("/api/admin/session", json={"password": "test-admin-password"}).json()["token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_health_includes_model_version():
@@ -129,7 +136,7 @@ def test_tracking_records_score_and_lead_for_admin_table():
     unauthorized_admin = client.get("/api/admin/property-queries")
     assert unauthorized_admin.status_code == 401
 
-    admin_response = client.get("/api/admin/property-queries", headers={"X-Admin-Passcode": "2027"})
+    admin_response = client.get("/api/admin/property-queries", headers=admin_headers())
     assert admin_response.status_code == 200
     row = next(item for item in admin_response.json() if item["id"] == query_id)
     assert row["vpsfScore"] == 512
@@ -173,7 +180,7 @@ def test_tracking_archives_added_property_details():
     )
     assert progress_response.status_code == 200
 
-    archive_response = client.get("/api/admin/property-detail-archive", headers={"X-Admin-Passcode": "2027"})
+    archive_response = client.get("/api/admin/property-detail-archive", headers=admin_headers())
     assert archive_response.status_code == 200
     archive_row = next(item for item in archive_response.json() if item["queryId"] == query_id)
     assert archive_row["field"] == "hvac"
@@ -261,13 +268,13 @@ def test_education_content_is_cached_and_admin_updatable():
 
     admin_update = client.put(
         f"/api/admin/education/{key}",
-        headers={"X-Admin-Passcode": "2027"},
+        headers=admin_headers(),
         json={**payload, "title": "DeepThink Final Page"},
     )
     assert admin_update.status_code == 200
     assert admin_update.json()["title"] == "DeepThink Final Page"
 
-    admin_list = client.get("/api/admin/education", headers={"X-Admin-Passcode": "2027"})
+    admin_list = client.get("/api/admin/education", headers=admin_headers())
     assert admin_list.status_code == 200
     assert any(item["key"] == key for item in admin_list.json())
 
@@ -318,3 +325,4 @@ def test_attom_parser_reads_public_record_shapes_and_permits():
     assert enriched.hvacAge == "Permit year 2022"
     assert enriched.solar == "Permit found - solar/battery work"
     assert enriched.backup == "Permit found - battery/storage work"
+

@@ -1,22 +1,35 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord
+from app.admin_auth import create_session, require_admin_session
+from app.models import AdminSessionRecord, LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord, utc_now
 from app.repositories import list_educational_content, list_product_clicks, list_products, list_property_detail_archive, list_property_queries, seed_products, upsert_educational_content
 from app.schemas import AdminSummary, EducationalContent, EducationalContentUpsert, ProductRecommendation
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
-def require_admin_passcode(x_admin_passcode: str = Header(default="")) -> None:
-    if x_admin_passcode != "2027":
-        raise HTTPException(status_code=401, detail="Invalid admin passcode")
+class LoginRequest(BaseModel):
+    password: str
+
+
+@router.post("/session")
+def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> dict:
+    return {"token": create_session(payload.password, request, db)}
+
+
+@router.delete("/session", status_code=204)
+def logout(session: AdminSessionRecord = Depends(require_admin_session), db: Session = Depends(get_db)) -> Response:
+    session.revoked_at = utc_now()
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/summary", response_model=AdminSummary)
-async def summary(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> AdminSummary:
+async def summary(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> AdminSummary:
     seed_products(db)
     return AdminSummary(
         properties=db.scalar(select(func.count()).select_from(PropertyRecord)) or 0,
@@ -27,12 +40,12 @@ async def summary(_: None = Depends(require_admin_passcode), db: Session = Depen
 
 
 @router.get("/products", response_model=list[ProductRecommendation])
-async def products(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[ProductRecommendation]:
+async def products(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[ProductRecommendation]:
     return list_products(db)
 
 
 @router.get("/education", response_model=list[EducationalContent])
-async def educational_pages(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[EducationalContent]:
+async def educational_pages(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[EducationalContent]:
     return list_educational_content(db)
 
 
@@ -40,14 +53,14 @@ async def educational_pages(_: None = Depends(require_admin_passcode), db: Sessi
 async def upsert_educational_page(
     content_key: str,
     payload: EducationalContentUpsert,
-    _: None = Depends(require_admin_passcode),
+    _: None = Depends(require_admin_session),
     db: Session = Depends(get_db),
 ) -> EducationalContent:
     return upsert_educational_content(db, content_key, payload)
 
 
 @router.patch("/products/{product_id}/weighting", response_model=ProductRecommendation)
-async def update_product_weighting(product_id: str, weight: str, _: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> ProductRecommendation:
+async def update_product_weighting(product_id: str, weight: str, _: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> ProductRecommendation:
     if weight not in {"Priority", "Standard", "Downgrade", "Hidden"}:
         raise HTTPException(status_code=400, detail="Unsupported product weight")
     record = db.get(ProductRecord, product_id)
@@ -69,7 +82,7 @@ async def update_product_weighting(product_id: str, weight: str, _: None = Depen
 
 
 @router.get("/properties")
-async def properties(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
+async def properties(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     records = db.scalars(select(PropertyRecord).order_by(PropertyRecord.created_at.desc()).limit(100)).all()
     return [
         {
@@ -86,7 +99,7 @@ async def properties(_: None = Depends(require_admin_passcode), db: Session = De
 
 
 @router.get("/leads")
-async def leads(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
+async def leads(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     records = db.scalars(select(LeadRecord).order_by(LeadRecord.created_at.desc()).limit(250)).all()
     return [
         {
@@ -105,7 +118,7 @@ async def leads(_: None = Depends(require_admin_passcode), db: Session = Depends
 
 
 @router.get("/reports/leads")
-async def lead_report(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> dict:
+async def lead_report(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> dict:
     records = db.scalars(select(LeadRecord).order_by(LeadRecord.created_at.desc()).limit(500)).all()
     by_product: dict[str, int] = {}
     by_zip: dict[str, int] = {}
@@ -134,15 +147,16 @@ async def lead_report(_: None = Depends(require_admin_passcode), db: Session = D
 
 
 @router.get("/property-queries")
-async def property_queries(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
+async def property_queries(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     return list_property_queries(db)
 
 
 @router.get("/product-clicks")
-async def product_clicks(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
+async def product_clicks(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     return list_product_clicks(db)
 
 
 @router.get("/property-detail-archive")
-async def property_detail_archive(_: None = Depends(require_admin_passcode), db: Session = Depends(get_db)) -> list[dict]:
+async def property_detail_archive(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     return list_property_detail_archive(db)
+

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, updateProductWeighting } from "../api/client";
+import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, loginAdmin, updateProductWeighting } from "../api/client";
 import cognitionIcon from "../assets/cognition-icon.png";
 import {
   BarChart3,
@@ -929,9 +929,9 @@ function MiniBar({ label, value }) {
 }
 
 export default function AdminDemo() {
-  const savedPasscode = window.sessionStorage.getItem("vpsf_admin_passcode") || "";
-  const [passcode, setPasscode] = useState(savedPasscode);
-  const [isUnlocked, setIsUnlocked] = useState(savedPasscode === "2027");
+  const [passcode, setPasscode] = useState("");
+  const [adminToken, setAdminToken] = useState(window.sessionStorage.getItem("vpsf_admin_session") || "");
+  const isUnlocked = Boolean(adminToken);
   const [passcodeError, setPasscodeError] = useState("");
   const [active, setActive] = useState("Properties");
   const [products, setProducts] = useState(initialProducts);
@@ -944,9 +944,9 @@ export default function AdminDemo() {
     let isMounted = true;
     setIsLoadingAdmin(true);
     Promise.all([
-      getAdminProducts(passcode),
-      getAdminPropertyQueries(passcode),
-      getAdminProductClicks(passcode)
+      getAdminProducts(adminToken),
+      getAdminPropertyQueries(adminToken),
+      getAdminProductClicks(adminToken)
     ])
       .then(([apiProducts, apiQueries, apiClicks]) => {
         if (!isMounted) return;
@@ -964,7 +964,10 @@ export default function AdminDemo() {
         setProductClicks(apiClicks || []);
       })
       .catch((error) => {
-        console.warn("Admin data stayed on demo data because the API was unavailable.", error);
+        setPasscodeError("Admin session expired or API unavailable. Sign in again.");
+        window.sessionStorage.removeItem("vpsf_admin_session");
+        setAdminToken("");
+        console.warn("Admin data unavailable.", error);
       })
       .finally(() => {
         if (isMounted) setIsLoadingAdmin(false);
@@ -972,25 +975,27 @@ export default function AdminDemo() {
     return () => {
       isMounted = false;
     };
-  }, [isUnlocked, passcode]);
+  }, [adminToken, isUnlocked]);
 
-  const unlockAdmin = (event) => {
+  const unlockAdmin = async (event) => {
     event.preventDefault();
-    if (passcode !== "2027") {
-      setPasscodeError("Invalid passcode.");
-      return;
+    try {
+      const { token } = await loginAdmin(passcode);
+      window.sessionStorage.setItem("vpsf_admin_session", token);
+      setAdminToken(token);
+      setPasscode("");
+      setPasscodeError("");
+    } catch {
+      setPasscodeError("Invalid credentials or too many attempts. Please try again later.");
     }
-    window.sessionStorage.setItem("vpsf_admin_passcode", passcode);
-    setPasscodeError("");
-    setIsUnlocked(true);
   };
 
   const content = {
     Dashboard: <Dashboard />,
     Properties: <Properties queries={queries} productClicks={productClicks} isLoading={isLoadingAdmin} />,
     "Climate and Location Metrics": <ScoringControlsPage />,
-    Products: <BrandWeighting products={products} setProducts={setProducts} passcode={passcode} />,
-    "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={passcode} />,
+    Products: <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
+    "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
     Users: <UsersPage />,
     Reports: <Reports products={products} />,
     Settings: <GenericPage title="Settings" />

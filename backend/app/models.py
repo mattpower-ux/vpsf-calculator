@@ -28,6 +28,44 @@ class AdminLoginAttemptRecord(Base):
     attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class ScoringModelRecord(Base):
+    __tablename__ = "scoring_models"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    version: Mapped[str] = mapped_column(String(80), unique=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    active: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class ScoringDraftRecord(Base):
+    __tablename__ = "scoring_drafts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    payload: Mapped[dict] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class ScoringAuditRecord(Base):
+    __tablename__ = "scoring_audit"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    action: Mapped[str] = mapped_column(String(40))
+    actor: Mapped[str] = mapped_column(String(120))
+    revision: Mapped[int] = mapped_column(Integer)
+    version: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class WalkabilityCacheRecord(Base):
+    __tablename__ = "walkability_cache"
+
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    evidence: Mapped[dict] = mapped_column(JSON)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class PropertyRecord(Base):
     __tablename__ = "properties"
 

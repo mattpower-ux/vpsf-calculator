@@ -22,7 +22,7 @@ def test_health_includes_model_version():
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    assert response.json()["modelVersion"] == "vpsf-0.2.0-usfs"
+    assert response.json()["modelVersion"]
 
 
 def test_score_endpoint_returns_persisted_score_run():
@@ -41,7 +41,7 @@ def test_score_endpoint_returns_persisted_score_run():
     body = response.json()
     assert response.status_code == 200
     assert body["total"] > 0
-    assert body["modelVersion"] == "vpsf-0.2.0-usfs"
+    assert body["modelVersion"] == client.get("/api/health").json()["modelVersion"]
     assert body["propertyId"]
     assert body["scoreRunId"]
     assert "energy" in body["explanations"]

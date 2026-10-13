@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { buildReportModel } from "./reportModel";
@@ -462,6 +462,33 @@ function Field({ label, value, onChange, options, wide = false }) {
         <input value={value} onChange={(e) => onChange(e.target.value)} />
       )}
     </label>
+  );
+}
+
+function CustomScoringFields({ fields, home, updateExtra, pillars }) {
+  const visible = fields.filter((field) => pillars.includes(field.pillar));
+  if (!visible.length) return null;
+  return (
+    <section className="formSection compactSpecsSection">
+      <h3>Additional Home Details</h3>
+      {visible.map((field) => (
+        <label className="field" key={field.id}>
+          <span>{field.label}</span>
+          {field.kind === "checkbox" ? (
+            <select value={String(home.extraInputs?.[field.id] ?? "Unknown")} onChange={(event) => updateExtra(field.id, event.target.value === "Unknown" ? "Unknown" : event.target.value === "true")}>
+              <option value="Unknown">Unknown</option><option value="true">Yes</option><option value="false">No</option>
+            </select>
+          ) : field.kind === "select" ? (
+            <select value={home.extraInputs?.[field.id] ?? "Unknown"} onChange={(event) => updateExtra(field.id, event.target.value)}>
+              <option>Unknown</option>{field.choices.map((choice) => <option key={choice}>{choice}</option>)}
+            </select>
+          ) : (
+            <input type="number" min={field.minimum} max={field.maximum} value={home.extraInputs?.[field.id] ?? ""} onChange={(event) => updateExtra(field.id, event.target.value === "" ? "Unknown" : Number(event.target.value))} />
+          )}
+          {field.helper && <small>{field.helper}</small>}
+        </label>
+      ))}
+    </section>
   );
 }
 
@@ -1229,7 +1256,7 @@ function PropertyDetails({ home, update, setScreen }) {
   );
 }
 
-function HomeSpecs({ home, update, setScreen }) {
+function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
   return (
     <div className="screen formScreen compactFormScreen">
       <ProgressDots step={2} />
@@ -1256,6 +1283,7 @@ function HomeSpecs({ home, update, setScreen }) {
         <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
       </section>
 
+      <CustomScoringFields fields={customFields} home={home} updateExtra={updateExtra} pillars={["energy", "health", "resilience"]} />
       <button className="primaryButton" onClick={() => setScreen(14)}>
         Next: Water, Carbon + Financial <ArrowRight size={18} />
       </button>
@@ -1263,7 +1291,7 @@ function HomeSpecs({ home, update, setScreen }) {
   );
 }
 
-function HomeSpecsMore({ home, update, setScreen }) {
+function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
   return (
     <div className="screen formScreen compactFormScreen">
       <ProgressDots step={3} />
@@ -1286,6 +1314,7 @@ function HomeSpecsMore({ home, update, setScreen }) {
         <Field label="Bike Access" value={home.bike} onChange={(v) => update("bike", v)} options={selectOptions.bike} />
       </section>
 
+      <CustomScoringFields fields={customFields} home={home} updateExtra={updateExtra} pillars={["water", "carbon", "financial", "community"]} />
       <button className="primaryButton" onClick={() => setScreen(3)}>
         Review & Confirm <ArrowRight size={18} />
       </button>
@@ -1449,12 +1478,26 @@ function TakeawayCard({ title, pillar, value, isBest, onOpenKnowHow }) {
 }
 
 
-function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar }) {
+function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar, home, resultMode }) {
   const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
   const details = PILLAR_DETAILS[pillar.key];
   const Icon = pillar.icon;
   const value = result.scores[pillar.key];
   const pct = Math.round((value / pillar.max) * 100);
+  const assessedCommunity = pillar.key === "community" && resultMode !== "demo";
+  const communityPros = assessedCommunity ? [
+    result.walkability?.status === "available" && result.walkability.value >= 11 ? `EPA National Walkability Index ${result.walkability.value.toFixed(1)} / 20` : null,
+    home.transit?.includes("Nearby") ? "Nearby transit and services recorded" : null,
+    /Green|Park/i.test(home.greenspace || "") ? "Green space recorded" : null,
+    home.amenities?.includes("Shared") ? "Shared amenities recorded" : null,
+    home.bike?.includes("Bike") ? "Bike access recorded" : null
+  ].filter(Boolean) : details.pros;
+  const communityCons = assessedCommunity ? [
+    result.walkability?.status !== "available" ? "EPA walkability could not be verified for this location" : null,
+    !home.transit?.includes("Nearby") ? "Nearby transit is not documented" : null,
+    !/Green|Park/i.test(home.greenspace || "") ? "Green space is not documented" : null,
+    !home.bike?.includes("Bike") ? "Bike access is not documented" : null
+  ].filter(Boolean) : details.cons;
 
   return (
     <div className="screen pillarDetailScreen withNav">
@@ -1473,21 +1516,23 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
       {pillar.key === "resilience" && result.explanations?.resilience && (
         <p className="sourceNote">{result.explanations.resilience}</p>
       )}
+      {assessedCommunity && result.walkability?.status === "available" && <p className="sourceNote">EPA National Walkability Index: {result.walkability.value.toFixed(1)} / 20, 2019 census block group {result.walkability.blockGroup}. <a href={result.walkability.sourceUrl} target="_blank" rel="noreferrer">EPA source</a></p>}
 
       <section className="prosConsGrid">
         <article className="prosCard">
           <h3>Pros</h3>
           <ul>
-            {details.pros.map((item) => (
+            {(assessedCommunity ? communityPros : details.pros).map((item) => (
               <li key={item}><Check size={15} /> {item}</li>
             ))}
+            {assessedCommunity && communityPros.length === 0 && <li>No verified community strengths recorded yet.</li>}
           </ul>
         </article>
 
         <article className="consCard">
           <h3>Cons</h3>
           <ul>
-            {details.cons.map((item) => (
+            {(assessedCommunity ? communityCons : details.cons).map((item) => (
               <li key={item}><Flame size={15} /> {item}</li>
             ))}
           </ul>
@@ -3455,6 +3500,7 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
+  const [customFields, setCustomFields] = useState([]);
   const [hasAssessedHome, setHasAssessedHome] = useState(false);
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
@@ -3504,6 +3550,11 @@ export default function App() {
       };
     });
   };
+  const updateExtra = (key, value) => update("extraInputs", { ...(home.extraInputs || {}), [key]: value });
+
+  useEffect(() => {
+    getScoringFormFields().then(setCustomFields).catch(() => setCustomFields([]));
+  }, []);
 
   useEffect(() => {
     queryIdRef.current = queryId;
@@ -3795,7 +3846,7 @@ export default function App() {
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
         {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} />}
-        {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} />}
+        {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 3 && (
           <ReviewScreen
             home={home}
@@ -3812,11 +3863,11 @@ export default function App() {
         {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} />}
+        {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
-        {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} />}
+        {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
         {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}

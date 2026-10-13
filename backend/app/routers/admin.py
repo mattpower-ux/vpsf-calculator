@@ -8,8 +8,90 @@ from app.admin_auth import create_session, require_admin_session
 from app.models import AdminSessionRecord, LeadRecord, ProductRecord, PropertyRecord, ScoreRunRecord, utc_now
 from app.repositories import list_educational_content, list_product_clicks, list_products, list_property_detail_archive, list_property_queries, seed_products, upsert_educational_content
 from app.schemas import AdminSummary, EducationalContent, EducationalContentUpsert, ProductRecommendation
+from app.schemas import PropertyInput
+from app.scoring.catalog import ScoreModel, evaluate_model
+from app.scoring.candidates import CANDIDATES
+from app.scoring.store import ConflictError, ModelUnavailableError, load_or_create_draft, load_published, model_history, publish_draft, save_draft
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+
+class DraftUpdate(BaseModel):
+    revision: int
+    model: ScoreModel
+
+
+class PublishRequest(BaseModel):
+    revision: int
+
+
+class PreviewRequest(BaseModel):
+    propertyId: int
+
+
+@router.get("/scoring/model", dependencies=[Depends(require_admin_session)])
+def published_scoring_model(db: Session = Depends(get_db)) -> ScoreModel:
+    return load_published(db)
+
+
+@router.get("/scoring/draft", dependencies=[Depends(require_admin_session)])
+def scoring_draft(db: Session = Depends(get_db)) -> dict:
+    model, revision = load_or_create_draft(db)
+    return {"model": model, "revision": revision}
+
+
+@router.put("/scoring/draft", dependencies=[Depends(require_admin_session)])
+def update_scoring_draft(payload: DraftUpdate, db: Session = Depends(get_db)) -> dict:
+    try:
+        revision = save_draft(db, payload.model, payload.revision)
+    except ConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"revision": revision, "model": payload.model}
+
+
+@router.post("/scoring/validate", dependencies=[Depends(require_admin_session)])
+def validate_scoring_draft(model: ScoreModel) -> dict:
+    issues = []
+    total = sum(model.pillars.values())
+    if total != 1000:
+        issues.append(f"Pillar budgets total {total}; they must total 1,000")
+    return {"valid": not issues, "issues": issues, "total": total}
+
+
+@router.post("/scoring/preview", dependencies=[Depends(require_admin_session)])
+def preview_scoring_draft(payload: PreviewRequest, db: Session = Depends(get_db)) -> dict:
+    record = db.get(PropertyRecord, payload.propertyId)
+    if not record:
+        raise HTTPException(status_code=404, detail="Property not found")
+    home = PropertyInput.model_validate(record.input_snapshot)
+    draft, revision = load_or_create_draft(db)
+    return {"propertyId": record.id, "revision": revision, "published": evaluate_model(home, load_published(db)), "draft": evaluate_model(home, draft)}
+
+
+@router.post("/scoring/publish", dependencies=[Depends(require_admin_session)])
+def publish_scoring_draft(payload: PublishRequest, db: Session = Depends(get_db)) -> ScoreModel:
+    try:
+        return publish_draft(db, payload.revision, "admin")
+    except ConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.get("/scoring/history", dependencies=[Depends(require_admin_session)])
+def scoring_history(db: Session = Depends(get_db)) -> list[dict]:
+    return model_history(db)
+
+
+@router.get("/scoring/available-fields", dependencies=[Depends(require_admin_session)])
+def scoring_available_fields() -> list[str]:
+    excluded = {"address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"}
+    return [key for key in PropertyInput.model_fields if key not in excluded]
+
+
+@router.get("/scoring/candidates", dependencies=[Depends(require_admin_session)])
+def scoring_candidates() -> list[dict]:
+    return CANDIDATES
 
 
 class LoginRequest(BaseModel):

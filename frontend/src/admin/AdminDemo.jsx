@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, loginAdmin, updateProductWeighting } from "../api/client";
 import cognitionIcon from "../assets/cognition-icon.png";
+import ScoresAndWeighting from "./ScoresAndWeighting";
 import {
   BarChart3,
   Building2,
@@ -243,10 +244,17 @@ function WeightSelect({ value, onChange }) {
 }
 
 function Sidebar({ active, setActive }) {
+  const navRef = useRef(null);
+  useEffect(() => {
+    if (window.innerWidth <= 700 && navRef.current) {
+      const selected = navRef.current.querySelector(".active");
+      if (selected) navRef.current.scrollLeft = selected.offsetLeft - navRef.current.clientWidth / 2 + selected.clientWidth / 2;
+    }
+  }, [active]);
   const items = [
     ["Dashboard", Gauge],
     ["Properties", Home],
-    ["Climate and Location Metrics", SlidersHorizontal],
+    ["Scores and Weighting", Layers],
     ["Products", Package],
     ["Brand Weighting", Layers],
     ["Users", Users],
@@ -266,7 +274,7 @@ function Sidebar({ active, setActive }) {
         <span>VPSF ADMIN</span>
       </div>
 
-      <nav>
+      <nav ref={navRef}>
         {items.map(([label, Icon]) => (
           <button
             key={label}
@@ -297,15 +305,15 @@ function Header({ active }) {
         <p>
           {active === "Brand Weighting"
             ? "Manage brand and product priority weighting across the seven VPSF pillars."
-            : active === "Climate and Location Metrics"
-              ? "Adjust regional climate, cost, and location factors that shape VPSF scoring impact."
+            : active === "Scores and Weighting"
+              ? "Inspect and publish the seven-pillar scoring model."
             : "Demo admin workspace for monitoring prototype activity, product interest, and property scoring."}
         </p>
       </div>
-      <div className="headerActions">
+      {active !== "Scores and Weighting" && <div className="headerActions">
         <button><Download size={17} /> Export</button>
         <button className="primary">Save Changes</button>
-      </div>
+      </div>}
     </header>
   );
 }
@@ -993,7 +1001,7 @@ export default function AdminDemo() {
   const content = {
     Dashboard: <Dashboard />,
     Properties: <Properties queries={queries} productClicks={productClicks} isLoading={isLoadingAdmin} />,
-    "Climate and Location Metrics": <ScoringControlsPage />,
+    "Scores and Weighting": <ScoresAndWeighting token={adminToken} />,
     Products: <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
     "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
     Users: <UsersPage />,
@@ -1472,13 +1480,28 @@ export default function AdminDemo() {
         }
 
         @media (max-width: 1050px) {
-          .adminApp { grid-template-columns: 1fr; }
+          .adminApp { width: 100%; grid-template-columns: minmax(0, 1fr); }
+          .adminMain, .adminContent { min-width: 0; }
           .adminSidebar { position: relative; min-height: auto; }
           .managerLayout { grid-template-columns: 1fr; }
           .gridPage { grid-template-columns: repeat(2, 1fr); }
           .customReportGrid { grid-template-columns: 1fr; }
           .prospectGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .tablePanel { overflow-x: auto; }
+        }
+        @media (max-width: 700px) {
+          .adminSidebar { padding: 12px; gap: 8px; }
+          .adminLogo { padding: 0 0 8px; grid-template-columns: 36px 1fr; }
+          .adminLogoIcon { width: 36px; height: 36px; }
+          .adminLogo strong { font-size: 22px; }
+          .adminLogo span { font-size: 9px; letter-spacing: .18em; }
+          .adminSidebar nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; position: relative; }
+          .adminSidebar nav::-webkit-scrollbar { display: none; }
+          .adminSidebar nav button { flex: 0 0 auto; white-space: nowrap; padding: 9px; }
+          .adminUser { display: none; }
+          .adminHeader { height: auto; padding: 16px; }
+          .adminHeader h1 { font-size: 22px; }
+          .adminContent { padding: 16px; }
         }
       `}</style>
     </div>

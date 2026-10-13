@@ -12,8 +12,8 @@ from app.db import get_db
 from app.models import AdminLoginAttemptRecord, AdminSessionRecord, utc_now
 
 
-def _hash(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
+def _hash(token: str, password: str) -> str:
+    return hmac.new(password.encode(), token.encode(), hashlib.sha256).hexdigest()
 
 
 def create_session(password: str, request: Request, db: Session) -> str:
@@ -32,7 +32,7 @@ def create_session(password: str, request: Request, db: Session) -> str:
         raise HTTPException(status_code=401, detail="Invalid admin credentials")
     db.execute(delete(AdminLoginAttemptRecord).where(AdminLoginAttemptRecord.client_key == key))
     token = secrets.token_urlsafe(32)
-    db.add(AdminSessionRecord(token_hash=_hash(token), expires_at=now + timedelta(hours=8)))
+    db.add(AdminSessionRecord(token_hash=_hash(token, expected), expires_at=now + timedelta(hours=8)))
     db.commit()
     return token
 
@@ -41,7 +41,10 @@ def require_admin_session(authorization: str = Header(default=""), db: Session =
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise HTTPException(status_code=401, detail="Admin session required")
-    record = db.scalar(select(AdminSessionRecord).where(AdminSessionRecord.token_hash == _hash(token)))
+    password = os.getenv("ADMIN_PASSWORD", "")
+    if not password:
+        raise HTTPException(status_code=401, detail="Admin login is not configured")
+    record = db.scalar(select(AdminSessionRecord).where(AdminSessionRecord.token_hash == _hash(token, password)))
     if not record or record.revoked_at:
         raise HTTPException(status_code=401, detail="Invalid admin session")
     expiry = record.expires_at.replace(tzinfo=timezone.utc) if record.expires_at.tzinfo is None else record.expires_at

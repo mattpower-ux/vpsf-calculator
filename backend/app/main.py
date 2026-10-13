@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.db import init_db
+from app.db import get_db, init_db
+from app.scoring.store import ModelUnavailableError, load_published
 from app.routers import admin, articles, help, integrations, leads, products, properties, scoring, tracking
 
 settings = get_settings()
@@ -46,5 +49,9 @@ app.include_router(help.router)
 
 
 @app.get("/api/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "modelVersion": settings.model_version}
+async def health(db: Session = Depends(get_db)) -> dict[str, str]:
+    try:
+        version = load_published(db).version
+    except ModelUnavailableError as error:
+        raise HTTPException(status_code=503, detail="Scoring model unavailable") from error
+    return {"status": "ok", "modelVersion": version}

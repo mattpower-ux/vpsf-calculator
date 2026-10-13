@@ -37,6 +37,10 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
     ensure_runtime_schema()
+    from app.scoring.store import seed_published
+
+    with SessionLocal() as db:
+        seed_published(db)
 
 
 def ensure_runtime_schema() -> None:

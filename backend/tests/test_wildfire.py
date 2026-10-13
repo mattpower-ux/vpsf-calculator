@@ -14,6 +14,7 @@ from app.routers import properties, scoring, tracking
 from app.schemas import PropertyInput, WildfireRisk
 from app.scoring import explain_score, score_home
 from app.scoring.wildfire import wildfire_adjustment, wildfire_explanation
+from app.scoring.store import seed_published
 
 
 def risk_fixture(percentile=95, **overrides):
@@ -152,6 +153,8 @@ def test_service_failures_never_become_low_risk(monkeypatch, mode, status):
 def risk_api(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'risk.db'}", connect_args={"check_same_thread": False})
     Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        seed_published(db)
     application = FastAPI()
     for router in (properties.router, scoring.router, tracking.router):
         application.include_router(router)

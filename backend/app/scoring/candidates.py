@@ -1,0 +1,27 @@
+"""Potential scoring inputs, deliberately excluded from published points."""
+
+CANDIDATES = [
+    {"pillar": "energy", "name": "HVAC age", "field": "hvacAge", "status": "Collected, not scored"},
+    {"pillar": "energy", "name": "Water heating system", "field": "waterHeater", "status": "Collected, not scored"},
+    {"pillar": "energy", "name": "Water heater age", "field": "waterHeaterAge", "status": "Collected, not scored"},
+    {"pillar": "energy", "name": "Solar PV capacity (kW)", "field": None, "status": "New input needed"},
+    {"pillar": "energy", "name": "Battery storage type", "field": None, "status": "New input needed"},
+    {"pillar": "energy", "name": "Battery storage capacity (kWh)", "field": None, "status": "New input needed"},
+    {"pillar": "energy", "name": "Energy-efficient appliances", "field": None, "status": "New input needed"},
+    {"pillar": "energy", "name": "LED lighting", "field": None, "status": "New input needed"},
+    {"pillar": "energy", "name": "Smart thermostat", "field": None, "status": "New input needed"},
+    {"pillar": "energy", "name": "Attic insulation", "field": "insulation", "status": "Collected, not scored"},
+    {"pillar": "energy", "name": "ENERGY STAR Certified Home", "field": None, "status": "Certification input needed"},
+    {"pillar": "energy", "name": "Pearl Certification", "field": None, "status": "Certification input needed"},
+    {"pillar": "energy", "name": "LEED Residential", "field": None, "status": "Certification input needed"},
+    {"pillar": "water", "name": "Low-flow faucets", "field": None, "status": "New input needed"},
+    {"pillar": "water", "name": "Low-flow showerheads", "field": None, "status": "New input needed"},
+    {"pillar": "water", "name": "Low-flow toilets", "field": None, "status": "New input needed"},
+    {"pillar": "water", "name": "Irrigation system", "field": None, "status": "New input needed"},
+    {"pillar": "water", "name": "Dishwasher efficiency", "field": None, "status": "New input needed"},
+    {"pillar": "resilience", "name": "Roof age", "field": "roofAge", "status": "Collected, not scored"},
+    {"pillar": "resilience", "name": "Driveway type", "field": None, "status": "New input needed"},
+    {"pillar": "resilience", "name": "Driveway age", "field": None, "status": "New input needed"},
+    {"pillar": "carbon", "name": "Material-specific certification", "field": None, "status": "Evidence input needed"},
+    {"pillar": "financial", "name": "Pearl asset documentation", "field": None, "status": "Certification input needed"},
+]

@@ -18,6 +18,8 @@ services:
         value: "100"
       - key: FRONTEND_ORIGIN
         value: https://vpsf-calculator.onrender.com,https://vpsf-frontend.onrender.com
+      - key: ADMIN_PASSWORD
+        sync: false
 
   - type: static
     name: vpsf-calculator

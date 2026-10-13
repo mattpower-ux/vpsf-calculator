@@ -19,6 +19,17 @@ class WildfireRisk(BaseModel):
     retrievedAt: str | None = None
 
 
+class WalkabilityEvidence(BaseModel):
+    source: str = "EPA National Walkability Index"
+    sourceUrl: str = "https://geodata.epa.gov/arcgis/rest/services/OA/WalkabilityIndex/MapServer/0"
+    status: Literal["available", "unverified"] = "unverified"
+    value: float | None = Field(default=None, ge=1, le=20)
+    blockGroup: str = ""
+    latitude: float | None = None
+    longitude: float | None = None
+    retrievedAt: str | None = None
+
+
 class PropertyInput(BaseModel):
     address: str = ""
     city: str = ""
@@ -27,6 +38,7 @@ class PropertyInput(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     wildfire: WildfireRisk | None = None
+    epaWalkability: WalkabilityEvidence | None = None
     squareFeet: str = ""
     yearBuilt: str = ""
     homeType: str = "Single Family Detached"
@@ -74,6 +86,7 @@ class PropertyInput(BaseModel):
     amenities: str = "None"
     bike: str = "None / Unknown"
     sourceNote: str | None = None
+    extraInputs: dict[str, object] = Field(default_factory=dict)
 
 
 class ListingImportRequest(BaseModel):
@@ -128,6 +141,7 @@ class ScoreResponse(BaseModel):
     confidence: int = 60
     propertyId: int | None = None
     scoreRunId: int | None = None
+    walkability: WalkabilityEvidence | None = None
 
 
 class ProductRecommendation(BaseModel):

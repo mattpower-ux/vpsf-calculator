@@ -175,7 +175,9 @@ def explain_score(home: PropertyInput, scores: dict[str, int]) -> dict[str, str]
         "resilience": f"Resilience reflects '{home.fortified}', flood design '{home.flood}', roof '{home.roof}', moisture details, and backup power. " + wildfire_explanation(home),
         "carbon": f"Carbon reflects strategy '{home.carbonStrategy}', concrete '{home.carbonConcrete}', structure '{home.structure}', and electrification.",
         "financial": f"Financial risk reflects PIETIM '{home.pietim}', insurance '{home.insurance}', warranty '{home.warranty}', and maintenance documentation.",
-        "community": f"Community reflects walk score '{home.walkscore}', transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access.",
+        "community": (f"Community reflects EPA National Walkability Index {home.epaWalkability.value}/20 for block group {home.epaWalkability.blockGroup}, transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access."
+                      if home.epaWalkability and home.epaWalkability.status == "available"
+                      else f"Community reflects recorded transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access; EPA walkability is unverified."),
         "summary": f"Current backend model scored this property at {sum(scores.values())} out of 1000, including available USFS area wildfire context.",
     }
 

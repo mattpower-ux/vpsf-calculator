@@ -26,11 +26,11 @@ export function getArticleReaderUrl(sourceUrl) {
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {})
-    },
-    ...options
+    }
   });
 
   if (!response.ok) {
@@ -64,6 +64,10 @@ export async function scoreProperty(propertyInput) {
     method: "POST",
     body: JSON.stringify(propertyInput)
   });
+}
+
+export async function getScoringFormFields() {
+  return request("/api/scoring/form-fields");
 }
 
 export async function geocodeProperty(address) {
@@ -183,3 +187,14 @@ export async function updateProductWeighting(productId, weight, token) {
     method: "PATCH"
   }));
 }
+
+export const getScoringModel = (token) => request("/api/admin/scoring/model", adminOptions(token));
+export const getScoringDraft = (token) => request("/api/admin/scoring/draft", adminOptions(token));
+export const getScoringHistory = (token) => request("/api/admin/scoring/history", adminOptions(token));
+export const getScoringAvailableFields = (token) => request("/api/admin/scoring/available-fields", adminOptions(token));
+export const getScoringCandidates = (token) => request("/api/admin/scoring/candidates", adminOptions(token));
+export const getAdminScoredProperties = (token) => request("/api/admin/properties", adminOptions(token));
+export const saveScoringDraft = (token, payload) => request("/api/admin/scoring/draft", adminOptions(token, { method: "PUT", body: JSON.stringify(payload) }));
+export const validateScoringDraft = (token, model) => request("/api/admin/scoring/validate", adminOptions(token, { method: "POST", body: JSON.stringify(model) }));
+export const previewScoringDraft = (token, propertyId) => request("/api/admin/scoring/preview", adminOptions(token, { method: "POST", body: JSON.stringify({ propertyId }) }));
+export const publishScoringDraft = (token, revision) => request("/api/admin/scoring/publish", adminOptions(token, { method: "POST", body: JSON.stringify({ revision }) }));

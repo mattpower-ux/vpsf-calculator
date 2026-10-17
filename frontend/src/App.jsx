@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
-import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { buildReportModel } from "./reportModel";
@@ -454,6 +454,7 @@ function Field({ label, value, onChange, options, wide = false }) {
       <span>{label}</span>
       {options ? (
         <select value={value} onChange={(e) => onChange(e.target.value)}>
+          {!options.includes(value) && <option value={value || ""}>{value || "Select an option"}</option>}
           {options.map((option) => (
             <option key={option}>{option}</option>
           ))}
@@ -764,10 +765,23 @@ function mergeSavedPropertySnapshot(current, saved) {
   return merged;
 }
 
+// New addresses must never inherit the demonstration home's equipment or ratings.
+function emptyHomeForAddress(enteredAddress) {
+  const blank = Object.fromEntries(Object.keys(defaultHome).map((key) => [key, "Unknown"]));
+  return {
+    ...blank,
+    ...parseAddressParts(enteredAddress),
+    latitude: null,
+    longitude: null,
+    wildfire: null,
+    sourceNote: "Enter or confirm your home's details. Unknown fields have not been verified."
+  };
+}
+
 function savedPropertyToHome(record) {
   return mergeSavedPropertySnapshot(
     {
-      ...defaultHome,
+      ...emptyHomeForAddress(""),
       address: record.address || "",
       city: record.city || "",
       state: normalizeState(record.state || ""),
@@ -782,7 +796,7 @@ function savedPropertyToHomeForEnteredAddress(record, enteredAddress) {
   const parsedAddress = parseAddressParts(enteredAddress);
   return mergeSavedPropertySnapshot(
     {
-      ...defaultHome,
+      ...emptyHomeForAddress(""),
       address: parsedAddress.address || record.address || "",
       city: parsedAddress.city || record.city || "",
       state: normalizeState(parsedAddress.state || record.state || ""),
@@ -807,7 +821,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
 
   if (publicRecordProperty) {
     return {
-      ...defaultHome,
+      ...emptyHomeForAddress(""),
       ...publicRecordProperty,
       latitude: geocode?.latitude ?? null,
       longitude: geocode?.longitude ?? null,
@@ -826,7 +840,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
   const parsedAddress = parseAddressParts(resolvedAddress);
 
   return {
-    ...defaultHome,
+    ...emptyHomeForAddress(""),
     latitude: geocode?.latitude ?? null,
     longitude: geocode?.longitude ?? null,
     wildfire: riskEnrichment?.wildfire ?? null,
@@ -843,7 +857,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
     garage: "Unknown",
     lotSize: "Unknown",
     climateZone: riskEnrichment?.climateZone || "Unknown",
-    occupancy: "Owner Occupied",
+    occupancy: "Unknown",
     hvac: "Unknown",
     hvacAge: "Unknown",
     waterHeater: "Unknown",
@@ -852,75 +866,72 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
     roofAge: "Unknown",
     windows: "Unknown",
     insulation: "Unknown",
-    solar: "None",
-    hers: "Code-Minimum",
-    evReady: "None",
-    fortified: "None",
+    solar: "Unknown",
+    hers: "Unknown",
+    evReady: "Unknown",
+    fortified: "Unknown",
     flood: riskEnrichment?.flood || "Unknown",
-    ventilation: "Exhaust Only",
-    healthCert: "None",
-    carbonStrategy: "No Accounting",
-    waterStandard: "Code-Minimum",
-    leak: "None",
-    insurance: "None / Unknown",
-    maintenance: "None",
+    ventilation: "Unknown",
+    healthCert: "Unknown",
+    carbonStrategy: "Unknown",
+    waterStandard: "Unknown",
+    leak: "Unknown",
+    insurance: "Unknown",
+    maintenance: "Unknown",
     sourceNote: geocode
       ? `Mapbox verified the address only. ${riskEnrichment?.sourceNote || "Property facts still need RentCast, documents, photos, or manual confirmation."}`
       : "Address lookup was unavailable. Property facts still need documents, photos, or manual confirmation."
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted }) {
-  const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, entryAddress, setEntryAddress }) {
+  const address = entryAddress;
+  const setAddress = setEntryAddress;
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
-  const [savedMatch, setSavedMatch] = useState(null);
-
+  const choiceDialog = useRef(null);
+  const addressInput = useRef(null);
+  const active = useRef(true);
   useEffect(() => {
-    const parsedAddress = parseAddressParts(address);
-    if (!parsedAddress.address || parsedAddress.address.length < 5) {
-      setSavedMatch(null);
-      return undefined;
-    }
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
-    const timer = window.setTimeout(async () => {
-      const result = await findSavedProperty(parsedAddress);
-      setSavedMatch(result?.found ? result.property : null);
-    }, 350);
+  const chooseEntryMethod = (event) => {
+    event.preventDefault();
+    if (isScanningAddress || !address.trim()) return;
+    setAddress(address.trim());
+    choiceDialog.current?.showModal();
+  };
 
-    return () => window.clearTimeout(timer);
-  }, [address]);
-
-  const applySavedAutofill = () => {
-    if (!savedMatch) return;
-    const savedHome = savedPropertyToHome(savedMatch);
-    setAddress(formatSavedAddress(savedMatch));
-    setHome(savedHome);
-    setScanNote("Saved property details loaded from the VPSF archive.");
+  const startManualEntry = () => {
+    choiceDialog.current?.close();
+    setHome(emptyHomeForAddress(address));
+    setResultMode("manual");
+    setScreen(1);
   };
 
   const startExistingHomeScan = async () => {
     if (isScanningAddress) return;
 
     const existingHome = demoProperties[0];
+    choiceDialog.current?.close();
     setIsScanningAddress(true);
     setScanNote("");
     setSelectedProperty(existingHome);
     try {
       const parsedAddress = parseAddressParts(address);
-      const savedResult = savedMatch
-        ? { found: true, property: savedMatch }
-        : await findSavedProperty(parsedAddress);
+      const savedResult = await findSavedProperty(parsedAddress);
       if (savedResult?.found && savedResult.property) {
         let savedHome = savedPropertyToHomeForEnteredAddress(savedResult.property, address);
         try {
           const geocode = await geocodeProperty(formatSavedAddress(savedResult.property));
           const risk = await enrichPropertyRisk({
-            state: geocode.state,
-            zip: geocode.zip,
-            county: geocode.county,
-            latitude: savedHome.latitude ?? geocode.latitude,
-            longitude: savedHome.longitude ?? geocode.longitude
+            state: geocode?.state,
+            zip: geocode?.zip,
+            county: geocode?.county,
+            latitude: savedHome.latitude ?? geocode?.latitude,
+            longitude: savedHome.longitude ?? geocode?.longitude
           });
           savedHome = {
             ...savedHome,
@@ -930,19 +941,18 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         } catch (error) {
           console.warn("Saved location risk lookup unavailable.", error);
         }
+        if (!active.current) return;
         setHome(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
         await onQueryStarted(savedHome, "saved_archive");
-        setResultMode("manual");
-        setScreen(3);
         return;
       }
 
-      const geocode = await geocodeProperty(address);
-      const normalizedAddress = geocode.normalizedAddress || address;
+      let geocode = null;
+      try { geocode = await geocodeProperty(address); }
+      catch (error) { console.warn("Address normalization unavailable.", error); }
+      const normalizedAddress = geocode?.normalizedAddress || address;
       let rentcastProperty = null;
-      let attomProperty = null;
-      let attomNote = "";
       let riskEnrichment = null;
       try {
         rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
@@ -950,120 +960,70 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         console.warn("RentCast enrichment unavailable.", rentcastError);
       }
       try {
-        attomProperty = await enrichPropertyWithAttom(normalizedAddress);
-      } catch (attomError) {
-        console.warn("ATTOM enrichment unavailable.", attomError);
-        attomNote = " ATTOM did not return a usable property record for this address.";
-      }
-      try {
         riskEnrichment = await enrichPropertyRisk({
-          latitude: geocode.latitude,
-          longitude: geocode.longitude,
-          state: geocode.state || rentcastProperty?.state || attomProperty?.state,
-          zip: geocode.zip || rentcastProperty?.zip || attomProperty?.zip,
-          county: geocode.county,
+          latitude: geocode?.latitude,
+          longitude: geocode?.longitude,
+          state: geocode?.state || rentcastProperty?.state || parsedAddress.state,
+          zip: geocode?.zip || rentcastProperty?.zip || parsedAddress.zip,
+          county: geocode?.county,
         });
       } catch (riskError) {
         console.warn("Risk enrichment unavailable.", riskError);
       }
-      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, attomProperty, riskEnrichment);
+      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, null, riskEnrichment);
+      if (!active.current) return;
       setHome(scannedHome);
-      setScanNote(`${rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}${attomNote}`);
-      await onQueryStarted(scannedHome, rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
+      setScanNote(`${rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}`);
+      await onQueryStarted(scannedHome, rentcastProperty ? "rentcast" : geocode ? "mapbox" : "manual_fallback");
     } catch (error) {
       const fallbackHome = homeFromExistingScan(address);
+      if (!active.current) return;
       setHome(fallbackHome);
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");
       await onQueryStarted(fallbackHome, "manual_fallback");
     } finally {
-      setResultMode("manual");
-      setIsScanningAddress(false);
-      setScreen(3);
+      if (active.current) {
+        setResultMode("manual");
+        setIsScanningAddress(false);
+        setScreen(1);
+      }
     }
   };
 
   return (
     <div className="screen startScreen">
-
-      <h1>Analyze an existing home</h1>
-      <p className="centerCopy">Start with an address. VPSF will prefill public records, permits, risk layers, and likely missing specs.</p>
-
-      <section className="existingHomeCard">
+      <h1>Grade my home at</h1>
+      <form className="existingHomeCard" onSubmit={chooseEntryMethod}>
         <div className="addressLookup">
           <MapPin size={18} />
-          <input
-            value={address}
+          <input ref={addressInput} value={address} required minLength={5} maxLength={300}
             onChange={(event) => setAddress(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                startExistingHomeScan();
-              }
-            }}
-            aria-label="Property address"
-            placeholder="Enter home address"
-          />
+            disabled={isScanningAddress} aria-label="Property address"
+            autoComplete="street-address" placeholder="Street address, city, state and ZIP" />
         </div>
-        <button className="primaryButton quickScanButton" onClick={startExistingHomeScan} disabled={isScanningAddress}>
-          {isScanningAddress ? "Checking Address..." : "Start Existing Home Scan"} <ArrowRight size={18} />
+        <button className="primaryButton quickScanButton" type="submit" disabled={isScanningAddress || !address.trim()}>
+          {isScanningAddress ? "Finding your home's details…" : "Continue"} <ArrowRight size={18} />
         </button>
-        {scanNote && <p className="addressScanNote">{scanNote}</p>}
-        {savedMatch && (
-          <button className="savedAddressAutofill" type="button" onClick={applySavedAutofill}>
-            Autofill saved address: {formatSavedAddress(savedMatch)}
+        <p className="addressScanNote" role="status" aria-live="polite">
+          {isScanningAddress ? "Checking available records. You'll review the details before continuing." : scanNote}
+        </p>
+      </form>
+      <dialog ref={choiceDialog} className="entryChoiceDialog" aria-labelledby="entry-choice-title"
+        onClose={() => addressInput.current?.focus()}>
+        <h2 id="entry-choice-title">How would you like to begin?</h2>
+        <p className="subhead">{address}</p>
+        <div className="startActions">
+          <button type="button" onClick={startExistingHomeScan}>
+            <span className="actionIcon"><Sparkles size={26} /></span>
+            <div><strong>Autofill</strong><em>Let us find everything we can before you add details?</em></div>
           </button>
-        )}
-        <div className="quickScanGrid">
-          {quickScanSources.map(([title, description]) => (
-            <div key={title}>
-              <CheckCircle2 size={15} />
-              <strong>{title}</strong>
-              <span>{description}</span>
-            </div>
-          ))}
+          <button type="button" onClick={startManualEntry}>
+            <span className="actionIcon"><ClipboardList size={26} /></span>
+            <div><strong>Manual Entry</strong><em>Enter your home's details yourself.</em></div>
+          </button>
         </div>
-      </section>
-
-      <div className="startActions modernStartActions">
-        <button onClick={() => setScreen(1)}>
-          <span className="actionIcon"><Upload size={26} /></span>
-          <div><strong>Upload Documents / Photos</strong><em>Inspection report, invoices, energy bills, permits, or equipment labels.</em></div>
-        </button>
-        <button onClick={() => setScreen(1)}>
-          <span className="actionIcon"><ClipboardList size={26} /></span>
-          <div><strong>Guided Home Walk</strong><em>Capture roof, HVAC, panel, water heater, windows, solar, and water fixtures.</em></div>
-        </button>
-      </div>
-
-      <section className="captureStrip">
-        {uploadCaptureOptions.map(([label, type]) => (
-          <span key={label}><strong>{type}</strong>{label}</span>
-        ))}
-      </section>
-
-      <details className="listingImportPanel">
-        <summary>Import an active listing instead</summary>
-        <div className="listingImportGrid">
-          {listingSources.map(([source, Icon, title]) => (
-            <button key={source} onClick={() => setScreen(11)}>
-              <Icon size={17} />
-              <span>{title}</span>
-            </button>
-          ))}
-        </div>
-      </details>
-
-      <aside className="smartParse existingSmartParse">
-        <Sparkles size={16} />
-        <strong>Ask only for the gaps</strong>
-        <p>Each field is tracked as public-record, document-extracted, photo-inferred, or homeowner-confirmed before scoring.</p>
-        <div className="confidenceLegend">
-          <span><i className="sourcePublic" /> Found</span>
-          <span><i className="sourceInferred" /> Inferred</span>
-          <span><i className="sourceMissing" /> Missing</span>
-        </div>
-      </aside>
-
+        <button type="button" className="savedAddressAutofill" onClick={() => choiceDialog.current?.close()}>Edit address</button>
+      </dialog>
     </div>
   );
 }
@@ -1217,10 +1177,13 @@ function PropertyDetails({ home, update, setScreen }) {
       <ProgressDots step={1} />
       <h2>Add Property Details</h2>
       <p className="subhead">Enter key property information and home characteristics.</p>
+      {home.sourceNote && <p className="sourceNote" role="status">{home.sourceNote}</p>}
 
       <section className="formSection">
         <h3>Property Information</h3>
         <Field wide label="Property Address" value={home.address} onChange={(v) => update("address", v)} />
+        <Field label="City" value={home.city} onChange={(v) => update("city", v)} />
+        <Field label="State" value={home.state} onChange={(v) => update("state", v)} />
         <Field label="Home Type" value={home.homeType} onChange={(v) => update("homeType", v)} options={selectOptions.homeType} />
         <Field label="Year Built" value={home.yearBuilt} onChange={(v) => update("yearBuilt", v)} />
         <Field label="Square Footage" value={home.squareFeet} onChange={(v) => update("squareFeet", v)} />
@@ -3478,6 +3441,7 @@ export default function App() {
   }
 
   const [screen, setScreen] = useState(0);
+  const [entryAddress, setEntryAddress] = useState("");
   const [menuVisit, setMenuVisit] = useState(-1);
   const menuReturnScreenRef = useRef(4);
   const menuDestinationScreenRef = useRef(null);
@@ -3844,7 +3808,7 @@ export default function App() {
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
-        {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
+        {screen === 0 && <StartScreen entryAddress={entryAddress} setEntryAddress={setEntryAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 3 && (
@@ -4167,6 +4131,19 @@ export default function App() {
 
         .startScreen { padding-top: 28px; }
         .startScreen h1 { text-align: center; font-size: 24px; }
+        .entryChoiceDialog {
+          width: min(460px, calc(100vw - 32px));
+          max-height: calc(100dvh - 48px);
+          overflow: auto;
+          border: 1px solid var(--accent-line);
+          border-radius: 14px;
+          padding: 24px;
+          background: var(--surface, #fff);
+          color: var(--ink);
+        }
+        .entryChoiceDialog::backdrop { background: rgba(9, 33, 59, .55); }
+        .entryChoiceDialog .subhead { overflow-wrap: anywhere; }
+        .addressLookup:focus-within { outline: 2px solid var(--blue); outline-offset: 3px; }
         .existingHomeCard {
           border: 1px solid var(--accent-line);
           background: linear-gradient(180deg, #ffffff 0%, var(--surface-tint) 100%);

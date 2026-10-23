@@ -56,6 +56,7 @@ import {
   MapPin,
   Menu,
   Maximize2,
+  RotateCw,
   Minimize2,
   Package,
   Pause,
@@ -1307,11 +1308,13 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
         <Field label="Carbon Strategy" value={home.carbonStrategy} onChange={(v) => update("carbonStrategy", v)} options={selectOptions.carbonStrategy} />
         <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)} options={selectOptions.waterStandard} />
         <Field label="Leak Protection" value={home.leak} onChange={(v) => update("leak", v)} options={selectOptions.leak} />
+        <details className="field fieldWide"><summary>What is PIETIM?</summary><p>Principal, interest, energy, taxes, insurance, and maintenance: the monthly cost of owning the home. Choose the range for these costs as a percentage of gross monthly household income. This is an ownership-cost estimate, not lender qualification.</p></details>
         <Field label="PIETIM" value={home.pietim} onChange={(v) => update("pietim", v)} options={selectOptions.pietim} />
       </section>
 
       <section className="formSection compactSpecsSection">
         <h3>Community + Mobility</h3>
+        <details className="field fieldWide"><summary>What does walkability mean?</summary><p>Walk Score is a separate 0–100 measure of access to nearby destinations. Enter a known score or choose Unknown. VPSF uses the EPA National Walkability Index, a location-based 1–20 index, for sourced walkability points. These scales are different. Missing EPA data is shown as unverified.</p></details>
         <Field label="WalkScore" value={home.walkscore} onChange={(v) => update("walkscore", v)} options={selectOptions.walkscore} />
         <Field label="Transit / Services" value={home.transit} onChange={(v) => update("transit", v)} options={selectOptions.transit} />
         <Field label="Green Space" value={home.greenspace} onChange={(v) => update("greenspace", v)} options={selectOptions.greenspace} />
@@ -2585,6 +2588,7 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
 function EducationDetail({ education, setScreen, returnScreen }) {
   const content = education || educationFallbacks.energy;
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [videoLandscape, setVideoLandscape] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [videoTime, setVideoTime] = useState(0);
@@ -2626,7 +2630,7 @@ function EducationDetail({ education, setScreen, returnScreen }) {
       </section>
 
       {videoId ? (
-        <section className={`copyCard educationVideoCard${isVideoExpanded ? " isExpanded" : ""}`} aria-label={`${content.title} video`}>
+        <section className={`copyCard educationVideoCard${isVideoExpanded ? " isExpanded" : ""}${isVideoExpanded && videoLandscape ? " userLandscape" : ""}`} aria-label={`${content.title} video`}>
           <div className="educationVideoFrame">
             <video
               key={videoId}
@@ -2649,6 +2653,7 @@ function EducationDetail({ education, setScreen, returnScreen }) {
           ) : null}
           {isVideoExpanded ? (
             <div className="educationVideoControls">
+              <button type="button" className="videoRotate" onClick={() => setVideoLandscape(value => !value)} aria-label={videoLandscape ? "Return video to portrait" : "Rotate video to landscape"} title="Rotate video"><RotateCw size={20} /></button>
               <button type="button" onClick={toggleVideoPlayback} aria-label={isVideoPlaying ? "Pause video" : "Play video"} title={isVideoPlaying ? "Pause" : "Play"}>{isVideoPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
               <span>{formatVideoTime(videoTime)} / {formatVideoTime(videoDuration)}</span>
               <input type="range" min="0" max={videoDuration} step="0.1" value={videoTime} onChange={(event) => { if (videoRef.current) videoRef.current.currentTime = Number(event.target.value); }} aria-label="Video position" />
@@ -2761,10 +2766,32 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
   );
 }
 
+function ProductRequestForm({ product, onSubmitLead, onBack }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle");
+  const submit = async event => {
+    event.preventDefault();
+    if (status === "sending" || status === "success") return;
+    setStatus("sending");
+    try { await onSubmitLead({ name: name.trim(), email: email.trim(), productId: product.id, action: "Requested specs and pricing" }); setStatus("success"); }
+    catch { setStatus("error"); }
+  };
+  return <form className="leadFormCard productLeadFormCard" onSubmit={submit}>
+    <h3>Request Specs and Pricing</h3>
+    <p>Your name, email, and product selection will be saved with VPSF for follow-up.</p>
+    {status === "success" ? <p role="status">Your request has been saved for the VPSF team to follow up.</p> : <>
+      <label className="field fieldWide"><span>Name</span><input required maxLength={120} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label>
+      <label className="field fieldWide"><span>Email</span><input required type="email" maxLength={254} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
+      {status === "error" && <p role="alert">Your request could not be saved. Please try again. Your details are still here.</p>}
+      <button className="primaryButton" type="submit" disabled={status === "sending" || !name.trim()}>{status === "sending" ? "Submitting..." : "Submit Request"}</button>
+    </>}
+    <button className="secondaryButton" type="button" onClick={onBack}>Back to Product</button>
+  </form>;
+}
+
 function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
-  const [leadName, setLeadName] = useState("");
-  const [leadEmail, setLeadEmail] = useState("");
   const allowSpecRequest = canRequestProductSpecs(product);
 
   return (
@@ -2799,34 +2826,7 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
         </>
       )}
 
-      {showLeadForm && allowSpecRequest && (
-        <section className="leadFormCard productLeadFormCard">
-          <h3>Request Specs and Pricing</h3>
-          <p className="leadFormIntro">
-            Send this request to the manufacturer or local supplier.
-          </p>
-          <label className="field fieldWide">
-            <span>Name</span>
-            <input placeholder="Your name" value={leadName} onChange={(event) => setLeadName(event.target.value)} />
-          </label>
-          <label className="field fieldWide">
-            <span>Email</span>
-            <input placeholder="name@example.com" value={leadEmail} onChange={(event) => setLeadEmail(event.target.value)} />
-          </label>
-
-          <div className="leadFormActions">
-            <button className="secondaryButton" onClick={() => setScreen(16)}>
-              Return to Product Categories
-            </button>
-            <button className="primaryButton" onClick={() => {
-              onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });
-              setScreen(9);
-            }}>
-              Create Report Card
-            </button>
-          </div>
-        </section>
-      )}
+      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
     </div>
@@ -2880,8 +2880,6 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
 
 function ProductDetail({ product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
-  const [leadName, setLeadName] = useState("");
-  const [leadEmail, setLeadEmail] = useState("");
   const allowSpecRequest = canRequestProductSpecs(product);
 
   return (
@@ -2916,34 +2914,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
         </>
       )}
 
-      {showLeadForm && allowSpecRequest && (
-        <section className="leadFormCard productLeadFormCard">
-          <h3>Request Specs and Pricing</h3>
-          <p className="leadFormIntro">
-            Send this product request to the manufacturer or local supplier.
-          </p>
-          <label className="field fieldWide">
-            <span>Name</span>
-            <input placeholder="Your name" value={leadName} onChange={(event) => setLeadName(event.target.value)} />
-          </label>
-          <label className="field fieldWide">
-            <span>Email</span>
-            <input placeholder="name@example.com" value={leadEmail} onChange={(event) => setLeadEmail(event.target.value)} />
-          </label>
-
-          <div className="leadFormActions">
-            <button className="secondaryButton" onClick={() => setScreen(7)}>
-              Return to Products
-            </button>
-            <button className="primaryButton" onClick={() => {
-              onSubmitLead({ name: leadName, email: leadEmail, productId: product.id, action: "Requested specs and pricing" });
-              setScreen(9);
-            }}>
-              Create Report Card
-            </button>
-          </div>
-        </section>
-      )}
+      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
 
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
@@ -3632,11 +3603,7 @@ export default function App() {
   };
 
   const handleSubmitLead = async (lead) => {
-    try {
-      await submitLead({ ...lead, propertyAddress: home.address, zip: home.zip });
-    } catch (error) {
-      console.warn("Lead submission fell back to local-only flow.", error);
-    }
+    await submitLead({ ...lead, propertyAddress: home.address, zip: home.zip });
     if (queryId) {
       await trackProgress({
         sessionId,
@@ -3648,7 +3615,7 @@ export default function App() {
         leadEmail: lead.email,
         leadProductId: lead.productId,
         leadAction: lead.action
-      });
+      }).catch(() => {});
     }
   };
 
@@ -3945,7 +3912,7 @@ export default function App() {
           --icon-ink: #476963;
           --surface-selected: #e6f0e6;
           --selection-tint: #eaf3ea;
-          background: #f8f7f1;
+          background: transparent;
         }
 
         .app[data-theme="greenpro"] .bannerWrap img {
@@ -3980,13 +3947,13 @@ export default function App() {
           --icon-ink: #187386;
           --surface-selected: #e8f4f3;
           --selection-tint: #eaf7f5;
-          background: #f4f8f7;
+          background: transparent;
           font-family: "Source Sans 3 Variable", "Segoe UI", Arial, sans-serif;
         }
 
         .app[data-theme="brand"] :where(.phoneShell) {
           border-color: #187386;
-          box-shadow: 0 18px 55px rgba(32, 41, 56, .12);
+          box-shadow: none;
         }
 
         .app[data-theme="brand"] :where(.bannerWrap) {
@@ -4004,7 +3971,8 @@ export default function App() {
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; background: var(--navy); }
+        html, body, #root { background: transparent; }
+        body { margin: 0; }
         button, input, select { font: inherit; }
         button { cursor: pointer; }
 
@@ -4015,7 +3983,7 @@ export default function App() {
           align-items: flex-start;
           justify-content: center;
           padding: 28px;
-          background: #fff;
+          background: transparent;
           color: var(--ink);
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
         }
@@ -4030,7 +3998,7 @@ export default function App() {
           background: var(--card);
           border: 3pt solid var(--blue);
           border-radius: 28px;
-          box-shadow: 0 24px 72px rgba(11, 37, 65, 0.14);
+          box-shadow: none;
           position: relative;
           scrollbar-width: thin;
         }
@@ -6564,6 +6532,12 @@ export default function App() {
         .screen.withNav { padding-bottom: 24px; }
         .educationVideoCard.isExpanded { width: 100%; height: 100dvh; }
         .educationVideoControls { flex: 0 0 auto; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+        .videoRotate { display: none !important; }
+        @media (max-width: 600px) and (orientation: portrait) {
+          .videoRotate { display: grid !important; }
+          .educationVideoCard.isExpanded.userLandscape { inset: auto; top: 0; left: 100vw; width: 100dvh; height: 100vw; transform: rotate(90deg); transform-origin: top left; }
+          .educationVideoCard.isExpanded.userLandscape .educationVideoFrame { width: 100%; }
+        }
         .videoExit { position: absolute; top: 12px; right: 12px; z-index: 2; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #fff; border-radius: 4px; background: #202938; color: #fff; }
       `}</style>
     </main>

@@ -15,6 +15,7 @@ import { manualChapters, manualChapterAt } from "./guideManual";
 import { themeFromSearch } from "./theme";
 import { resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
 import knowHowCatalog from "./data/knowHowArticles.json";
+import { recordedPillarFeatures } from "./recordedFeatures";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import brandPreviewLogo from "./assets/brand-preview/VPSF_Logo_Primary_Color.svg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
@@ -312,7 +313,7 @@ const selectOptions = {
   occupancy: ["Owner Occupied", "Rental", "Builder Spec", "For Sale"],
   hvac: ["Heat Pump (Electric)", "Geothermal", "Gas Furnace", "Electric Resistance", "Unknown"],
   waterHeater: ["Heat Pump Water Heater", "Tank Electric", "Tank Gas", "Tankless Gas", "Solar Thermal", "Unknown"],
-  solar: ["None", "Solar PV", "5.2 kW Solar PV", "5.2 kW Solar PV + Battery", "Solar PV + Battery"],
+  solar: ["None", "Solar PV", "Solar PV + Battery"],
   evReady: ["None", "EV Ready", "EV Charger Installed"],
   hers: ["≤ 0", "1–10", "11–20", "21–30", "31–40", "41–50", "51–60", "61–70", "71–80", "81–90", "Code-Minimum"],
   fortified: ["FORTIFIED Gold", "FORTIFIED Silver", "FORTIFIED Bronze", "Wildfire Prepared Home", "None"],
@@ -455,6 +456,7 @@ function Field({ label, value, onChange, options, wide = false }) {
       <span>{label}</span>
       {options ? (
         <select value={value} onChange={(e) => onChange(e.target.value)}>
+          {value && !options.includes(value) && <option value={value}>{value}</option>}
           {options.map((option) => (
             <option key={option}>{option}</option>
           ))}
@@ -521,7 +523,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
         </button>
       )}
       {children}
-      {hasEntryNavigation(screen) && <BottomNav active="Menu" setScreen={setScreen} />}
+      {screen !== 12 && <BottomNav active={[4, 5, 9, 10, 17, 18, 19, 24].includes(screen) ? "My Scores" : [25, 27].includes(screen) ? "Help?" : "Menu"} setScreen={setScreen} />}
     </div>
   );
 }
@@ -1482,7 +1484,11 @@ function TakeawayCard({ title, pillar, value, isBest, onOpenKnowHow }) {
 
 function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar, home, resultMode }) {
   const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
-  const details = PILLAR_DETAILS[pillar.key];
+  const details = resultMode === "demo" ? PILLAR_DETAILS[pillar.key] : {
+    ...PILLAR_DETAILS[pillar.key],
+    pros: recordedPillarFeatures(home, pillar.key),
+    cons: ["Unrecorded features have not been verified. Review your home details to add supporting information."]
+  };
   const Icon = pillar.icon;
   const value = result.scores[pillar.key];
   const pct = Math.round((value / pillar.max) * 100);
@@ -2558,7 +2564,7 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
 
       <section className="knowHowArticleList" aria-label={`${archive.title} articles`}>
         {listing.articles.map((article) => (
-          <a className="knowHowArticleCard" href={getArticleReaderUrl(article.url)} target="_blank" rel="noopener noreferrer" onClick={openKnowHowArticle} key={article.url}>
+          <a className="knowHowArticleCard" href={article.url} target="_blank" rel="noopener noreferrer" key={article.url}>
             {article.date && <time dateTime={article.date}>{new Date(`${article.date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>}
             <strong>{article.title}</strong>
             <p>{article.description}</p>
@@ -2639,6 +2645,9 @@ function EducationDetail({ education, setScreen, returnScreen }) {
             />
           </div>
           {isVideoExpanded ? (
+            <button type="button" className="videoExit" onClick={() => setIsVideoExpanded(false)} aria-label="Close expanded video" title="Close video"><Minimize2 size={22} /></button>
+          ) : null}
+          {isVideoExpanded ? (
             <div className="educationVideoControls">
               <button type="button" onClick={toggleVideoPlayback} aria-label={isVideoPlaying ? "Pause video" : "Play video"} title={isVideoPlaying ? "Pause" : "Play"}>{isVideoPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
               <span>{formatVideoTime(videoTime)} / {formatVideoTime(videoDuration)}</span>
@@ -2713,7 +2722,7 @@ function EducationDetail({ education, setScreen, returnScreen }) {
 }
 
 
-function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct, onProductClick }) {
+function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct, onProductClick, setActivePillar }) {
   const products = demoMatchingProducts[recommendation.id] || demoMatchingProducts["water-fixtures"];
   const Icon = recommendation.icon;
 
@@ -2744,7 +2753,7 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
         ))}
       </div>
 
-      <button className="primaryButton" onClick={() => setScreen(7)}>Specific Products of this Type</button>
+      <button className="primaryButton" onClick={() => { setActivePillar(recommendation.pillar); setScreen(7); }}>Specific Products of this Type</button>
       <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
 
       <BottomNav active="Recommendations" setScreen={setScreen} />
@@ -3088,6 +3097,7 @@ function BarChartIcon() {
 
 
 function marketingOverviewForProperty(property) {
+  if (property?.assessed) return `This evaluation summarizes the recorded features of ${property.address || "your home"}. Review the pillar scores and recommendations to identify improvements, and update the home details as work is completed.`;
   if (property?.id === "vision-house") {
     return "This high-performance Orlando showcase home already sits near the top of the VPSF scale, with strong energy, health, resilience, and water systems. Its market story should emphasize lower operating costs, verified performance, and long-term value protection.";
   }
@@ -3105,11 +3115,11 @@ function MarketingStudio({ selectedProperty, setScreen }) {
       <header className="screenTop"><h2>Share Your Score</h2></header>
 
       <section className="marketingHero realHomeHero">
-        <img
+        {!selectedProperty.assessed && <img
           src={demoOrlandoHome}
           alt={`${selectedProperty.name} exterior`}
           className="marketingHeroPhoto"
-        />
+        />}
         <div className="marketingHeroContent">
           <strong>{selectedProperty.name}</strong>
           <p>{selectedProperty.address}</p>
@@ -3125,9 +3135,9 @@ function MarketingStudio({ selectedProperty, setScreen }) {
       <section className="copyCard highlightCard">
         <h3>Performance Highlights</h3>
         <ul className="checkList">
-          <li><Check size={15} /> Strong performance story around efficiency, resilience, and ownership risk</li>
-          <li><Check size={15} /> Clear improvement path tied to VPSF score gains</li>
-          <li><Check size={15} /> Technical features translated into buyer-friendly value</li>
+          <li><Check size={15} /> Review the current home's seven pillar scores in the report card</li>
+          <li><Check size={15} /> Compare recorded features with the improvement recommendations</li>
+          <li><Check size={15} /> Confirm equipment and documentation before planning upgrades</li>
         </ul>
       </section>
 
@@ -3863,7 +3873,7 @@ export default function App() {
         {screen === 5 && result && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
         {screen === 6 && result && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
-        {screen === 8 && <MarketingStudio selectedProperty={selectedProperty} setScreen={navigateFromUI} />}
+        {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
@@ -3871,7 +3881,7 @@ export default function App() {
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
-        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} />}
+        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} setActivePillar={setActivePillar} />}
         {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 18 && result && <FutureCostExposureScreen setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 19 && result && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
@@ -5105,10 +5115,6 @@ export default function App() {
         .educationVideoControls { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 12px; background: #000; color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
         .educationVideoControls button { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border: 0; background: none; color: #fff; cursor: pointer; }
         .educationVideoControls input { flex: 1; min-width: 40px; accent-color: #54c7eb; }
-        @media (orientation: portrait) {
-          .educationVideoCard.isExpanded { inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; transform: rotate(90deg); transform-origin: top left; }
-          .educationVideoCard.isExpanded .educationVideoFrame { width: 100%; }
-        }
         .smartDataUpsell { display: grid; grid-template-columns: 34px 1fr; gap: 12px; background: #f4f9ff; }
         .smartDataUpsell svg { color: var(--blue); }
 
@@ -6553,6 +6559,12 @@ export default function App() {
 
         .bottomNav { position: sticky; }
         }
+        .screen > .bottomNav { display: none; }
+        .phoneShell > .bottomNav { position: relative; flex: 0 0 62px; width: 100%; margin: 0; }
+        .screen.withNav { padding-bottom: 24px; }
+        .educationVideoCard.isExpanded { width: 100%; height: 100dvh; }
+        .educationVideoControls { flex: 0 0 auto; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+        .videoExit { position: absolute; top: 12px; right: 12px; z-index: 2; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #fff; border-radius: 4px; background: #202938; color: #fff; }
       `}</style>
     </main>
   );

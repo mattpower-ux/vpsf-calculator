@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models import ScoringAuditRecord, ScoringDraftRecord, ScoringModelRecord, utc_now
 from app.scoring.catalog import ScoreModel
 from app.scoring.seed import seed_model_v1
+from app.scoring.heating_resilience import UPGRADE_SUFFIX, with_heating_resilience
 
 
 class ConflictError(Exception):
@@ -15,10 +16,25 @@ class ModelUnavailableError(Exception):
 
 
 def seed_published(db: Session) -> None:
-    if db.scalar(select(ScoringModelRecord.id).limit(1)) is not None:
+    if db.scalar(select(ScoringModelRecord.id).limit(1)) is None:
+        model = seed_model_v1()
+        db.add(ScoringModelRecord(version=model.version, payload=model.model_dump(), active=True))
+        db.commit()
+    previous = db.scalar(select(ScoringModelRecord).where(ScoringModelRecord.active.is_(True)).with_for_update())
+    # Keep the migration in history so retiring a factor later stays respected.
+    if db.scalar(select(ScoringModelRecord.id).where(ScoringModelRecord.version.endswith(UPGRADE_SUFFIX)).limit(1)) is not None:
+        db.rollback()
         return
-    model = seed_model_v1()
+    if previous is None:
+        raise ModelUnavailableError("No published scoring model")
+    model = with_heating_resilience(ScoreModel.model_validate(previous.payload))
+    previous.active = False
     db.add(ScoringModelRecord(version=model.version, payload=model.model_dump(), active=True))
+    draft = db.get(ScoringDraftRecord, 1)
+    if draft is not None:
+        draft.payload = with_heating_resilience(ScoreModel.model_validate(draft.payload)).model_dump()
+        draft.revision += 1
+    db.add(ScoringAuditRecord(action="upgrade", actor="deployment", version=model.version, revision=draft.revision if draft else 0))
     db.commit()
 
 

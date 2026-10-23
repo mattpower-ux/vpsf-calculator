@@ -9,6 +9,7 @@ from app.repositories import create_property, create_score_run
 from app.schemas import PropertyInput, ScoreResponse
 from app.scoring import classify_score, confidence_for_input, explain_score
 from app.scoring.catalog import ScoreModel, evaluate_model
+from app.scoring.improvements import improvement_plan
 from app.scoring.store import ModelUnavailableError, load_published
 from app.integrations.epa_walkability import cached_walkability
 
@@ -82,5 +83,6 @@ async def score_property(property_input: PropertyInput, db: Session = Depends(ge
         propertyId=property_record.id,
         scoreRunId=score_run.id,
         walkability=property_input.epaWalkability,
+        improvements=improvement_plan(property_input, model),
         **classification,
     )

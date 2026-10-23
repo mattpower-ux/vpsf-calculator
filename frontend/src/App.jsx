@@ -16,6 +16,7 @@ import { themeFromSearch } from "./theme";
 import { resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import { recordedPillarFeatures } from "./recordedFeatures";
+import { heatingResilienceDefaults, heatingResilienceOptions, assessmentImprovements, heatingSelectionPatch } from "./heatingResilience";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import brandPreviewLogo from "./assets/brand-preview/VPSF_Logo_Primary_Color.svg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
@@ -270,6 +271,7 @@ const defaultHome = {
   lotSize: "0.18 acres",
   climateZone: "2A - Hot Humid",
   occupancy: "Owner Occupied",
+  ...heatingResilienceDefaults,
   hvac: "Heat Pump (Electric)",
   hvacAge: "Unknown",
   waterHeater: "Heat Pump Water Heater",
@@ -312,8 +314,8 @@ const selectOptions = {
   homeType: ["Single Family Detached", "Townhome", "Condo", "Multifamily", "Manufactured Home"],
   stories: ["1", "1.5", "2", "3+"],
   occupancy: ["Owner Occupied", "Rental", "Builder Spec", "For Sale"],
-  hvac: ["Heat Pump (Electric)", "Geothermal", "Gas Furnace", "Electric Resistance", "Unknown"],
-  waterHeater: ["Heat Pump Water Heater", "Tank Electric", "Tank Gas", "Tankless Gas", "Solar Thermal", "Unknown"],
+  hvac: ["Heat Pump (Electric)", "Geothermal", "Gas Furnace", "Electric Resistance", "Boiler", "Combination Boiler", "Condensing Boiler (AFUE 90%+)", "Condensing Combination Boiler (AFUE 90%+)", "Hydronic Heating", "Unknown"],
+  waterHeater: ["Heat Pump Water Heater", "Tank Electric", "Tank Gas", "Tankless Gas", "Solar Thermal", "Combination Boiler", "Condensing Combination Boiler (AFUE 90%+)", "Unknown"],
   solar: ["None", "Solar PV", "Solar PV + Battery"],
   evReady: ["None", "EV Ready", "EV Charger Installed"],
   hers: ["≤ 0", "1–10", "11–20", "21–30", "31–40", "41–50", "51–60", "61–70", "71–80", "81–90", "Code-Minimum"],
@@ -1271,9 +1273,13 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
       <section className="formSection compactSpecsSection">
         <h3>Energy</h3>
         <Field label="HERS Score" value={home.hers} onChange={(v) => update("hers", v)} options={selectOptions.hers} />
-        <Field label="HVAC System" value={home.hvac} onChange={(v) => update("hvac", v)} options={selectOptions.hvac} />
+        <Field wide label="HVAC System" value={home.hvac} onChange={(v) => update("hvac", v)} options={selectOptions.hvac} />
+        {(/boiler/i.test(home.hvac) || home.hvac === "Hydronic Heating") && <Field wide label="Hydronic Heat Source" value={home.hydronicSource || "Unknown"} onChange={(v) => update("hydronicSource", v)} options={heatingResilienceOptions.hydronicSource} />}
+        <Field wide label="Heat Distribution" value={home.heatingDistribution || "Unknown"} onChange={(v) => update("heatingDistribution", v)} options={heatingResilienceOptions.heatingDistribution} />
+        {["Hydronic Radiant", "Hydronic Radiators / Baseboards"].includes(home.heatingDistribution) && <Field wide label="Hydronic Controls" value={home.heatingControls || "Unknown"} onChange={(v) => update("heatingControls", v)} options={heatingResilienceOptions.heatingControls} />}
+        <details className="field fieldWide"><summary>Boiler, heat pump, or radiant heat?</summary><p>A combination boiler supplies space heating and domestic hot water. Radiant describes heat delivery, not the fuel or efficiency.</p><p>Use the equipment label to confirm AFUE for a fuel-burning boiler. Heat pumps use COP, which varies with operating conditions. Ground-source systems use ground heat; air-to-water systems use outdoor air.</p><p>Natural gas ranks above heating oil in this model; ground-source heat pumps rank higher. These are model weights, not measured carbon savings. For a heat pump serving water-based heating, select Hydronic Heating and its heat source.</p></details>
         <Field label="HVAC Age" value={home.hvacAge} onChange={(v) => update("hvacAge", v)} />
-        <Field label="Water Heating" value={home.waterHeater} onChange={(v) => update("waterHeater", v)} options={selectOptions.waterHeater} />
+        <Field wide label="Water Heating" value={home.waterHeater} onChange={(v) => update("waterHeater", v)} options={selectOptions.waterHeater} />
         <Field label="Water Heater Age" value={home.waterHeaterAge} onChange={(v) => update("waterHeaterAge", v)} />
         <Field label="Solar / Battery" value={home.solar} onChange={(v) => update("solar", v)} options={selectOptions.solar} />
         <Field wide label="EV Readiness" value={home.evReady} onChange={(v) => update("evReady", v)} options={selectOptions.evReady} />
@@ -1283,6 +1289,10 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
         <h3>Resilience + Health</h3>
         <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)} options={selectOptions.fortified} />
         <Field label="Flood Design" value={home.flood} onChange={(v) => update("flood", v)} options={selectOptions.flood} />
+        <Field wide label="Wildfire Mitigation" value={home.wildfireMitigation || "Unknown"} onChange={(v) => update("wildfireMitigation", v)} options={heatingResilienceOptions.wildfireMitigation} />
+        <Field wide label="Extreme-Temperature Protection" value={home.temperatureProtection || "Unknown"} onChange={(v) => update("temperatureProtection", v)} options={heatingResilienceOptions.temperatureProtection} />
+        <Field wide label="Wind / Tornado Protection" value={home.windProtection || "Unknown"} onChange={(v) => update("windProtection", v)} options={heatingResilienceOptions.windProtection} />
+        <details className="field fieldWide"><summary>Which protections qualify?</summary><p>Select installed features supported by product specifications, installation records, or an inspection. Choose Unknown when unsure. Each selection replaces the previous option; points do not stack within a field.</p><p>A safe room protects occupants, not the whole house. Opening protection is not tornado shelter. Use a qualified designer to verify applicable FEMA guidance and ICC 500. Wildfire mitigation does not change the area's mapped risk.</p></details>
         <Field label="Roof Age" value={home.roofAge} onChange={(v) => update("roofAge", v)} />
         <Field label="Ventilation" value={home.ventilation} onChange={(v) => update("ventilation", v)} options={selectOptions.ventilation} />
         <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
@@ -1341,6 +1351,12 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
     [Droplets, "Water Heating", home.waterHeaterAge && home.waterHeaterAge !== "Unknown" ? `${home.waterHeater} • ${home.waterHeaterAge}` : home.waterHeater],
     [Home, "Roofing", home.roofAge && home.roofAge !== "Unknown" ? `${home.roof} • ${home.roofAge}` : home.roof],
     [Wind, "Ventilation", home.ventilation],
+    [Zap, "Heat Distribution", home.heatingDistribution || "Unknown"],
+    [Zap, "Hydronic Heat Source", home.hydronicSource || "Unknown"],
+    [Zap, "Hydronic Controls", home.heatingControls || "Unknown"],
+    [Shield, "Wildfire Mitigation", home.wildfireMitigation || "Unknown"],
+    [Shield, "Temperature Protection", home.temperatureProtection || "Unknown"],
+    [Shield, "Wind / Tornado Protection", home.windProtection || "Unknown"],
     [Sun, "Solar", home.solar]
   ];
 
@@ -1370,7 +1386,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
             <span>{b}</span>
           </div>
         ))}
-        <button className="textLink" onClick={() => setScreen(2)}>View all specs (18)</button>
+        <button className="textLink" onClick={() => setScreen(2)}>View all specs</button>
       </section>
 
       <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>
@@ -2156,6 +2172,11 @@ const educationVideoIds = new Set([
 
 function educationForRecommendation(recommendation) {
   const key = recommendation.id || recommendation.pillar || "energy";
+  if (recommendation.changes) return { key, content: {
+    title: recommendation.title, intro: recommendation.copy,
+    why: ["This option addresses a remaining scoring opportunity in the current home record. An installer or assessor should verify suitability before the work is specified."], verify: Object.entries(recommendation.changes).map(([field, value]) => `${field === "hvac" ? "HVAC" : field.replace(/([A-Z])/g, " $1").replace(/^./, letter => letter.toUpperCase())}: ${value}`),
+    vpsf: "The estimate uses the published scoring model and remaining pillar capacity. Verify current features and installation suitability; it is not a savings or performance guarantee."
+  } };
   const content = educationByRecommendation[key] || educationFallbacks[recommendation.pillar] || educationFallbacks.energy;
   return { key, content };
 }
@@ -2165,6 +2186,7 @@ async function openEducationForRecommendation(recommendation, setScreen, setSele
   setSelectedEducation({ ...content, key });
   setEducationReturnScreen(returnScreen);
   setScreen(21);
+  if (recommendation.changes) return;
 
   const cachedContent = await getEducationContent(key);
   const cachedHasRichSections = Boolean(cachedContent?.background || cachedContent?.howItWorks?.length || cachedContent?.sustainableAspects?.length);
@@ -2378,7 +2400,7 @@ const demoMatchingProducts = {
 };
 
 function canRequestProductSpecs(product) {
-  return Boolean(product?.requestSpecs || (product?.technicalWriteup && product?.image));
+  return Boolean(product?.requestSpecs || product?.technicalWriteup);
 }
 
 const pillarLabelMap = {
@@ -2410,13 +2432,13 @@ function productMatchesPillar(product, pillarKey) {
 
 function recommendationMatchesPillar(recommendation, pillarKey) {
   if (!pillarKey) return true;
-  return recommendation.pillar === pillarKey;
+  return recommendation.pillar === pillarKey || recommendation.pillarGains?.[pillarKey] > 0;
 }
 
 
 
-function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
-  const filteredRecommendations = demoRecommendationDetails.filter((rec) =>
+function Recommendations({ result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
+  const filteredRecommendations = assessmentImprovements(result).map(rec => ({ ...rec, gain: `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
   const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
@@ -2438,6 +2460,9 @@ function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEduc
         </section>
       )}
 
+      <p className="sourceNote">Estimates use this assessment's scoring model and remaining pillar capacity, in the order shown. Confirm existing features and suitability before work; gains are not guaranteed savings.</p>
+      {!filteredRecommendations.length && <p>No additional scored upgrades are identified for this selection. Review your home details or generate a new score for the current model.</p>}
+
       {filteredRecommendations.map((rec) => {
         const Icon = rec.icon;
         return (
@@ -2445,6 +2470,7 @@ function Recommendations({ setScreen, setSelectedRecommendation, setSelectedEduc
             <div className="recHead"><Icon size={22} /><span>{rec.eyebrow}</span><strong>{rec.gain}</strong></div>
             <h3>{rec.title}</h3>
             <p>{rec.copy}</p>
+            {rec.pillarGains && <p className="sourceNote">{Object.entries(rec.pillarGains).map(([key, gain]) => `${pillarLabelMap[key] || key} ${gain > 0 ? "+" : ""}${gain}`).join(" · ")}</p>}
             <div className="recommendationCardActions">
               <button onClick={() => {
                 setSelectedRecommendation(rec);
@@ -2728,7 +2754,7 @@ function EducationDetail({ education, setScreen, returnScreen }) {
 
 
 function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct, onProductClick, setActivePillar }) {
-  const products = demoMatchingProducts[recommendation.id] || demoMatchingProducts["water-fixtures"];
+  const products = demoMatchingProducts[recommendation.id] || [];
   const Icon = recommendation.icon;
 
   return (
@@ -2736,6 +2762,7 @@ function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduc
       <header className="screenTop"><h2>Product Categories</h2><Package size={18} /></header>
 
       <div className="matchProductList">
+        {!products.length && <p>No specific product match is listed yet. Browse the relevant pillar's products or consult a qualified installer about this improvement.</p>}
         {products.map((product) => (
           <article className="matchProductCard" key={product.id}>
             <div className={product.image ? "matchImage" : "matchIcon"}>
@@ -2854,7 +2881,7 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
         {filteredProducts.map((product) => (
           <article className="productCard" key={product.id}>
             <div className="productImage realProductImage">
-              <img src={product.image} alt={product.name} />
+              {product.image ? <img src={product.image} alt={product.name} /> : <Package size={44} aria-hidden="true" />}
             </div>
             <div>
               <span>{product.category}</span>
@@ -2887,7 +2914,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
       <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
 
       <section className="productHeroCard">
-        <img src={product.image} alt={product.name} />
+        {product.image ? <img src={product.image} alt={product.name} /> : <Package size={44} aria-hidden="true" />}
         <div>
           <span>{product.category}</span>
           <h3>{product.name}</h3>
@@ -2925,17 +2952,11 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
 function PathTo700Screen({ result, setScreen, streetAddress }) {
   const current = result.total;
   const goal = 700;
-  const steps = [
-    ["Leak Detection", 8],
-    ["Low-Flow Fixtures", 12],
-    ["Smart Irrigation", 15],
-    ["Cool Roof Upgrade", 20],
-    ["Energy Recovery Ventilation", 15]
-  ];
+  const steps = assessmentImprovements(result).map(item => [item.title, item.gainPoints]);
   const totalGain = steps.reduce((sum, [, gain]) => sum + gain, 0);
-  const projected = Math.min(goal, current + totalGain);
-  const progressPct = Math.min(100, Math.round((current / goal) * 100));
-  const projectedPct = Math.min(100, Math.round((projected / goal) * 100));
+  const projected = Math.min(1000, current + totalGain);
+  const progressPct = Math.min(100, Math.round((current / 1000) * 100));
+  const projectedPct = Math.min(100, Math.round((projected / 1000) * 100));
 
   return (
     <div className="screen path700Screen withNav">
@@ -2943,21 +2964,22 @@ function PathTo700Screen({ result, setScreen, streetAddress }) {
       <ResultStreetAddress streetAddress={streetAddress} />
 
       <section className="pathHeroCard">
-        <p>A practical upgrade path that moves this home toward a stronger VPSF ranking without rebuilding the whole property.</p>
+        <p>{current >= goal ? "This assessment already meets the 700-point goal." : "Model-based upgrade estimates for this home's recorded features. These options may not reach 700; update missing details and evaluate further improvements."}</p>
         <div className="pathScoreRow">
           <div><strong>{current}</strong><span>Current</span></div>
           <ArrowRight size={22} />
-          <div><strong>{goal}</strong><span>Goal</span></div>
+          <div><strong>{projected}</strong><span>Projected</span></div>
         </div>
         <div className="pathBar">
           <i style={{ width: `${progressPct}%` }} />
           <b style={{ left: `${projectedPct}%` }} />
         </div>
-        <div className="pathLabels"><span>{current}</span><span>{projected}</span><span>{goal}</span></div>
+        <div className="pathLabels"><span>0</span><span>Goal: {goal}</span><span>1,000</span></div>
       </section>
 
       <section className="upgradePlanCard">
         <h3>Recommended Path</h3>
+        {!steps.length && <p>No additional scored steps are identified. Review your details or generate a new score for the current model.</p>}
         {steps.map(([name, gain]) => (
           <div className="upgradeStep" key={name}>
             <span>{name}</span>
@@ -3526,6 +3548,7 @@ export default function App() {
       const locationChanged = ["address", "city", "state", "zip"].includes(key) && current[key] !== value;
       return {
         ...current, [key]: value,
+        ...heatingSelectionPatch(current, key, value),
         ...(locationChanged ? {
           latitude: null, longitude: null, wildfire: null,
           sourceNote: "Location changed. Previous location risk is no longer used; verify the updated address before scoring."
@@ -3684,9 +3707,9 @@ export default function App() {
     getProductRecommendations()
       .then((apiProducts) => {
         if (!isMounted || !apiProducts.length) return;
-        setProducts(apiProducts.map((product, index) => ({
+        setProducts(apiProducts.map((product) => ({
           ...product,
-          image: product.image || demoProducts[index % demoProducts.length].image
+          image: product.image || demoProducts.find(item => item.id === product.id)?.image
         })));
       })
       .catch(() => {
@@ -3838,7 +3861,7 @@ export default function App() {
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
         {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
-        {screen === 6 && result && <Recommendations setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
+        {screen === 6 && result && <Recommendations result={result} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}

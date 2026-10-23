@@ -121,7 +121,7 @@ export async function getProductRecommendations() {
     name: `${product.brand} ${product.product}`,
     category: product.category,
     image: product.imageUrl,
-    improvement: product.weight === "Priority" ? "+10 VPSF Points" : "+5 VPSF Points",
+    improvement: "Score impact depends on installed features",
     description: product.summary,
     technicalWriteup: product.summary,
     pillar: product.pillar,

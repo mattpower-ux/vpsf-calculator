@@ -1,8 +1,8 @@
 const fields = {
-  energy: ['hvac', 'waterHeater', 'solar', 'evReady', 'hers'],
+  energy: ['hvac', 'waterHeater', 'solar', 'evReady', 'hers', 'heatingDistribution', 'heatingControls', 'hydronicSource'],
   water: ['waterStandard', 'leak', 'reuse', 'landscape'],
   health: ['healthCert', 'ventilation', 'materials', 'iaq', 'daylighting'],
-  resilience: ['fortified', 'flood', 'roof', 'moisture', 'backup'],
+  resilience: ['fortified', 'flood', 'roof', 'moisture', 'backup', 'wildfireMitigation', 'temperatureProtection', 'windProtection'],
   carbon: ['carbonStrategy', 'carbonConcrete', 'structure'],
   financial: ['insurance', 'warranty', 'maintenance', 'leak']
 };

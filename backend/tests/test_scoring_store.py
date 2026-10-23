@@ -18,7 +18,7 @@ def session():
 def test_seed_and_draft_survive_reload(session):
     seed_published(session)
     seed_published(session)
-    assert load_published(session).version == "vpsf-0.2.0-usfs"
+    assert load_published(session).version == "vpsf-0.2.0-usfs-heating-resilience"
     model, revision = load_or_create_draft(session)
     model.factors[0].options["Code-Minimum"] = 41
     assert save_draft(session, model, revision) == revision + 1

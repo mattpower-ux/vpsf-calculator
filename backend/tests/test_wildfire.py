@@ -203,7 +203,7 @@ def test_disk_cache_archive_and_score_snapshots_survive_new_sessions(risk_api, m
     with Session(engine) as db:
         stored = db.get(ScoreRunRecord, scored.json()["scoreRunId"])
         assert stored.input_snapshot["wildfire"]["retrievedAt"]
-        assert stored.model_version == "vpsf-0.2.0-usfs"
+        assert stored.model_version == scored.json()["modelVersion"]
         assert len(db.scalars(select(WildfireRiskCacheRecord)).all()) == 1
     payload = dict(sessionId="usfs-test", address=home.address, city=home.city, state=home.state, zip=home.zip,
                    snapshot=home.model_dump(mode="json"), source="saved_archive")

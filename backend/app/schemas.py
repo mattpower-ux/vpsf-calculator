@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class WildfireRisk(BaseModel):
@@ -51,6 +51,9 @@ class PropertyInput(BaseModel):
     occupancy: str = "Owner Occupied"
     hvac: str = "Unknown"
     hvacAge: str = "Unknown"
+    heatingDistribution: str = "Unknown"
+    heatingControls: str = "Unknown"
+    hydronicSource: str = "Unknown"
     waterHeater: str = "Unknown"
     waterHeaterAge: str = "Unknown"
     roof: str = "Unknown"
@@ -62,6 +65,9 @@ class PropertyInput(BaseModel):
     evReady: str = "None"
     fortified: str = "None"
     flood: str = "Unknown"
+    wildfireMitigation: str = "Unknown"
+    temperatureProtection: str = "Unknown"
+    windProtection: str = "Unknown"
     moisture: str = "Unknown"
     backup: str = "None"
     healthCert: str = "None"
@@ -87,6 +93,17 @@ class PropertyInput(BaseModel):
     bike: str = "None / Unknown"
     sourceNote: str | None = None
     extraInputs: dict[str, object] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def normalize_heating(self):
+        hydronic = "boiler" in self.hvac.lower() or self.hvac == "Hydronic Heating"
+        if not hydronic:
+            self.hydronicSource = "Unknown"
+        elif self.hydronicSource in {"Ground-Source Heat Pump", "Air-to-Water Heat Pump"}:
+            self.hvac = "Hydronic Heating"
+        if self.heatingDistribution not in {"Hydronic Radiant", "Hydronic Radiators / Baseboards"}:
+            self.heatingControls = "Unknown"
+        return self
 
 
 class ListingImportRequest(BaseModel):
@@ -142,6 +159,7 @@ class ScoreResponse(BaseModel):
     propertyId: int | None = None
     scoreRunId: int | None = None
     walkability: WalkabilityEvidence | None = None
+    improvements: list[dict] = Field(default_factory=list)
 
 
 class ProductRecommendation(BaseModel):

@@ -169,11 +169,11 @@ def classify_score(total: int) -> dict[str, str]:
 
 def explain_score(home: PropertyInput, scores: dict[str, int]) -> dict[str, str]:
     return {
-        "energy": f"Energy reflects HERS '{home.hers}', HVAC '{home.hvac}', solar '{home.solar}', and EV readiness '{home.evReady}'.",
+        "energy": f"Energy reflects HERS '{home.hers}', HVAC '{home.hvac}', distribution '{home.heatingDistribution}', controls '{home.heatingControls}', solar '{home.solar}', and EV readiness '{home.evReady}'. Radiant distribution and combination water heating alone do not earn an efficiency bonus.",
         "water": f"Water reflects '{home.waterStandard}', leak protection '{home.leak}', reuse '{home.reuse}', and landscape '{home.landscape}'.",
         "health": f"Health reflects certification '{home.healthCert}', ventilation '{home.ventilation}', materials '{home.materials}', and IAQ '{home.iaq}'.",
-        "resilience": f"Resilience reflects '{home.fortified}', flood design '{home.flood}', roof '{home.roof}', moisture details, and backup power. " + wildfire_explanation(home),
-        "carbon": f"Carbon reflects strategy '{home.carbonStrategy}', concrete '{home.carbonConcrete}', structure '{home.structure}', and electrification.",
+        "resilience": f"Resilience reflects '{home.fortified}', flood design '{home.flood}', roof '{home.roof}', moisture details, and backup power. Property protections: wildfire '{home.wildfireMitigation}', temperature '{home.temperatureProtection}', wind/tornado '{home.windProtection}'. " + wildfire_explanation(home),
+        "carbon": f"Carbon reflects strategy '{home.carbonStrategy}', concrete '{home.carbonConcrete}', structure '{home.structure}', electrification, and hydronic heat source '{home.hydronicSource}'. Fuel rankings are model weights, not measured emissions reductions.",
         "financial": f"Financial risk reflects PIETIM '{home.pietim}', insurance '{home.insurance}', warranty '{home.warranty}', and maintenance documentation.",
         "community": (f"Community reflects EPA National Walkability Index {home.epaWalkability.value}/20 for block group {home.epaWalkability.blockGroup}, transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access."
                       if home.epaWalkability and home.epaWalkability.status == "available"

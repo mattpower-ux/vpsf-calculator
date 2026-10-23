@@ -3,6 +3,21 @@ from app.schemas import ProductRecommendation
 
 SEED_PRODUCTS = [
     ProductRecommendation(
+        id="us-boiler-alta-altac-200", brand="U.S. Boiler", product="ALTA ALTAC-200 Combi Boiler",
+        pillar="Energy", category="Condensing Boiler", weight="Standard",
+        summary="ENERGY STAR lists ALTAC-200 at 95% AFUE for natural gas or propane, with domestic hot-water integration. Verify heating load, hot-water demand, venting, and condensate drainage with an installer. Certification record: ENERGY STAR ID 2385559, reviewed October 23, 2026. Request specifications through VPSF; brand selection alone does not add points.",
+    ),
+    ProductRecommendation(
+        id="us-boiler-alpine", brand="U.S. Boiler", product="Alpine Condensing Gas Boiler",
+        pillar="Energy", category="Condensing Boiler", weight="Standard",
+        summary="U.S. Boiler lists Alpine at 95% AFUE and ENERGY STAR certified, with natural-gas or propane operation and outdoor-temperature sensing. This is space-heating equipment; domestic hot-water design needs separate review. Verify the selected model, load, and system water temperatures. Manufacturer specifications reviewed October 23, 2026.",
+    ),
+    ProductRecommendation(
+        id="navien-ncb-250-150h", brand="Navien", product="NCB-250/150H Combi Boiler",
+        pillar="Energy", category="Condensing Boiler", weight="Standard",
+        summary="Navien lists the NCB-250/150H at 95% AFUE and ENERGY STAR certified. It combines hydronic space heating with domestic hot water and supports natural gas or propane. Size heating and hot-water loads separately; rated flow depends on temperature rise. Manufacturer specifications reviewed October 23, 2026. Requests are handled by VPSF.",
+    ),
+    ProductRecommendation(
         id="rheem-proterra",
         brand="Rheem",
         product="ProTerra Heat Pump Water Heater",

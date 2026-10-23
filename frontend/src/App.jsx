@@ -4048,12 +4048,12 @@ export default function App() {
           line-height: 15px;
           color: #ffffff;
           text-align: center;
-          font-size: 9px;
+          font-size: 11.7px;
           font-weight: 600;
           letter-spacing: 0;
           white-space: nowrap;
         }
-        .app[data-theme="brand"] .brandCredit { color: #34454b; }
+        .app[data-theme="brand"] .brandCredit { color: var(--blue); }
 
         .screen {
           flex: 1 1 auto;

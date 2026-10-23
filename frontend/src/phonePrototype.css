@@ -1,0 +1,47 @@
+/* Phone devices only; development previews can opt in. Wider layouts stay unchanged. */
+@media (max-width: 600px) {
+  html[data-phone-preview] .app {
+    padding: 0;
+    height: 100dvh;
+  }
+  html[data-phone-preview] .app .phoneShell {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  html[data-phone-preview] .app .bannerWrap {
+    border-radius: 0;
+    height: 64px;
+    flex: 0 0 64px;
+  }
+  html[data-phone-preview] .app .screen {
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-right: max(18px, env(safe-area-inset-right, 0px));
+    padding-bottom: 24px;
+    scroll-padding-block: 20px;
+  }
+  html[data-phone-preview] .app .phoneShell > .bottomNav {
+    flex: 0 0 auto;
+    min-height: 68px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  }
+  html[data-phone-preview] .app .bottomNav button { min-height: 48px; }
+  html[data-phone-preview] .app :is(input, select, textarea) {
+    font-size: 16px;
+    min-height: 48px;
+    max-width: 100%;
+  }
+  html[data-phone-preview] .app .backButton { width: 44px; height: 44px; }
+  html[data-phone-preview] .app :is(.primaryButton, .secondaryButton) {
+    min-height: 48px;
+    white-space: normal;
+  }
+  html[data-phone-preview] .app .formSection { grid-template-columns: minmax(0, 1fr); }
+  html[data-phone-preview] .app .formSection > * { grid-column: auto; min-width: 0; }
+  html[data-phone-preview] .app .analyzingScreen { min-height: 0; }
+}

@@ -519,6 +519,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
     <div className={`phoneShell${hasEntryNavigation(screen) ? " entryNavShell" : ""}`} ref={shellRef}>
       <div className="bannerWrap">
         <img src={isBrandTheme ? brandPreviewLogo : VPSF_BANNER} alt="VPSF Value Per Square Foot" />
+        <span className="brandCredit">POWERED BY GREEN BUILDER MEDIA</span>
       </div>
       {screen > 0 && screen !== 11 && (
         <button className="backButton" onClick={() => (onBack ? onBack() : setScreen(Math.max(0, screen - 1)))} aria-label="Go back">
@@ -3982,7 +3983,7 @@ export default function App() {
         .app[data-theme="brand"] :where(.bannerWrap) {
           background: #ffffff;
           border-bottom: 1px solid var(--line);
-          padding: 9px 20px;
+          padding: 3px 20px;
         }
 
         .app[data-theme="brand"] .bannerWrap img {
@@ -4036,11 +4037,23 @@ export default function App() {
         }
         .bannerWrap img {
           width: 100%;
-          height: 100%;
+          height: calc(100% - 15px);
           display: block;
           object-fit: cover;
           object-position: center;
         }
+        .brandCredit {
+          display: block;
+          height: 15px;
+          line-height: 15px;
+          color: #ffffff;
+          text-align: center;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0;
+          white-space: nowrap;
+        }
+        .app[data-theme="brand"] .brandCredit { color: #34454b; }
 
         .screen {
           flex: 1 1 auto;

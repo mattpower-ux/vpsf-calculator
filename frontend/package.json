@@ -6,6 +6,7 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@fontsource-variable/source-sans-3": "5.3.1",
     "@vitejs/plugin-react": "latest",
     "jspdf": "^4.2.1",
     "lucide-react": "latest",

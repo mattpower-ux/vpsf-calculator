@@ -16,6 +16,7 @@ import { themeFromSearch } from "./theme";
 import { resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import vpsfBanner from "./assets/vpsf-banner.jpg";
+import brandPreviewLogo from "./assets/brand-preview/VPSF_Logo_Primary_Color.svg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
 import cognitionIcon from "./assets/cognition-icon.png";
 import atasRoofingThumb from "./assets/Atas-roofing.jpg";
@@ -503,6 +504,7 @@ function ProgressDots({ step }) {
 }
 
 function AppChrome({ children, screen, setScreen, onBack }) {
+  const isBrandTheme = themeFromSearch(window.location.search) === "brand";
   const shellRef = useRef(null);
   useEffect(() => {
     shellRef.current?.scrollTo(0, 0);
@@ -511,7 +513,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
   return (
     <div className={`phoneShell${hasEntryNavigation(screen) ? " entryNavShell" : ""}`} ref={shellRef}>
       <div className="bannerWrap">
-        <img src={VPSF_BANNER} alt="VPSF Value Per Square Foot" />
+        <img src={isBrandTheme ? brandPreviewLogo : VPSF_BANNER} alt="VPSF Value Per Square Foot" />
       </div>
       {screen > 0 && screen !== 11 && (
         <button className="backButton" onClick={() => (onBack ? onBack() : setScreen(Math.max(0, screen - 1)))} aria-label="Go back">
@@ -3942,6 +3944,53 @@ export default function App() {
 
         .app[data-theme="greenpro"] .primaryButton {
           box-shadow: 0 10px 22px rgba(36, 68, 73, .18);
+        }
+
+        .app[data-theme="brand"] {
+          --navy: #202938;
+          --navy-2: #324655;
+          --blue: #187386;
+          --bright-blue: #2fb2b0;
+          --green: #007359;
+          --green-2: #00cb93;
+          --gold: #a14937;
+          --red: #b13f33;
+          --ink: #202938;
+          --muted: #536773;
+          --line: #dce7e8;
+          --soft: #f4f8f7;
+          --card: #ffffff;
+          --body-muted: #536773;
+          --body-copy: #3e5661;
+          --surface-tint: #f0f8f8;
+          --surface-tint-2: #f9fbfb;
+          --accent-line: #c4dde1;
+          --accent-line-soft: #dcebed;
+          --back-color: #187386;
+          --icon-ink: #187386;
+          --surface-selected: #e8f4f3;
+          --selection-tint: #eaf7f5;
+          background: #f4f8f7;
+          font-family: "Source Sans 3 Variable", "Segoe UI", Arial, sans-serif;
+        }
+
+        .app[data-theme="brand"] :where(.phoneShell) {
+          border-color: #187386;
+          box-shadow: 0 18px 55px rgba(32, 41, 56, .12);
+        }
+
+        .app[data-theme="brand"] :where(.bannerWrap) {
+          background: #ffffff;
+          border-bottom: 1px solid var(--line);
+          padding: 9px 20px;
+        }
+
+        .app[data-theme="brand"] .bannerWrap img {
+          object-fit: contain;
+        }
+
+        .app[data-theme="brand"] .primaryButton {
+          box-shadow: 0 9px 24px rgba(24, 115, 134, .16);
         }
 
         * { box-sizing: border-box; }

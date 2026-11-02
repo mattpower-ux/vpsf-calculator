@@ -12,6 +12,15 @@ function resolveApiBaseUrl() {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+export async function extractUpload(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const response = await fetch(`${API_BASE_URL}/api/properties/ocr`, { method: "POST", body, signal: AbortSignal.timeout(120000) });
+  const data = await response.json();
+  if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : "The upload could not be processed.");
+  return data;
+}
+
 export function getArticleReaderUrl(sourceUrl) {
   const url = new URL(sourceUrl);
   const isReaderPage = url.protocol === "https:"

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
+import DocumentUpload from "./DocumentUpload.jsx";
 import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
@@ -1097,7 +1098,7 @@ function DemoHelpButton({ title, body }) {
   );
 }
 
-function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultMode, setScreen }) {
+function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultMode, setScreen, onUploadApply }) {
   const selectedListing = demoProperties[0];
   const demoMls = demoMlsFromProperty(selectedListing);
 
@@ -1126,7 +1127,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
 
       <section className="formSection demoFormSection">
         <h3 className="importOptionsTitle">Import Options</h3>
-        <p className="importOptionsHelp">Entering a new MLS number, address, or uploaded document would update the property preview above.</p>
+        <p className="importOptionsHelp">The listing above is a demo. Reviewed document details open your property form.</p>
 
         <label className="field fieldWide demoField">
           <span>Enter MLS Number</span>
@@ -1150,20 +1151,7 @@ function DemoMlsImportScreen({ selectedProperty, setSelectedProperty, setResultM
           </div>
         </label>
 
-        <label className="field fieldWide demoField">
-          <span>Upload and Scan Documents</span>
-          <div className="fakeUpload uploadDropZone">
-            <Upload size={22} />
-            <div>
-              <strong>Drag and drop MLS sheet, appraisal, or product specs</strong>
-              <em>{demoMls.scanName} selected · PDF / JPG / PNG</em>
-            </div>
-            <DemoHelpButton
-              title="Document Scan"
-              body="The live backend can use OCR and document parsing to identify home systems, certifications, square footage, and green-building attributes."
-            />
-          </div>
-        </label>
+        <DocumentUpload onApply={onUploadApply} />
       </section>
 
       
@@ -1247,14 +1235,8 @@ function PropertyDetails({ home, update, setScreen }) {
       </section>
 
       <section className="formSection photoUploadSection">
-        <h3>Home Photos</h3>
-        <div className="fakeUpload homePhotoUpload">
-          <Upload size={22} />
-          <div>
-            <strong>Upload exterior, roof, mechanical room, or water-fixture photos</strong>
-            <em>Photos help verify roof age, HVAC, water systems, tree cover, and visible resilience features.</em>
-          </div>
-        </div>
+        <h3>Documents and Photos</h3>
+        <DocumentUpload onApply={facts => Object.entries(facts).forEach(([key,value]) => update(key,value))} />
       </section>
 
       <button className="primaryButton stickyButton" onClick={() => setScreen(2)}>
@@ -3867,7 +3849,7 @@ export default function App() {
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
-        {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} />}
+        {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} onUploadApply={facts => { Object.entries(facts).forEach(([key,value]) => update(key,value)); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1); }} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
@@ -4511,6 +4493,12 @@ export default function App() {
         }
         .primaryButton { border: 0; background: var(--blue); color: white; box-shadow: 0 10px 22px rgba(18,111,210,.2); }
         .secondaryButton { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+        .documentUpload { min-width: 0; display: grid; gap: 12px; }
+        .documentUpload p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+        .documentUpload input[type="file"] { width: 100%; max-width: 100%; padding: 12px 4px; }
+        .documentUpload input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; margin: 12px 6px 12px 0; }
+        .documentUpload button:disabled { opacity: .55; cursor: not-allowed; }
+        .documentUpload [role="alert"] { color: #a12720; }
         .stickyButton { position: sticky; bottom: 16px; }
 
         .summaryHeader, .screenTop {

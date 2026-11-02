@@ -619,16 +619,6 @@ async def import_property(request: ListingImportRequest, db: Session = Depends(g
 
 
 @router.post("/ocr", response_model=PropertyInput)
-async def import_property_from_ocr(file: UploadFile = File(...), db: Session = Depends(get_db)) -> PropertyInput:
-    property_input = await extract_property_from_upload(file)
-    property_record = create_property(db, property_input, source="ocr", source_identifier=file.filename)
-    create_source_document(
-        db,
-        property_id=property_record.id,
-        filename=file.filename or "uploaded-listing",
-        content_type=file.content_type or "",
-        extracted_facts=property_input.model_dump(),
-        confidence=35,
-    )
-    property_input.sourceNote = f"Saved OCR upload as property #{property_record.id}; extraction needs review."
-    return property_input
+async def import_property_from_ocr(file: UploadFile = File(...)) -> PropertyInput:
+    # Extraction is a preview: do not archive unconfirmed facts or retain source files.
+    return await extract_property_from_upload(file)

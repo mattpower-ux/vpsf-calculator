@@ -45,7 +45,7 @@ export function buildMenuGroups(pillars, recommendations) {
     {
       title: "Building Science Basics",
       items: [
-        ...pillars.map(({ key, label }) => ({ id: `archive-${key}`, label, subsection: "Know-How Archives", target: { screen: 22, pillar: key } })),
+        ...pillars.map(({ key, label }) => ({ id: `archive-${key}`, label, subsection: "Pillar Insights", target: { screen: 22, pillar: key } })),
         ...recommendations.map(({ id, title }) => ({ id: `learn-${id}`, label: title, subsection: "Learn More", target: { screen: 21, recommendationId: id } }))
       ]
     },

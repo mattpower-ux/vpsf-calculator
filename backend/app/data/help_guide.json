@@ -175,14 +175,14 @@
   },
   {
     "id": "know-how-archive",
-    "title": "Finding Green Builder know-how",
+    "title": "Finding Green Builder Insights",
     "category": "Improvements",
-    "body": "Know-How Archives collect Green Builder Media articles by pillar.",
+    "body": "Pillar Insights collect Green Builder Media articles by pillar.",
     "sections": [
       {"heading": "Browse", "text": "Open them from Building Science Basics or Key Takeaway. Individual articles use a clean reader; collections show linked lists."},
       {"heading": "Use with care", "text": "Articles offer background, not a project-specific design, inspection, or local code review."}
     ],
-    "keywords": ["know-how", "archive", "articles", "Green Builder", "research"],
+    "keywords": ["insights", "know-how", "archive", "articles", "Green Builder", "research"],
     "screen": 23
   },
   {

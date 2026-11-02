@@ -103,7 +103,7 @@ const SCREEN_LABELS = {
   19: "Comparison",
   20: "Matching Product Detail",
   21: "Learn More",
-  22: "Know-How Archive",
+  22: "Pillar Insights",
   23: "Menu",
   24: "My Scores",
   25: "Help",
@@ -1477,7 +1477,7 @@ function TakeawayCard({ title, pillar, value, isBest, onOpenKnowHow }) {
         <p>{takeawaySentence(pillar.key, isBest)}</p>
       </div>
       <button className="knowHowButton" onClick={() => onOpenKnowHow(pillar.key)}>
-        Open Know-How Archive <ArrowRight size={16} />
+        Open {knowHowArchive[pillar.key].title} <ArrowRight size={16} />
       </button>
     </section>
   );
@@ -1581,7 +1581,7 @@ function PillarDefinitionScreen({ selectedPillar, setScreen, onOpenArchive }) {
         </ul>
       </section>
       <button className="secondaryButton" type="button" onClick={() => onOpenArchive(pillar.key)}>
-        Explore {pillar.label} Know-How <ArrowRight size={18} />
+        Explore {knowHowArchive[pillar.key].title} <ArrowRight size={18} />
       </button>
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
@@ -2041,31 +2041,31 @@ const educationFallbacks = {
 
 const knowHowArchive = {
   energy: {
-    title: "KNOW-HOW-Energy",
+    title: "Energy Insights",
     intro: "Energy know-how focuses on lowering utility exposure, improving comfort, electrifying major systems, and documenting performance so efficiency translates into durable value."
   },
   water: {
-    title: "KNOW-HOW-Water",
+    title: "Water Insights",
     intro: "Water know-how covers efficient fixtures, leak detection, drought response, irrigation controls, water reuse, and the local risks that turn water performance into value."
   },
   health: {
-    title: "KNOW-HOW-Health",
+    title: "Health Insights",
     intro: "Health know-how connects ventilation, filtration, humidity, source control, low-emitting materials, and IAQ monitoring to buyer confidence and long-term comfort."
   },
   resilience: {
-    title: "KNOW-HOW-Resilience",
+    title: "Resilience Insights",
     intro: "Resilience know-how centers on climate risk, roof and envelope durability, backup power, insurability, storm protection, fire risk, and recovery cost reduction."
   },
   carbon: {
-    title: "KNOW-HOW-Carbon",
+    title: "Carbon Insights",
     intro: "Carbon and materials know-how helps translate embodied carbon, EPDs, durability, recycled content, and low-carbon product choices into a clearer value story."
   },
   financial: {
-    title: "KNOW-HOW-Ownership",
+    title: "Ownership Insights",
     intro: "Ownership know-how looks at insurance, utility bills, maintenance exposure, replacement timing, warranties, and the total cost of living in a home."
   },
   community: {
-    title: "KNOW-HOW-Community",
+    title: "Community Insights",
     intro: "Community know-how connects location, transportation choices, broadband, nearby services, green space, and daily livability to a home's practical value."
   }
 };

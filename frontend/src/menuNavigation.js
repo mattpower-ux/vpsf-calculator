@@ -52,7 +52,7 @@ export function buildMenuGroups(pillars, recommendations) {
     {
       title: "Products & Value",
       items: [
-        item("categories", "Product Categories", 16),
+        item("categories", "Product Categories", 28),
         item("products", "Recommended Products", 7)
       ]
     },

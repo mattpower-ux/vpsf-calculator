@@ -5,6 +5,8 @@ import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enr
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { buildReportModel } from "./reportModel";
+import { buildFutureCosts } from "./futureCosts";
+import { catalogCategories, productsInCategory } from "./productCategories";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
@@ -109,7 +111,8 @@ const SCREEN_LABELS = {
   24: "My Scores",
   25: "Help",
   26: "Pillar Definition",
-  27: "VPSF Field Guide"
+  27: "VPSF Field Guide",
+  28: "Product Categories"
 };
 
 function getOrCreateSessionId() {
@@ -2859,9 +2862,25 @@ function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
   );
 }
 
-function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar, onProductClick, propertyAddress }) {
-  const filteredProducts = products.filter((product) => productMatchesPillar(product, activePillar));
-  const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
+function ProductCategories({ products, onChoose, setScreen }) {
+  const categories = catalogCategories(products);
+  return <div className="screen withNav categoryDirectory">
+    <header className="screenTop"><h2>Product Categories</h2><Package size={18} /></header>
+    <p className="guideLead">Browse every category in the VPSF product catalog. Choose a category to see its products.</p>
+    <div className="categoryLinks">
+      {categories.map(category => <button key={category.id} onClick={() => onChoose(category.id)}>
+        <span>{category.label}<small>{category.count} {category.count === 1 ? "product" : "products"}</small></span><ChevronRight size={18} />
+      </button>)}
+    </div>
+    {!categories.length && <p>No products are available yet. Please check again shortly.</p>}
+    <button className="secondaryButton" onClick={() => onChoose(null)}>Browse All Products</button>
+    <BottomNav active="Menu" setScreen={setScreen} />
+  </div>;
+}
+
+function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar, activeCategory, setActiveCategory, onProductClick, propertyAddress }) {
+  const filteredProducts = productsInCategory(products, activeCategory).filter((product) => productMatchesPillar(product, activePillar));
+  const activeLabel = activeCategory ? catalogCategories(products).find(c => c.id === activeCategory)?.label : activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
   return (
     <div className="screen products withNav">
@@ -2870,13 +2889,14 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
 
       {activeLabel && (
         <section className="contextBanner">
-          <strong>{activeLabel} Product Match</strong>
-          <span>Showing products matched to the selected pillar path.</span>
-          <button onClick={() => setActivePillar(null)}>Show All Products</button>
+          <strong>{activeLabel}</strong>
+          <span>{activeCategory ? "Showing products in this catalog category." : "Showing products matched to the selected pillar path."}</span>
+          <button onClick={() => { setActivePillar(null); setActiveCategory(null); }}>Show All Products</button>
         </section>
       )}
 
       <div className="productList">
+        {!filteredProducts.length && <p>No products are listed in this selection yet. Choose another category or show all products.</p>}
         {filteredProducts.map((product) => (
           <article className="productCard" key={product.id}>
             <div className="productImage realProductImage">
@@ -2898,6 +2918,7 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
           </article>
         ))}
       </div>
+      <button className="secondaryButton" onClick={() => setScreen(28)}>Browse Product Categories</button>
       <button className="primaryButton" onClick={() => setScreen(8)}>Share Your Score</button>
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
@@ -2997,12 +3018,10 @@ function PathTo700Screen({ result, setScreen, streetAddress }) {
   );
 }
 
-function FutureCostExposureScreen({ setScreen, streetAddress }) {
-  const costs = [
-    { item: "Roof Replacement", timing: "3 years", cost: "$12,000", icon: Home },
-    { item: "HVAC Replacement", timing: "7 years", cost: "$6,800", icon: Wind },
-    { item: "Water Heater", timing: "2 years", cost: "$1,600", icon: Droplets }
-  ];
+function FutureCostExposureScreen({ home, setScreen, streetAddress }) {
+  const estimate = buildFutureCosts(home);
+  const dollars = value => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+  const range = row => row.low === null ? "Local quote needed" : `${dollars(row.low)}–${dollars(row.high)}`;
 
   return (
     <div className="screen futureCostScreen withNav">
@@ -3011,22 +3030,33 @@ function FutureCostExposureScreen({ setScreen, streetAddress }) {
 
       <section className="costIntroCard">
         <h3>Potential Major Expenses</h3>
-        <p>This older home carries near-term maintenance risk. VPSF uses these cost signals to show buyers and owners where risk may affect value.</p>
+        <p>Replacement planning for this home's recorded roof, heating system, and water heater. Age suggests a planning window; it does not establish condition or predict failure.</p>
+        <p>{estimate.location.note}</p>
       </section>
 
-      <section className="costListCard">
-        {costs.map(({ item, timing, cost, icon: Icon }) => (
-          <article className="costItem" key={item}>
-            <div><Icon size={20} /></div>
-            <div><strong>{item}</strong><span>Estimated Cost: {cost}</span></div>
-            <em>{timing}</em>
+      <section className="costPlanningList" aria-label="Replacement planning estimates">
+        {estimate.rows.map(row => (
+          <article className="copyCard costPlanningItem" key={row.id}>
+            <h3>{row.label}</h3>
+            <p>{row.type} · {row.ageYears === null ? "Age unknown" : `${row.ageYears} years old`}</p>
+            <strong className="costRange">{row.sharedWith ? "Included with shared boiler" : range(row)}</strong>
+            <p>{row.timing.label}</p>
+            <p className="sourceNote">{row.includedInTotal ? "Included in the partial 10-year subtotal." : estimate.total.excluded.find(item => item.id === row.id)?.reason}</p>
+            <details><summary>Estimate details &amp; sources</summary>
+              <ul>{row.assumptions.map(note => <li key={note}>{note}</li>)}</ul>
+              {!!row.missingData.length && <><h4>Confirm before budgeting</h4><ul>{row.missingData.map(note => <li key={note}>{note}</li>)}</ul></>}
+              {row.sources.map(source => <p key={source.id}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a></p>)}
+            </details>
           </article>
         ))}
-        <div className="costTotal">
-          <span>Estimated Total / Next 10 Years</span>
-          <strong>$20,400</strong>
-        </div>
       </section>
+      <section className="copyCard costPlanningTotal">
+        <h3>{estimate.total.label}</h3>
+        <strong className="costRange">{estimate.total.low === null ? "Not enough information for a subtotal" : range(estimate.total)}</strong>
+        <p>{estimate.total.coverageNote}</p>
+        <details><summary>Scope &amp; assumptions</summary><ul>{estimate.assumptions.map(note => <li key={note}>{note}</li>)}</ul><p>Sources reviewed {estimate.asOf}.</p></details>
+      </section>
+      <button className="secondaryButton" onClick={() => setScreen(2)}>Review Equipment Details</button>
 
       <button className="primaryButton" onClick={() => setScreen(19)}>Compare This Home <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(7)}>View Product Solutions</button>
@@ -3494,6 +3524,7 @@ export default function App() {
   const [manualGuide, setManualGuide] = useState(null);
   const [manualChapterIndex, setManualChapterIndex] = useState(null);
   const [activePillar, setActivePillar] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
   const [selectedEducation, setSelectedEducation] = useState(educationByRecommendation[demoRecommendationDetails[0].id]);
@@ -3519,6 +3550,8 @@ export default function App() {
   const propertyAddress = assessedHomeAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const streetAddress = assessedHomeStreetAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const navigateFromUI = (target) => {
+    if (target === 28) { setActiveCategory(null); setActivePillar(null); }
+    if (target === 7 && ![28, 13].includes(screen)) setActiveCategory(null);
     if (target === 23) {
       if (screen !== 23) {
         menuReturnScreenRef.current = screen;
@@ -3779,6 +3812,15 @@ export default function App() {
       setScreen(7);
       return;
     }
+    if (screen === 28) {
+      setScreen(7);
+      return;
+    }
+    if (screen === 7 && activeCategory) {
+      setActiveCategory(null);
+      setScreen(28);
+      return;
+    }
     if (screen === 12 && resultMode !== "demo") {
       setScreen(3);
       return;
@@ -3861,7 +3903,7 @@ export default function App() {
         {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
         {screen === 6 && result && <Recommendations result={result} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
-        {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
+        {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
@@ -3872,7 +3914,7 @@ export default function App() {
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} setActivePillar={setActivePillar} />}
         {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 18 && result && <FutureCostExposureScreen setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 18 && result && <FutureCostExposureScreen home={resultMode === "demo" ? selectedProperty : home} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 19 && result && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
@@ -3882,6 +3924,7 @@ export default function App() {
         {screen === 25 && <HelpScreen onNavigate={handleHelpNavigate} onOpenGuide={openFullGuide} setScreen={navigateFromUI} />}
         {screen === 26 && <PillarDefinitionScreen selectedPillar={selectedPillar} setScreen={navigateFromUI} onOpenArchive={openPillarArchive} />}
         {screen === 27 && <FullGuideScreen guide={manualGuide} chapterIndex={manualChapterIndex} setChapterIndex={setManualChapterIndex} onExit={exitFullGuide} onNavigate={handleGuideNavigate} setScreen={navigateFromUI} />}
+        {screen === 28 && <ProductCategories products={products} setScreen={navigateFromUI} onChoose={category => { setActiveCategory(category); setActivePillar(null); navigateFromUI(7); }} />}
       </AppChrome>
 
       <style>{`
@@ -5194,6 +5237,7 @@ export default function App() {
   line-height: 1.2;
 }
         .homeLabel {
+          flex-shrink: 0;
           margin-top: 18px;
           border-radius: 14px;
           overflow: hidden;
@@ -6573,6 +6617,18 @@ export default function App() {
         .screen > .bottomNav { display: none; }
         .phoneShell > .bottomNav { position: relative; flex: 0 0 62px; width: 100%; margin: 0; }
         .screen.withNav { padding-bottom: 24px; }
+        .categoryLinks { display: grid; margin-bottom: 20px; }
+        .categoryLinks button { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font-size: 16px; font-weight: 750; }
+        .categoryLinks small { display: block; margin-top: 4px; color: var(--body-muted); font-size: 13px; font-weight: 400; }
+        .costPlanningList { display: grid; gap: 16px; }
+        .costPlanningItem, .costPlanningTotal { margin-top: 16px; }
+        .costPlanningItem h3, .costPlanningTotal h3 { text-transform: none; }
+        .costRange { display: block; margin: 12px 0; color: var(--blue); font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
+        .futureCostScreen > *, .categoryDirectory > * { flex-shrink: 0; }
+        .futureCostScreen details { margin-top: 14px; font-size: 13px; line-height: 1.5; }
+        .futureCostScreen summary { cursor: pointer; color: var(--blue); font-weight: 700; }
+        .futureCostScreen li { margin: 8px 0; }
+        .futureCostScreen a { color: var(--blue); }
         .educationVideoCard.isExpanded { width: 100%; height: 100dvh; }
         .educationVideoControls { flex: 0 0 auto; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
         .videoRotate { display: none !important; }

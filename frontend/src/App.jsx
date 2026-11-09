@@ -48,6 +48,7 @@ import {
   ClipboardList,
   Droplets,
   Download,
+  ExternalLink,
   FileSearch,
   Filter,
   Flame,
@@ -2420,6 +2421,19 @@ function recommendationMatchesPillar(recommendation, pillarKey) {
 
 
 
+function IapmoWaterResources() {
+  return <section className="recommendationCard iapmoResources" aria-label="IAPMO water resources">
+    <div className="recHead"><Droplets size={22} /><span>IAPMO · VPSF Sponsor</span></div>
+    <h3>Right-size your home's plumbing</h3>
+    <p>IAPMO's Water Demand Calculator estimates peak indoor water demand to help plumbing professionals size water supply pipes for modern fixtures and appliances.</p>
+    <div className="iapmoResourceLinks">
+      <a href="https://iapmo.org/we-stand/water-demand-calculator" target="_blank" rel="noopener noreferrer">Access IAPMO Water Demand Calculator <ExternalLink size={16} aria-hidden="true" /></a>
+      <a href="https://309276.fs1.hubspotusercontent-na1.net/hubfs/309276/IAPMO/Why%20Right%20Sizing%20Water%20Calculations%20Matter.pdf" target="_blank" rel="noopener noreferrer">Read Why Right Sizing Water Calculations Matter (PDF) <ExternalLink size={16} aria-hidden="true" /></a>
+    </div>
+    <p className="sourceNote">Both resources open in a new tab, keeping your VPSF evaluation here. The calculator download requires Excel.</p>
+  </section>;
+}
+
 function Recommendations({ result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
   const filteredRecommendations = assessmentImprovements(result).map(rec => ({ ...rec, gain: `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
@@ -2467,6 +2481,7 @@ function Recommendations({ result, setScreen, setSelectedRecommendation, setSele
           </article>
         );
       })}
+      {(!activePillar || activePillar === "water") && <IapmoWaterResources />}
       <button className="primaryButton" onClick={() => setScreen(18)}>View Future Cost Exposure <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(7)}>
         {activeLabel ? `View ${activeLabel} Products` : "View Recommended Products"}
@@ -2567,6 +2582,7 @@ function KnowHowArchiveScreen({ pillarKey, setScreen, returnScreen }) {
         <span>{articles.length} articles from Green Builder Media</span>
       </section>
 
+      {pillarKey === "water" && <IapmoWaterResources />}
       <label className="archiveSearch">
         <Search size={18} aria-hidden="true" />
         <input type="search" aria-label="Search this archive" placeholder="Search articles" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} />
@@ -4493,6 +4509,9 @@ export default function App() {
         }
         .primaryButton { border: 0; background: var(--blue); color: white; box-shadow: 0 10px 22px rgba(18,111,210,.2); }
         .secondaryButton { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+        .iapmoResourceLinks { display: grid; gap: 12px; margin: 16px 0; }
+        .iapmoResourceLinks a { color: var(--blue); font-weight: 700; line-height: 1.4; text-decoration: underline; overflow-wrap: anywhere; }
+        .iapmoResourceLinks svg { display: inline; vertical-align: middle; }
         .documentUpload { min-width: 0; display: grid; gap: 12px; }
         .documentUpload p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
         .documentUpload input[type="file"] { width: 100%; max-width: 100%; padding: 12px 4px; }

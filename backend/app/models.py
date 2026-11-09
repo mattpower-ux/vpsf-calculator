@@ -262,3 +262,21 @@ class PropertyDetailArchiveRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     query: Mapped[PropertyQueryRecord | None] = relationship(back_populates="detail_events")
+
+
+class ProductAdviceRecord(Base):
+    __tablename__ = "product_advice"
+    id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class EcoTipRecord(Base):
+    __tablename__ = "eco_tips"
+    id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    draft: Mapped[dict] = mapped_column(JSON, default=dict)
+    published: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    history: Mapped[list] = mapped_column(JSON, default=list)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)

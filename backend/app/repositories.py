@@ -111,6 +111,9 @@ def seed_products(db: Session) -> None:
 def list_products(db: Session) -> list[ProductRecommendation]:
     seed_products(db)
     records = db.scalars(select(ProductRecord).where(ProductRecord.status == "active").order_by(ProductRecord.brand)).all()
+    from app.models import ProductAdviceRecord
+    from app.advice.catalog_metadata import initial_metadata
+    metadata = {m.id: m for m in db.scalars(select(ProductAdviceRecord)).all()}
     return [
         ProductRecommendation(
             id=record.id,
@@ -121,6 +124,8 @@ def list_products(db: Session) -> list[ProductRecommendation]:
             weight=record.weight,
             summary=record.summary,
             imageUrl=record.image_url,
+            **(metadata[record.id].payload if record.id in metadata else initial_metadata(record).model_dump()),
+            metadataRevision=metadata[record.id].revision if record.id in metadata else 0,
         )
         for record in records
     ]

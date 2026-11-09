@@ -35,12 +35,15 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 def init_db() -> None:
     from app import models  # noqa: F401
 
+    backup_before_advice_schema()
     Base.metadata.create_all(bind=engine)
     ensure_runtime_schema()
     from app.scoring.store import seed_published
 
     with SessionLocal() as db:
         seed_published(db)
+        from app.eco_tips import seed_tips
+        seed_tips(db)
 
 
 def ensure_runtime_schema() -> None:
@@ -98,3 +101,19 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def backup_before_advice_schema():
+    """One-time consistent SQLite backup before additive production tables."""
+    import os
+    import sqlite3
+    if not os.getenv("RENDER") or not settings.database_url.startswith("sqlite"):
+        return
+    path = make_url(settings.database_url).database
+    if not path or not Path(path).exists() or "eco_tips" in inspect(engine).get_table_names():
+        return
+    backup = Path(path).with_name("vpsf-before-advice-2026-11-09.sqlite.bak")
+    if backup.exists():
+        return
+    with sqlite3.connect(path) as source, sqlite3.connect(str(backup)) as target:
+        source.backup(target)

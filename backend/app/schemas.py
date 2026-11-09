@@ -30,7 +30,14 @@ class WalkabilityEvidence(BaseModel):
     retrievedAt: str | None = None
 
 
+class FieldProvenance(BaseModel):
+    origin: Literal["user-confirmed", "imported", "inferred", "unknown"] = "unknown"
+    source: str = Field(default="", max_length=300)
+    date: str = Field(default="", max_length=40)
+
+
 class PropertyInput(BaseModel):
+    provenance: dict[str, FieldProvenance] = Field(default_factory=dict)
     address: str = ""
     city: str = ""
     state: str = ""
@@ -81,6 +88,7 @@ class PropertyInput(BaseModel):
     waterStandard: str = "Code-Minimum"
     leak: str = "None"
     reuse: str = "None"
+    irrigation: str = "Unknown"
     landscape: str = "Standard Landscaping"
     pietim: str = "30-35%"
     insurance: str = "None / Unknown"
@@ -171,6 +179,15 @@ class ProductRecommendation(BaseModel):
     weight: str = "Standard"
     summary: str = ""
     imageUrl: str | None = None
+    needTags: list[str] = Field(default_factory=list)
+    pillars: list[str] = Field(default_factory=list)
+    requirements: list[str] = Field(default_factory=list)
+    verificationNotes: str = ""
+    sourceUrl: str = ""
+    reviewedAt: str = ""
+    isSponsored: bool = False
+    sponsorName: str = ""
+    metadataRevision: int = 0
 
 
 class EducationalContent(BaseModel):

@@ -242,3 +242,28 @@ async def product_clicks(_: None = Depends(require_admin_session), db: Session =
 async def property_detail_archive(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     return list_property_detail_archive(db)
 
+
+
+from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
+from app.models import ProductAdviceRecord
+from app.advice.schemas import MetadataUpdate
+
+
+@router.put("/products/{product_id}/metadata")
+async def product_metadata(product_id: str, payload: MetadataUpdate, _: None = Depends(require_admin_session), db: Session = Depends(get_db)):
+    if not db.get(ProductRecord, product_id): raise HTTPException(404, "Product not found")
+    values = payload.data.model_dump()
+    if payload.revision == 0:
+        db.add(ProductAdviceRecord(id=product_id, payload=values, revision=1))
+        try: db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(409, "Product changed; reload before saving")
+    else:
+        result = db.execute(update(ProductAdviceRecord).where(ProductAdviceRecord.id == product_id, ProductAdviceRecord.revision == payload.revision).values(payload=values, revision=payload.revision+1))
+        if result.rowcount != 1:
+            db.rollback()
+            raise HTTPException(409, "Product changed; reload before saving")
+        db.commit()
+    return next(p for p in list_products(db) if p.id == product_id)

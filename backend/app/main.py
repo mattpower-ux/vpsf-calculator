@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.db import get_db, init_db
 from app.scoring.store import ModelUnavailableError, load_published
-from app.routers import admin, articles, help, integrations, leads, products, properties, scoring, tracking
+from app.routers import eco_tips, admin, articles, help, integrations, leads, products, properties, scoring, tracking
 
 settings = get_settings()
 default_cors_origins = [
@@ -46,6 +46,7 @@ app.include_router(integrations.router)
 app.include_router(tracking.router)
 app.include_router(articles.router)
 app.include_router(help.router)
+app.include_router(eco_tips.router)
 
 
 @app.get("/api/health")

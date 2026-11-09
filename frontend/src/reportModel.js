@@ -33,18 +33,22 @@ export function buildReportModel(result, property, pillars, availableProducts) {
   const productByPillar = new Map();
 
   for (const product of availableProducts) {
-    const source = productSources[product.id];
+    const source = product.sourceUrl ? {company: product.brand || product.name, pillar: (product.pillars?.[0] || product.pillar || "").toLowerCase(), url: product.sourceUrl} : productSources[product.id];
     if (!source || productByPillar.has(source.pillar)) continue;
     productByPillar.set(source.pillar, {
       id: product.id,
-      name: product.name,
+      name: `${product.isSponsored ? "[Sponsored] " : ""}${product.name}`,
+      isSponsored: Boolean(product.isSponsored),
+      matchGroup: product.match?.group,
       company: source.company,
       pillar: source.pillar,
       url: source.url
     });
   }
 
-  const products = ascending.map(({ key }) => productByPillar.get(key)).filter(Boolean).slice(0, 3);
+  const products = availableProducts.some(p => p.match)
+    ? [...productByPillar.values()].slice(0, 3)
+    : ascending.map(({ key }) => productByPillar.get(key)).filter(Boolean).slice(0, 3);
   const aboveB = scores.filter(({ grade }) => ["A", "B+", "B"].includes(grade)).length;
   const facts = [
     property?.yearBuilt ? `Built ${property.yearBuilt}` : null,

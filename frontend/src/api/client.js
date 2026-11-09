@@ -43,7 +43,8 @@ async function request(path, options = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    const body = typeof response.json === "function" ? await response.json().catch(() => ({})) : {};
+    throw new Error(typeof body.detail === "string" ? body.detail : `API request failed: ${response.status}. Check the form fields or retry.`);
   }
 
   return response.json();
@@ -126,6 +127,7 @@ export async function cacheEducationContent(key, content) {
 export async function getProductRecommendations() {
   const products = await request("/api/products/recommendations");
   return products.map((product) => ({
+    ...product,
     id: product.id,
     name: `${product.brand} ${product.product}`,
     category: product.category,
@@ -207,3 +209,11 @@ export const saveScoringDraft = (token, payload) => request("/api/admin/scoring/
 export const validateScoringDraft = (token, model) => request("/api/admin/scoring/validate", adminOptions(token, { method: "POST", body: JSON.stringify(model) }));
 export const previewScoringDraft = (token, propertyId) => request("/api/admin/scoring/preview", adminOptions(token, { method: "POST", body: JSON.stringify({ propertyId }) }));
 export const publishScoringDraft = (token, revision) => request("/api/admin/scoring/publish", adminOptions(token, { method: "POST", body: JSON.stringify({ revision }) }));
+
+
+export const getHomeAdvice=(home,modelVersion,signal)=>request('/api/products/advice',{method:'POST',body:JSON.stringify({home,modelVersion}),signal});
+export const getEcoTips=()=>request('/api/eco-tips',{signal:AbortSignal.timeout(10000)});
+export const getAdminEcoTips=token=>request('/api/admin/eco-tips',adminOptions(token));
+export const saveAdminEcoTip=(token,id,data,revision)=>request(`/api/admin/eco-tips/${encodeURIComponent(id)}`,adminOptions(token,{method:'PUT',body:JSON.stringify({data,revision})}));
+export const publishAdminEcoTip=(token,id,action,revision,version)=>request(`/api/admin/eco-tips/${encodeURIComponent(id)}/${action}`,adminOptions(token,{method:'POST',body:JSON.stringify({revision,version})}));
+export const saveProductMetadata=(token,id,data,revision)=>request(`/api/admin/products/${encodeURIComponent(id)}/metadata`,adminOptions(token,{method:'PUT',body:JSON.stringify({data,revision})}));

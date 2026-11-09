@@ -156,7 +156,7 @@ export function createReportPdf(model) {
     pdf.line(MARGIN, y - 12, PAGE_WIDTH - MARGIN, y - 12);
     font(pdf, 9, "bold");
     ink(pdf);
-    pdf.text(fitLine(pdf, product.name, 347, 8, 9), MARGIN, y);
+    pdf.text(fitLine(pdf, `${product.matchGroup === "verification" ? "[Verify fit] " : ""}${product.name}`, 347, 8, 9), MARGIN, y);
     font(pdf, 8, "bold");
     ink(pdf, TEAL);
     pdf.text(product.pillar.toUpperCase(), PAGE_WIDTH - MARGIN, y, { align: "right" });

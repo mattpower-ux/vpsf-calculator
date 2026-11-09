@@ -12,7 +12,14 @@ import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menu
 import { bottomNavigationItems } from "./bottomNavigation";
 import { assessedHomeAddress, assessedHomeStreetAddress } from "./assessedHomeAddress";
 import { climateZoneOptionsFor } from "./climateZoneOptions";
-import { ecoTipForVisit, nextMenuVisit } from "./ecoTips";
+import { nextMenuVisit } from "./ecoTips";
+import { useEcoTip } from "./useEcoTip";
+import EcoTipCard from "./EcoTipCard";
+import KeyTakeaways, { AdviceStatus } from "./KeyTakeaways";
+import { SponsoredLabel, MatchExplanation } from "./HomeProductRecommendations";
+import { useHomeAdvice } from "./useHomeAdvice";
+import { confirmedEdit, importedHome, joinAdviceProducts, demoAdviceHome } from "./homeAdvice";
+import "./advice.css";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { manualChapters, manualChapterAt } from "./guideManual";
 import { themeFromSearch } from "./theme";
@@ -303,6 +310,7 @@ const defaultHome = {
   waterStandard: "WaterSense Home v2",
   leak: "Leak Detection + Auto Shutoff",
   reuse: "Rainwater Harvesting",
+  irrigation: "Unknown",
   landscape: "Drought-Tolerant Landscaping",
   pietim: "25–30%",
   insurance: "Verified Insurance Discount",
@@ -314,6 +322,8 @@ const defaultHome = {
   amenities: "Shared Amenities",
   bike: "Bike Infrastructure"
 };
+
+defaultHome.provenance = Object.fromEntries(Object.keys(defaultHome).map(key => [key, {origin: "unknown", source: "Initial form default"}]));
 
 const selectOptions = {
   homeType: ["Single Family Detached", "Townhome", "Condo", "Multifamily", "Manufactured Home"],
@@ -762,13 +772,14 @@ function mergePropertyFacts(primary, fallback) {
 
 function mergeSavedPropertySnapshot(current, saved) {
   if (!saved || typeof saved !== "object") return current;
-  const merged = { ...current };
+  const merged = { ...current, provenance: {...current.provenance, ...saved.provenance} };
   const protectedFields = new Set(["address", "city", "state", "zip"]);
   Object.entries(saved).forEach(([key, value]) => {
-    if (key === "sourceNote") return;
+    if (key === "sourceNote" || key === "provenance") return;
     if (protectedFields.has(key) && hasUsableValue(merged[key])) return;
     if (hasUsableValue(value)) {
       merged[key] = value;
+      if (!saved.provenance?.[key]) delete merged.provenance[key];
     }
   });
   if (current.sourceNote || saved.sourceNote) {
@@ -822,6 +833,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
     return {
       ...defaultHome,
       ...publicRecordProperty,
+      provenance: {...defaultHome.provenance, ...importedHome(publicRecordProperty).provenance},
       latitude: geocode?.latitude ?? null,
       longitude: geocode?.longitude ?? null,
       wildfire: riskEnrichment?.wildfire ?? null,
@@ -980,9 +992,9 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         console.warn("Risk enrichment unavailable.", riskError);
       }
       const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, attomProperty, riskEnrichment);
-      setHome(scannedHome);
+      setHome(importedHome(scannedHome));
       setScanNote(`${rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}${attomNote}`);
-      await onQueryStarted(scannedHome, rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
+      await onQueryStarted(importedHome(scannedHome), rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
     } catch (error) {
       const fallbackHome = homeFromExistingScan(address);
       setHome(fallbackHome);
@@ -1304,6 +1316,7 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
         <h3>Carbon, Water + Financial</h3>
         <Field label="Carbon Strategy" value={home.carbonStrategy} onChange={(v) => update("carbonStrategy", v)} options={selectOptions.carbonStrategy} />
         <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)} options={selectOptions.waterStandard} />
+        <Field label="Irrigation system" value={home.irrigation || "Unknown"} onChange={(v) => update("irrigation", v)} options={["Unknown", "No irrigation", "Conventional Irrigation", "Smart Irrigation", "Drip Irrigation", "Xeriscaping"]} />
         <Field label="Leak Protection" value={home.leak} onChange={(v) => update("leak", v)} options={selectOptions.leak} />
         <details className="field fieldWide"><summary>What is PIETIM?</summary><p>Principal, interest, energy, taxes, insurance, and maintenance: the monthly cost of owning the home. Choose the range for these costs as a percentage of gross monthly household income. This is an ownership-cost estimate, not lender qualification.</p></details>
         <Field label="PIETIM" value={home.pietim} onChange={(v) => update("pietim", v)} options={selectOptions.pietim} />
@@ -1592,73 +1605,19 @@ function PillarDefinitionScreen({ selectedPillar, setScreen, onOpenArchive }) {
   );
 }
 
-function PillarBreakdown({ result, selectedPillar, setScreen, setSelectedKnowHowPillar, setKnowHowReturnScreen, streetAddress }) {
-  const pillarPriority = {
-    health: 1,
-    resilience: 2,
-    energy: 3,
-    carbon: 4,
-    water: 5,
-    financial: 6,
-    community: 7
+function PillarBreakdown({ result, advice, setScreen, setSelectedKnowHowPillar, setKnowHowReturnScreen, setActivePillar, streetAddress }) {
+  const act = t => {
+    if (t.action.destination === "details") return setScreen(1);
+    if (t.action.destination === "products") { setActivePillar(t.pillar); return setScreen(7); }
+    setSelectedKnowHowPillar(t.pillar); setKnowHowReturnScreen(5); setScreen(22);
   };
-
-  const bestPillar = [...PILLARS].sort((a, b) => {
-    const rawDifference = result.scores[b.key] - result.scores[a.key];
-    if (rawDifference !== 0) return rawDifference;
-    return pillarPriority[a.key] - pillarPriority[b.key];
-  })[0];
-
-  const waterPillar = PILLARS.find((item) => item.key === "water");
-  const opportunityPillar =
-    waterPillar && result.scores.water <= 50
-      ? waterPillar
-      : [...PILLARS].sort((a, b) => {
-          const aGap = a.max - result.scores[a.key];
-          const bGap = b.max - result.scores[b.key];
-          if (bGap !== aGap) return bGap - aGap;
-          return pillarPriority[a.key] - pillarPriority[b.key];
-        })[0];
-
-  const focusPillar = PILLARS.find((item) => item.key === selectedPillar) || bestPillar;
-  const focusValue = result.scores[focusPillar.key];
-  const openKnowHow = (pillarKey) => {
-    setSelectedKnowHowPillar(pillarKey);
-    setKnowHowReturnScreen(5);
-    setScreen(22);
-  };
-
-  return (
-    <div className="screen pillarBreakdown keyTakeawayScreen withNav">
-      <header className="screenTop keyHeader"><h2>Key Takeaway</h2></header>
-      <ResultStreetAddress streetAddress={streetAddress} />
-
-      <TakeawayCard
-        title="Key Strength"
-        pillar={bestPillar}
-        value={result.scores[bestPillar.key]}
-        isBest
-        onOpenKnowHow={openKnowHow}
-      />
-
-      <TakeawayCard
-        title="Biggest Opportunity"
-        pillar={opportunityPillar}
-        value={result.scores[opportunityPillar.key]}
-        onOpenKnowHow={openKnowHow}
-      />
-
-      <section className="detailCard compactDetail affordableUpgradeCard">
-        <h3>Affordable Upgrade</h3>
-        <div className="detailRow"><span>Smart Leak Detection</span><strong>+8 VPSF</strong></div>
-        <div className="detailRow"><span>Estimated Installed Cost</span><strong>&lt; $2,000</strong></div>
-        <p>Whole-home leak detection with automatic shutoff can reduce water loss, limit damage risk, and may qualify for insurance rebates.</p>
-      </section>
-
-      <button className="primaryButton keyInsightsAction" onClick={() => setScreen(17)}>View Path to 700 VPSF <ArrowRight size={18} /></button>
-      <BottomNav active="Pillars" setScreen={setScreen} />
-    </div>
-  );
+  return <div className="screen keyTakeawayScreen withNav">
+    <header className="screenTop"><h2>Key Takeaway</h2></header>
+    <ResultStreetAddress streetAddress={streetAddress} />
+    <KeyTakeaways advice={advice} result={result} onAction={act}/>
+    <button className="primaryButton" onClick={()=>setScreen(17)}>View Path to 700 VPSF <ArrowRight size={18}/></button>
+    <BottomNav active="My Scores" setScreen={setScreen}/>
+  </div>;
 }
 
 const demoRecommendationDetails = [
@@ -2192,200 +2151,6 @@ async function openEducationForRecommendation(recommendation, setScreen, setSele
   }
 }
 
-const demoMatchingProducts = {
-  "water-fixtures": [
-    {
-      id: "kohler-watersense-faucet",
-      name: "Kohler WaterSense Bathroom Faucet",
-      category: "Low-Flow Faucet",
-      impact: "+3 VPSF",
-      image: kohlerFaucetThumb,
-      note: "Reduces lavatory water use while preserving everyday performance.",
-      requestSpecs: true
-    },
-    {
-      id: "moen-eco-showerhead",
-      name: "Moen Eco-Performance Showerhead",
-      category: "Low-Flow Showerhead",
-      impact: "+4 VPSF",
-      image: moenShowerThumb,
-      note: "Cuts shower water demand, one of the highest-use fixture categories.",
-      requestSpecs: true
-    },
-    {
-      id: "niagara-low-flow-toilet",
-      name: "Niagara Low-Flow Toilet",
-      category: "High-Efficiency Toilet",
-      impact: "+5 VPSF",
-      image: niagaraToiletThumb,
-      note: "High-efficiency flushing can materially reduce indoor water demand.",
-      requestSpecs: true
-    },
-    {
-      id: "rachio-smart-irrigation",
-      name: "Rachio Smart Irrigation Controller",
-      category: "Smart Irrigation",
-      impact: "+6 VPSF",
-      image: rachioThumb,
-      note: "Weather-based scheduling reduces outdoor irrigation waste.",
-      requestSpecs: true
-    }
-  ],
-  "roof-risk": [
-    {
-      id: "atas-solar-ready",
-      name: "ATAS Solar-Ready Metal Roofing",
-      category: "Solar-Ready Roofing",
-      impact: "+8 VPSF",
-      image: atasRoofingThumb,
-      note: "Standing-seam metal roofing designed for future solar integration and long-term durability.",
-      requestSpecs: true
-    },
-    {
-      id: "certainteed-solaris",
-      name: "CertainTeed Solaris Cool Roof Shingles",
-      category: "Reflective Roofing",
-      impact: "+6 VPSF",
-      image: certainteedSolarisThumb,
-      note: "Solar-reflective shingles that reduce roof heat gain and cooling demand.",
-      requestSpecs: true
-    },
-    {
-      id: "euroshield-roofing",
-      name: "Euroshield Recycled Rubber Roofing",
-      category: "Impact-Resistant Roofing",
-      impact: "+9 VPSF",
-      image: euroshieldThumb,
-      note: "Class 4 impact-resistant roofing made from recycled rubber with exceptional durability.",
-      requestSpecs: true
-    }
-  ],
-  "tree-risk": [
-    {
-      id: "arborist-plan",
-      name: "Certified Arborist Tree Plan",
-      category: "Site Risk",
-      impact: "+4 VPSF",
-      image: arboristThumb,
-      note: "Balances shade benefits with storm and maintenance risk."
-    },
-    {
-      id: "storm-pruning",
-      name: "Storm-Season Tree Pruning",
-      category: "Maintenance",
-      impact: "+4 VPSF",
-      image: arboristThumb,
-      note: "Reduces limb-over-roof exposure before severe weather."
-    }
-  ],
-  "energy-hvac": [
-    {
-      id: "smart-thermostat",
-      name: "Smart Thermostat + Load Controls",
-      category: "Energy Controls",
-      impact: "+5 VPSF",
-      note: "Smart controls reduce energy waste and improve peak-load management."
-    },
-    {
-      id: "high-efficiency-heat-pump",
-      name: "High-Efficiency Heat Pump System",
-      category: "HVAC",
-      impact: "+11 VPSF",
-      note: "Modern heat pump systems can reduce heating and cooling energy demand."
-    }
-  ],
-  "energy-water-heating": [
-    {
-      id: "rheem-proterra-match",
-      name: "Rheem ProTerra Heat Pump Water Heater",
-      category: "Water Heating",
-      impact: "+15 VPSF",
-      note: "Heat-pump water heating reduces energy use and operating cost exposure.",
-      requestSpecs: true
-    }
-  ],
-  "water-leak-detection": [
-    {
-      id: "smart-leak-detection",
-      name: "Whole-Home Leak Detection + Auto Shutoff",
-      category: "Leak Protection",
-      impact: "+8 VPSF",
-      note: "Automatic shutoff reduces damage risk and improves water resilience."
-    },
-    {
-      id: "rachio-smart-irrigation-leak",
-      name: "Rachio Smart Irrigation Controller",
-      category: "Smart Irrigation",
-      impact: "+6 VPSF",
-      image: rachioThumb,
-      note: "Weather-based scheduling reduces outdoor irrigation waste.",
-      requestSpecs: true
-    }
-  ],
-  "health-ventilation": [
-    {
-      id: "renewaire-erv-match",
-      name: "RenewAire Energy Recovery Ventilator",
-      category: "Ventilation",
-      impact: "+10 VPSF",
-      note: "Energy recovery ventilation improves fresh-air delivery and humidity control.",
-      requestSpecs: true
-    }
-  ],
-  "health-filtration": [
-    {
-      id: "high-merv-filtration",
-      name: "High-MERV Filtration Upgrade",
-      category: "Filtration",
-      impact: "+6 VPSF",
-      note: "Better filtration can reduce indoor particulate exposure."
-    }
-  ],
-  "resilience-backup-power": [
-    {
-      id: "critical-load-panel",
-      name: "Critical-Load Backup Power Panel",
-      category: "Backup Power",
-      impact: "+7 VPSF",
-      note: "Critical-load readiness improves function during outages."
-    },
-    {
-      id: "home-battery",
-      name: "Home Battery Backup System",
-      category: "Energy Storage",
-      impact: "+12 VPSF",
-      note: "Battery backup improves resilience where power failures are frequent."
-    }
-  ],
-  "carbon-materials": [
-    {
-      id: "epd-material-package",
-      name: "EPD-Backed Product Package",
-      category: "Materials Documentation",
-      impact: "+8 VPSF",
-      note: "EPDs make lower-carbon material choices easier to verify."
-    }
-  ],
-  "community-connectivity": [
-    {
-      id: "broadband-verification",
-      name: "Broadband + Services Verification",
-      category: "Community Access",
-      impact: "+4 VPSF",
-      note: "Documenting broadband and nearby services strengthens community scoring."
-    }
-  ],
-  "ownership-insurance": [
-    {
-      id: "insurance-risk-package",
-      name: "Insurance Risk Reduction Package",
-      category: "Ownership Risk",
-      impact: "+10 VPSF",
-      note: "Roof, leak, and storm upgrades can improve ownership-risk confidence."
-    }
-  ]
-};
-
 function canRequestProductSpecs(product) {
   return Boolean(product?.requestSpecs || product?.technicalWriteup);
 }
@@ -2755,46 +2520,6 @@ function EducationDetail({ education, setScreen, returnScreen }) {
 }
 
 
-function MatchingProducts({ recommendation, setScreen, setSelectedMatchingProduct, onProductClick, setActivePillar }) {
-  const products = demoMatchingProducts[recommendation.id] || [];
-  const Icon = recommendation.icon;
-
-  return (
-    <div className="screen matchingProductsScreen withNav">
-      <header className="screenTop"><h2>Product Categories</h2><Package size={18} /></header>
-
-      <div className="matchProductList">
-        {!products.length && <p>No specific product match is listed yet. Browse the relevant pillar's products or consult a qualified installer about this improvement.</p>}
-        {products.map((product) => (
-          <article className="matchProductCard" key={product.id}>
-            <div className={product.image ? "matchImage" : "matchIcon"}>
-              {product.image ? <img src={product.image} alt={product.name} /> : <Icon size={24} />}
-            </div>
-            <div>
-              <span>{product.category}</span>
-              <h3>{product.name}</h3>
-              <p>{product.note}</p>
-              <em>{product.impact}</em>
-              <button className="inlineDetailsButton" onClick={() => {
-                onProductClick(product, "matching_products");
-                setSelectedMatchingProduct(product);
-                setScreen(20);
-              }}>
-                More Details <ArrowRight size={15} />
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <button className="primaryButton" onClick={() => { setActivePillar(recommendation.pillar); setScreen(7); }}>Specific Products of this Type</button>
-      <button className="secondaryButton" onClick={() => setScreen(6)}>Return to Recommendations</button>
-
-      <BottomNav active="Recommendations" setScreen={setScreen} />
-    </div>
-  );
-}
-
 function ProductRequestForm({ product, onSubmitLead, onBack }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -2819,49 +2544,6 @@ function ProductRequestForm({ product, onSubmitLead, onBack }) {
   </form>;
 }
 
-function MatchingProductDetail({ product, setScreen, onSubmitLead }) {
-  const [showLeadForm, setShowLeadForm] = useState(false);
-  const allowSpecRequest = canRequestProductSpecs(product);
-
-  return (
-    <div className="screen productDetailScreen withNav">
-      <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
-
-      <section className="productHeroCard">
-        {product.image && <img src={product.image} alt={product.name} />}
-        <div>
-          <span>{product.category}</span>
-          <h3>{product.name}</h3>
-          <em>{product.impact}</em>
-        </div>
-      </section>
-
-      {!showLeadForm && (
-        <>
-          <section className="copyCard">
-            <h3>Technical Overview</h3>
-            <p>{product.note}</p>
-          </section>
-
-          {allowSpecRequest && (
-            <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
-              Request Specs and Pricing <ArrowRight size={18} />
-            </button>
-          )}
-
-          <button className="secondaryButton" onClick={() => setScreen(16)}>
-            Return to Product Categories
-          </button>
-        </>
-      )}
-
-      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
-
-      <BottomNav active="Recommendations" setScreen={setScreen} />
-    </div>
-  );
-}
-
 function ProductCategories({ products, onChoose, setScreen }) {
   const categories = catalogCategories(products);
   return <div className="screen withNav categoryDirectory">
@@ -2878,8 +2560,9 @@ function ProductCategories({ products, onChoose, setScreen }) {
   </div>;
 }
 
-function Products({ products, setScreen, setSelectedProduct, activePillar, setActivePillar, activeCategory, setActiveCategory, onProductClick, propertyAddress }) {
-  const filteredProducts = productsInCategory(products, activeCategory).filter((product) => productMatchesPillar(product, activePillar));
+function Products({ browseAll, setBrowseAll, products, recommendedProducts, advice, setScreen, setSelectedProduct, activePillar, setActivePillar, activeCategory, setActiveCategory, onProductClick, propertyAddress }) {
+
+  const filteredProducts = productsInCategory(browseAll ? products : recommendedProducts, activeCategory).filter((product) => !activePillar || (product.pillars?.length ? product.pillars.includes(activePillar) : productMatchesPillar(product, activePillar)));
   const activeLabel = activeCategory ? catalogCategories(products).find(c => c.id === activeCategory)?.label : activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
   return (
@@ -2891,21 +2574,34 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
         <section className="contextBanner">
           <strong>{activeLabel}</strong>
           <span>{activeCategory ? "Showing products in this catalog category." : "Showing products matched to the selected pillar path."}</span>
-          <button onClick={() => { setActivePillar(null); setActiveCategory(null); }}>Show All Products</button>
+          <button onClick={() => { setActivePillar(null); setActiveCategory(null); setBrowseAll(true); }}>Show All Products</button>
         </section>
       )}
 
+      <div className="productViewToggle" aria-label="Product view">
+        <button aria-pressed={!browseAll} onClick={()=>setBrowseAll(false)}>For this home</button>
+        <button aria-pressed={browseAll} onClick={()=>setBrowseAll(true)}>Browse all products</button>
+      </div>
+      <div className="adviceFilters">
+        <label><span>Pillar</span><select value={activePillar||""} onChange={e=>setActivePillar(e.target.value||null)}><option value="">All pillars</option>{PILLARS.map(p=><option key={p.key} value={p.key}>{p.label}</option>)}</select></label>
+        <label><span>Category</span><select value={activeCategory||""} onChange={e=>setActiveCategory(e.target.value||null)}><option value="">All categories</option>{catalogCategories(products).map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+      </div>
+      {!browseAll && <AdviceStatus advice={advice}/>}
       <div className="productList">
-        {!filteredProducts.length && <p>No products are listed in this selection yet. Choose another category or show all products.</p>}
-        {filteredProducts.map((product) => (
-          <article className="productCard" key={product.id}>
+        {!filteredProducts.length && <p>No matching products are available in this selection. Confirm the home details or browse the full catalog; a product purchase may not be the next step.</p>}
+        {filteredProducts.map((product, index) => (
+          <React.Fragment key={product.id}>
+          {!browseAll && (index === 0 || product.match?.group !== filteredProducts[index-1].match?.group) && <h3 className="matchGroupHeading">{product.match?.group === "matched" ? "Matched to recorded needs" : "Needs verification"}</h3>}
+          <article className="productCard">
             <div className="productImage realProductImage">
               {product.image ? <img src={product.image} alt={product.name} /> : <Package size={44} aria-hidden="true" />}
             </div>
             <div>
               <span>{product.category}</span>
               <h3>{product.name}</h3>
+              <SponsoredLabel product={product}/>
               <p>{product.description}</p>
+              <MatchExplanation product={product}/>
               <em>{product.improvement}</em>
               <button onClick={() => {
                 onProductClick(product, "product_listing");
@@ -2915,7 +2611,7 @@ function Products({ products, setScreen, setSelectedProduct, activePillar, setAc
                 More Details <ArrowRight size={15} />
               </button>
             </div>
-          </article>
+          </article></React.Fragment>
         ))}
       </div>
       <button className="secondaryButton" onClick={() => setScreen(28)}>Browse Product Categories</button>
@@ -2938,6 +2634,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
         <div>
           <span>{product.category}</span>
           <h3>{product.name}</h3>
+          <SponsoredLabel product={product}/>
           <em>{product.improvement}</em>
         </div>
       </section>
@@ -2947,6 +2644,8 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
           <section className="copyCard">
             <h3>Technical Overview</h3>
             <p>{product.technicalWriteup}</p>
+            <MatchExplanation product={product}/>
+            {product.sourceUrl && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer">Product reference</a>}
           </section>
 
           {allowSpecRequest && (
@@ -3420,14 +3119,7 @@ function MenuScreen({ onNavigate, setScreen, tip }) {
           );
         })}
       </div>
-      <aside className="ecoTip" aria-label="Eco tip">
-        <img className="ecoTipImage" src={ECO_TIP_IMAGES[tip.image]} alt={tip.alt} />
-        <div className="ecoTipCopy">
-          <h3>ECO-TIP <span>Did you know?</span></h3>
-          <p>{tip.text}</p>
-          <a href={tip.source} target="_blank" rel="noreferrer">Source: {tip.sourceLabel}</a>
-        </div>
-      </aside>
+      <EcoTipCard tip={tip} />
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
   );
@@ -3525,13 +3217,13 @@ export default function App() {
   const [manualChapterIndex, setManualChapterIndex] = useState(null);
   const [activePillar, setActivePillar] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [browseAll, setBrowseAll] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(demoProducts[0]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(demoRecommendationDetails[0]);
   const [selectedEducation, setSelectedEducation] = useState(educationByRecommendation[demoRecommendationDetails[0].id]);
   const [educationReturnScreen, setEducationReturnScreen] = useState(15);
   const [selectedKnowHowPillar, setSelectedKnowHowPillar] = useState("energy");
   const [knowHowReturnScreen, setKnowHowReturnScreen] = useState(5);
-  const [selectedMatchingProduct, setSelectedMatchingProduct] = useState(demoMatchingProducts["water-fixtures"][0]);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
@@ -3540,7 +3232,7 @@ export default function App() {
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
   const [scoreError, setScoreError] = useState("");
-  const [products, setProducts] = useState(demoProducts);
+  const [products, setProducts] = useState([]);
   const sessionId = useMemo(() => getOrCreateSessionId(), []);
   const [queryId, setQueryId] = useState(null);
   const queryIdRef = useRef(null);
@@ -3549,7 +3241,12 @@ export default function App() {
   const result = resultForCurrentAssessment(resultMode, demoResult, apiResult);
   const propertyAddress = assessedHomeAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const streetAddress = assessedHomeStreetAddress({ resultMode, selectedProperty, home, hasAssessedHome });
+  const adviceHome = resultMode === "demo" ? demoAdviceHome(selectedProperty) : home;
+  const advice = useHomeAdvice(adviceHome, resultMode === "demo" ? undefined : result?.modelVersion, Boolean(result));
+  const recommendedProducts = joinAdviceProducts(products, advice.data);
+  const ecoTip = useEcoTip(menuVisit, home.climateZone);
   const navigateFromUI = (target) => {
+    if (target === 16) { setBrowseAll(false); setActivePillar(selectedRecommendation.pillar); setActiveCategory(null); }
     if (target === 28) { setActiveCategory(null); setActivePillar(null); }
     if (target === 7 && ![28, 13].includes(screen)) setActiveCategory(null);
     if (target === 23) {
@@ -3557,7 +3254,7 @@ export default function App() {
         menuReturnScreenRef.current = screen;
         menuDestinationScreenRef.current = null;
       }
-      setMenuVisit(nextMenuVisit);
+      if (screen !== 23) setMenuVisit(nextMenuVisit);
     }
     if (target === 24) {
       if (screen !== 24) scoresReturnScreenRef.current = screen;
@@ -3579,7 +3276,7 @@ export default function App() {
     setHome((current) => {
       const locationChanged = ["address", "city", "state", "zip"].includes(key) && current[key] !== value;
       return {
-        ...current, [key]: value,
+        ...confirmedEdit(current, key, value),
         ...heatingSelectionPatch(current, key, value),
         ...(locationChanged ? {
           latitude: null, longitude: null, wildfire: null,
@@ -3621,6 +3318,7 @@ export default function App() {
   };
 
   const handleGenerateScore = async () => {
+    setHasAssessedHome(true);
     setResultMode("manual");
     setScreen(12);
     setIsScoring(true);
@@ -3738,14 +3436,14 @@ export default function App() {
     let isMounted = true;
     getProductRecommendations()
       .then((apiProducts) => {
-        if (!isMounted || !apiProducts.length) return;
+        if (!isMounted) return;
         setProducts(apiProducts.map((product) => ({
           ...product,
           image: product.image || demoProducts.find(item => item.id === product.id)?.image
         })));
       })
       .catch(() => {
-        if (isMounted) setProducts(demoProducts);
+        if (isMounted) setProducts([]);
       });
     return () => {
       isMounted = false;
@@ -3901,30 +3599,30 @@ export default function App() {
         )}
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
         {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
-        {screen === 5 && result && <PillarBreakdown result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
+        {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
         {screen === 6 && result && <Recommendations result={result} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
-        {screen === 7 && <Products products={products} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
+        {screen === 7 && <Products browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
-        {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={products} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} onUploadApply={facts => { Object.entries(facts).forEach(([key,value]) => update(key,value)); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1); }} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
-        {screen === 16 && <MatchingProducts recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedMatchingProduct={setSelectedMatchingProduct} onProductClick={handleProductClick} setActivePillar={setActivePillar} />}
+        {screen === 16 && <Products browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={streetAddress} />}
         {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 18 && result && <FutureCostExposureScreen home={resultMode === "demo" ? selectedProperty : home} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 19 && result && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 20 && <MatchingProductDetail product={selectedMatchingProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
+
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
         {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
-        {screen === 23 && <MenuScreen key={menuVisit} onNavigate={handleMenuNavigate} setScreen={navigateFromUI} tip={ecoTipForVisit(menuVisit)} />}
+        {screen === 23 && <MenuScreen key={menuVisit} onNavigate={handleMenuNavigate} setScreen={navigateFromUI} tip={ecoTip} />}
         {screen === 24 && <MyScoresScreen onNavigate={handleScoresNavigate} setScreen={navigateFromUI} />}
         {screen === 25 && <HelpScreen onNavigate={handleHelpNavigate} onOpenGuide={openFullGuide} setScreen={navigateFromUI} />}
         {screen === 26 && <PillarDefinitionScreen selectedPillar={selectedPillar} setScreen={navigateFromUI} onOpenArchive={openPillarArchive} />}
         {screen === 27 && <FullGuideScreen guide={manualGuide} chapterIndex={manualChapterIndex} setChapterIndex={setManualChapterIndex} onExit={exitFullGuide} onNavigate={handleGuideNavigate} setScreen={navigateFromUI} />}
-        {screen === 28 && <ProductCategories products={products} setScreen={navigateFromUI} onChoose={category => { setActiveCategory(category); setActivePillar(null); navigateFromUI(7); }} />}
+        {screen === 28 && <ProductCategories products={products} setScreen={navigateFromUI} onChoose={category => { setBrowseAll(true); setActiveCategory(category); setActivePillar(null); navigateFromUI(7); }} />}
       </AppChrome>
 
       <style>{`

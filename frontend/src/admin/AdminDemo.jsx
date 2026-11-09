@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, loginAdmin, updateProductWeighting } from "../api/client";
 import cognitionIcon from "../assets/cognition-icon.png";
 import ScoresAndWeighting from "./ScoresAndWeighting";
+import EcoTips from "./EcoTips";
+import ProductMetadataEditor from "./ProductMetadataEditor";
 import {
   BarChart3,
+  BookOpen,
   Building2,
   ChevronDown,
   Download,
@@ -256,6 +259,7 @@ function Sidebar({ active, setActive }) {
     ["Properties", Home],
     ["Scores and Weighting", Layers],
     ["Products", Package],
+    ["Eco-Tips", BookOpen],
     ["Brand Weighting", Layers],
     ["Users", Users],
     ["Reports", BarChart3],
@@ -960,6 +964,7 @@ export default function AdminDemo() {
         if (!isMounted) return;
         if (apiProducts.length) {
           setProducts(apiProducts.map((item) => ({
+            ...item,
             id: item.id,
             brand: item.brand,
             product: item.product,
@@ -1002,7 +1007,8 @@ export default function AdminDemo() {
     Dashboard: <Dashboard />,
     Properties: <Properties queries={queries} productClicks={productClicks} isLoading={isLoadingAdmin} />,
     "Scores and Weighting": <ScoresAndWeighting token={adminToken} />,
-    Products: <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
+    Products: <><BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} /><ProductMetadataEditor products={products} setProducts={setProducts} token={adminToken}/></>,
+    "Eco-Tips": <EcoTips token={adminToken}/>,
     "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
     Users: <UsersPage />,
     Reports: <Reports products={products} />,

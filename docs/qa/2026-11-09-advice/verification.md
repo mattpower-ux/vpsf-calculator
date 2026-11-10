@@ -17,3 +17,10 @@ Backend deployed first. Additive product_advice and eco_tips tables only; existi
 
 ## Editorial limits
 Unreviewed specifications and installation compatibility are explicitly marked Needs verification. Legacy products are not presumed sponsored. Admin must explicitly designate sponsorship. No manufacturer messages are sent; inquiry routing remains through VPSF admin.
+
+## Live release verification
+- API Render deployment dep-dbp5mq942hec73d4gfrg live; frontend dep-dbp5nrlg1s2s73c11jgg live at ff0adff.
+- WordPress embed: live pillar/category controls, catalog detail navigation, sourced Eco-Tips and changed tip on Menu reentry verified. Sections reset collapsed.
+- Live phone-width catalog and laptop menu screenshots inspected. Local personalized takeaway and recommendation flows verified at both viewport sizes.
+- Local PDF download completed and UI confirmed download. Existing report tests pass; no new visual PDF redesign in this release.
+- Sara's three corresponding punchlist items updated after live verification on November 9, 2026.

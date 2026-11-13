@@ -2649,9 +2649,8 @@ function Products({ isDemo = false, browseAll, setBrowseAll, products, recommend
             </div>
             <div>
               {product.imageCredit && <small className="productPhotoCredit">{product.imageCredit}</small>}
-              <span>{product.category}</span>
+              <div className="productCategoryLine"><span>{product.category}</span><SponsoredLabel product={product}/></div>
               <h3>{product.name}</h3>
-              <SponsoredLabel product={product}/>
               <button className="primaryButton" onClick={() => {
                 onProductClick(product, "product_request");
                 setSelectedProduct({...product, openRequest: true});
@@ -2692,9 +2691,8 @@ function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
         {product.image ? <img src={product.image} alt={product.imageAlt || product.name} /> : <Package size={44} aria-hidden="true" />}
         <div>
           {product.imageCredit && <small className="productPhotoCredit">{product.imageCredit}</small>}
-          <span>{product.category}</span>
+          <div className="productCategoryLine"><span>{product.category}</span><SponsoredLabel product={product}/></div>
           <h3>{product.name}</h3>
-          <SponsoredLabel product={product}/>
           {!isDemo && <em>{product.improvement}</em>}
         </div>
       </section>

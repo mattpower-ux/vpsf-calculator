@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { catalogCategories, productsInCategory } from './productCategories.js';
+import { catalogCategories, productsInCategory, recommendationCategory, focusedProducts } from './productCategories.js';
 import { buildMenuGroups } from './menuNavigation.js';
 
 test('directory covers the whole catalog, including new and uncategorized products', () => {
@@ -17,4 +17,14 @@ test('directory covers the whole catalog, including new and uncategorized produc
 test('menu categories opens full directory, not recommendation matches', () => {
   const item = buildMenuGroups([],[]).flatMap(g=>g.items || []).find(i=>i.id==='categories');
   assert.equal(item.target.screen,28);
+});
+
+test('specific recommendation opens its category and puts disclosed sponsors first', () => {
+  assert.equal(recommendationCategory({id:'resilience-siding'}), 'siding');
+  assert.equal(recommendationCategory({id:'heating-boiler'}), 'condensing boiler');
+  const products = [{id:'a',category:'Siding'}, {id:'roof',category:'Roofing'}, {id:'james-hardie-plank',category:'Siding',isSponsored:true}, ...Array.from({length:12},(_,i)=>({id:`x${i}`,category:'Siding'}))];
+  const list = focusedProducts(products, 'siding');
+  assert.equal(list.length,10);
+  assert.equal(list[0].id,'james-hardie-plank');
+  assert.ok(list.every(p=>p.category==='Siding'));
 });

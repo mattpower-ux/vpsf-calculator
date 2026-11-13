@@ -48,7 +48,7 @@ def needs(context):
     def add(tag, field, reason):
         result[tag] = {"field": field, "reason": reason, "confirmed": c.confirmed(field)}
     if has_matching_wildfire_risk(c.home) and c.home.wildfire.nationalPercentile >= 70 and c.known("siding") and c.value("siding").lower() in {"wood clapboard", "wood siding", "cedar shingles", "engineered wood", "vinyl"}:
-        add("fire-resistant-siding", "siding", f"{c.value('siding')} is recorded in an area with elevated USFS wildfire exposure; assess noncombustible cladding.")
+        add("fire-resistant-siding", "siding", f"{c.value('siding')} is recorded in an area with elevated USFS wildfire exposure; consider replacing it with noncombustible cladding.")
     hvac = c.value("hvac").lower()
     if c.known("hvac") and not any(x in hvac for x in ["heat pump", "geothermal", "condensing"]):
         if c.value("hydronicSource") not in {"Ground-Source Heat Pump", "Air-to-Water Heat Pump"}:

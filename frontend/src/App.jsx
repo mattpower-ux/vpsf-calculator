@@ -7,7 +7,7 @@ import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { buildReportModel } from "./reportModel";
 import { buildFutureCosts } from "./futureCosts";
-import { catalogCategories, productsInCategory } from "./productCategories";
+import { catalogCategories, productsInCategory, recommendationCategory, focusedProducts } from "./productCategories";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
@@ -43,6 +43,7 @@ import rachioThumb from "./assets/rachio.jpg";
 import sprinklerTipImage from "./assets/eco-tip-sprinkler.jpg";
 import waterHeaterTipImage from "./assets/products/rheem-proterra.jpg";
 import { demoProperties } from "./demo/demoProperties";
+import hardieSidingPhoto from "./assets/products/james-hardie-siding.jpg";
 import { demoProducts } from "./demo/demoProducts";
 import {
   ArrowRight,
@@ -1563,8 +1564,14 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
       </section>
 
       {pillar.key === "resilience" && result.explanations?.resilience && (
-        <p className="sourceNote">{result.explanations.resilience}</p>
+        <p className="sourceNote resilienceSummary">{result.explanations.resilience}</p>
       )}
+      {pillar.key === "resilience" && <section className="copyCard">
+        <h3>Understanding Resilience</h3>
+        <p>{educationFallbacks.resilience.intro}</p>
+        <p>{educationFallbacks.resilience.background}</p>
+        <ul className="smartSummaryList">{educationFallbacks.resilience.howItWorks.map(item => <li key={item}><Check size={15} />{item}</li>)}</ul>
+      </section>}
       {assessedCommunity && result.walkability?.status === "available" && <p className="sourceNote">EPA National Walkability Index: {result.walkability.value.toFixed(1)} / 20, 2019 census block group {result.walkability.blockGroup}. <a href={result.walkability.sourceUrl} target="_blank" rel="noreferrer">EPA source</a></p>}
 
       <section className="prosConsGrid">
@@ -2056,6 +2063,25 @@ const knowHowArchive = {
 };
 
 const educationByRecommendation = {
+  "resilience-siding": {
+    title: "Siding and Wildfire Resistance",
+    intro: "Siding can help keep a nearby fire from reaching the wall behind it. Material choice matters, but so do the joints, openings, and other parts of the wall.",
+    background: "A wall can face flying embers, intense radiant heat, or direct flames from burning plants, fences, and decks. Noncombustible siding does not add fuel, but it cannot make the whole house fireproof.",
+    howItWorks: [
+      "Wood clapboard, cedar, and engineered wood: untreated wood-based siding can ignite and sustain burning. Do not assume a wood product is ignition-resistant without documentation for that exact product.",
+      "Vinyl: heat can deform or melt it, exposing the sheathing or wall cavity. The layers underneath then become especially important.",
+      "Fiber cement: noncombustible lap siding and panels do not contribute fuel as wood does. Check product documentation and install joints, flashing, and clearances as specified.",
+      "Brick, stone, and traditional stucco: noncombustible surfaces can protect the wall. Cracks, transitions, and exposed edges still need attention; synthetic stucco systems are not interchangeable with traditional stucco.",
+      "Metal: noncombustible, but it transfers heat and thin panels can distort. The backing, insulation, and complete wall design matter."
+    ],
+    why: ["Replace combustible cladding where wildfire exposure makes it a priority. Also address vulnerable vents, windows, and eaves.", "Keep combustible debris and attachments away from the wall so they cannot hold flames against it."],
+    verify: ["Ask for the exact product's noncombustibility or ignition-resistance documentation and local code acceptance.", "A surface flame-spread rating is not a whole-wall fire-resistance rating. Ask which test and wall assembly a claimed rating covers.", "Have the installer check joints, penetrations, flashing, and ember entry into gaps behind the siding."],
+    vpsf: "The new VPSF model assigns 30 Resilience points to recorded noncombustible siding, within the pillar's 200-point cap. The recommendation shows the available gain for your assessment's model. This is a scoring rule, not a measured reduction in fire risk.",
+    sources: [
+      {label: "University of California: Siding and wildfire", url: "https://ucanr.edu/program/uc-anr-fire-network/siding"},
+      {label: "DOE Building America: Design for Wildfire Resistance", url: "https://basc.pnnl.gov/information/design-wildfire-resistance"}
+    ]
+  },
   "energy-hvac": {
     ...educationFallbacks.energy,
     title: "HVAC + Smart Controls",
@@ -2140,6 +2166,7 @@ const educationVideoIds = new Set([
 
 function educationForRecommendation(recommendation) {
   const key = recommendation.id || recommendation.pillar || "energy";
+  if (key === "resilience-siding") return { key, content: educationByRecommendation[key] };
   if (recommendation.changes) return { key, content: {
     title: recommendation.title, intro: recommendation.copy,
     why: ["This option addresses a remaining scoring opportunity in the current home record. An installer or assessor should verify suitability before the work is specified."], verify: Object.entries(recommendation.changes).map(([field, value]) => `${field === "hvac" ? "HVAC" : field.replace(/([A-Z])/g, " $1").replace(/^./, letter => letter.toUpperCase())}: ${value}`),
@@ -2154,7 +2181,7 @@ async function openEducationForRecommendation(recommendation, setScreen, setSele
   setSelectedEducation({ ...content, key });
   setEducationReturnScreen(returnScreen);
   setScreen(21);
-  if (recommendation.changes) return;
+  if (recommendation.changes || key === "resilience-siding") return;
 
   const cachedContent = await getEducationContent(key);
   const cachedHasRichSections = Boolean(cachedContent?.background || cachedContent?.howItWorks?.length || cachedContent?.sustainableAspects?.length);
@@ -2225,7 +2252,7 @@ function IapmoWaterResources() {
 }
 
 function Recommendations({ onProductOptions, advice, result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
-  const filteredRecommendations = [...(advice?.data?.advisoryRecommendations || []), ...assessmentImprovements(result)].map(rec => ({ ...rec, gain: rec.gainPoints == null ? "Assessment" : `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
+  const filteredRecommendations = [...(advice?.data?.advisoryRecommendations || []), ...assessmentImprovements(result)].map(rec => ({ ...rec, gain: rec.gainPoints == null ? "Recommended" : `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
   const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
@@ -2263,7 +2290,7 @@ function Recommendations({ onProductOptions, advice, result, setScreen, setSelec
                 setSelectedRecommendation(rec);
                 openEducationForRecommendation(rec, setScreen, setSelectedEducation, setEducationReturnScreen, 6);
               }}>Learn More <ArrowRight size={15} /></button>
-              <button onClick={() => onProductOptions(rec)}>Product Options <ArrowRight size={15} /></button>
+              <button onClick={() => onProductOptions(rec)}>Recommended Products <ArrowRight size={15} /></button>
             </div>
           </article>
         );
@@ -2530,6 +2557,8 @@ function EducationDetail({ education, setScreen, returnScreen }) {
         <p>{content.vpsf}</p>
       </section>
 
+      {content.sources?.length > 0 && <section className="copyCard"><h3>Sources</h3><ul>{content.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a></li>)}</ul></section>}
+
       <button className="primaryButton" onClick={() => setScreen(16)}>See Product Categories <ArrowRight size={18} /></button>
       <button className="secondaryButton" onClick={() => setScreen(returnScreen)}>{returnLabel}</button>
 
@@ -2579,9 +2608,9 @@ function ProductCategories({ products, onChoose, setScreen }) {
   </div>;
 }
 
-function Products({ browseAll, setBrowseAll, products, recommendedProducts, advice, setScreen, setSelectedProduct, activePillar, setActivePillar, activeCategory, setActiveCategory, onProductClick, propertyAddress }) {
+function Products({ isDemo = false, browseAll, setBrowseAll, products, recommendedProducts, advice, setScreen, setSelectedProduct, activePillar, setActivePillar, activeCategory, setActiveCategory, onProductClick, propertyAddress }) {
 
-  const filteredProducts = productsInCategory(browseAll ? products : recommendedProducts, activeCategory).filter((product) => !activePillar || (product.pillars?.length ? product.pillars.includes(activePillar) : productMatchesPillar(product, activePillar)));
+  const filteredProducts = focusedProducts((browseAll ? products : recommendedProducts).filter((product) => !activePillar || (product.pillars?.length ? product.pillars.includes(activePillar) : productMatchesPillar(product, activePillar))), activeCategory);
   const activeLabel = activeCategory ? catalogCategories(products).find(c => c.id === activeCategory)?.label : activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
   return (
@@ -2592,7 +2621,7 @@ function Products({ browseAll, setBrowseAll, products, recommendedProducts, advi
       {activeLabel && (
         <section className="contextBanner">
           <strong>{activeLabel}</strong>
-          <span>{activeCategory ? "Showing products in this catalog category." : "Showing products matched to the selected pillar path."}</span>
+          <span>{activeCategory ? `Showing ${filteredProducts.length} options in this category. Premiere Partners appear first.` : "Showing products matched to the selected pillar path."}</span>
           <button onClick={() => { setActivePillar(null); setActiveCategory(null); setBrowseAll(true); }}>Show All Products</button>
         </section>
       )}
@@ -2610,18 +2639,19 @@ function Products({ browseAll, setBrowseAll, products, recommendedProducts, advi
         {!filteredProducts.length && <p>No matching products are available in this selection. Confirm the home details or browse the full catalog; a product purchase may not be the next step.</p>}
         {filteredProducts.map((product, index) => (
           <React.Fragment key={product.id}>
-          {!browseAll && (index === 0 || product.match?.group !== filteredProducts[index-1].match?.group) && <h3 className="matchGroupHeading">{product.match?.group === "matched" ? "Matched to recorded needs" : "Needs verification"}</h3>}
-          <article className="productCard">
+          {!isDemo && !browseAll && (index === 0 || product.match?.group !== filteredProducts[index-1].match?.group) && <h3 className="matchGroupHeading">{product.match?.group === "matched" ? "Matched to recorded needs" : "Needs verification"}</h3>}
+          <article className={`productCard${product.imageCredit ? " productCardWithPhoto" : ""}`}>
             <div className="productImage realProductImage">
-              {product.image ? <img src={product.image} alt={product.name} /> : <Package size={44} aria-hidden="true" />}
+              {product.image ? <img src={product.image} alt={product.imageAlt || product.name} /> : <Package size={44} aria-hidden="true" />}
             </div>
             <div>
+              {product.imageCredit && <small className="productPhotoCredit">{product.imageCredit}</small>}
               <span>{product.category}</span>
               <h3>{product.name}</h3>
               <SponsoredLabel product={product}/>
               <p>{product.description}</p>
-              <MatchExplanation product={product}/>
-              <em>{product.improvement}</em>
+              <MatchExplanation product={product} isDemo={isDemo}/>
+              {!isDemo && <em>{product.improvement}</em>}
               <button onClick={() => {
                 onProductClick(product, "product_listing");
                 setSelectedProduct(product);
@@ -2640,7 +2670,7 @@ function Products({ browseAll, setBrowseAll, products, recommendedProducts, advi
   );
 }
 
-function ProductDetail({ product, setScreen, onSubmitLead }) {
+function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const allowSpecRequest = canRequestProductSpecs(product);
 
@@ -2649,12 +2679,13 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
       <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
 
       <section className="productHeroCard">
-        {product.image ? <img src={product.image} alt={product.name} /> : <Package size={44} aria-hidden="true" />}
+        {product.image ? <img src={product.image} alt={product.imageAlt || product.name} /> : <Package size={44} aria-hidden="true" />}
         <div>
+          {product.imageCredit && <small className="productPhotoCredit">{product.imageCredit}</small>}
           <span>{product.category}</span>
           <h3>{product.name}</h3>
           <SponsoredLabel product={product}/>
-          <em>{product.improvement}</em>
+          {!isDemo && <em>{product.improvement}</em>}
         </div>
       </section>
 
@@ -2663,7 +2694,7 @@ function ProductDetail({ product, setScreen, onSubmitLead }) {
           <section className="copyCard">
             <h3>Technical Overview</h3>
             <p>{product.technicalWriteup}</p>
-            <MatchExplanation product={product}/>
+            <MatchExplanation product={product} isDemo={isDemo}/>
             {product.sourceUrl && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer">Product reference</a>}
           </section>
 
@@ -3467,7 +3498,9 @@ export default function App() {
         if (!isMounted) return;
         setProducts(apiProducts.map((product) => ({
           ...product,
-          image: product.image || demoProducts.find(item => item.id === product.id)?.image
+          image: product.image || (product.id === "james-hardie-plank" ? hardieSidingPhoto : demoProducts.find(item => item.id === product.id)?.image),
+          imageAlt: product.id === "james-hardie-plank" ? "White lap siding on a home featured by James Hardie" : product.name,
+          imageCredit: product.id === "james-hardie-plank" ? "Photo: James Hardie · Example installation" : null
         })));
       })
       .catch(() => {
@@ -3628,17 +3661,17 @@ export default function App() {
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
         {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
-        {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); setActiveCategory(null); navigateFromUI(7);}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
-        {screen === 7 && <Products browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
+        {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); navigateFromUI(7); setActiveCategory(recommendationCategory(rec));}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
+        {screen === 7 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
         {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} onUploadApply={facts => { Object.entries(facts).forEach(([key,value]) => update(key,value)); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1); }} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
-        {screen === 13 && <ProductDetail product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
+        {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
-        {screen === 16 && <Products browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={streetAddress} />}
+        {screen === 16 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={streetAddress} />}
         {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 18 && result && <FutureCostExposureScreen home={resultMode === "demo" ? selectedProperty : home} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 19 && result && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}

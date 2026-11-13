@@ -11,7 +11,7 @@ def improvement_plan(home: PropertyInput, model: ScoreModel) -> list[dict]:
         candidates.append(dict(id=id, pillar=pillar, title=title, copy=copy, changes=changes))
 
     if home.hydronicSource in {"Heating Oil", "Natural Gas", "Propane", "Electric Resistance"}:
-        add("heating-ground-source", "energy", "Assess Ground-Source Hydronic Heating",
+        add("heating-ground-source", "energy", "Ground-Source Hydronic Heating",
             "Check ground-loop feasibility, design heat loss, and the water temperature needed by existing radiators or radiant floors. A ground-source heat pump avoids on-site combustion; actual carbon savings depend on electricity supply and system performance.",
             {"hvac": "Hydronic Heating", "hydronicSource": "Ground-Source Heat Pump"})
     elif "boiler" in home.hvac.lower():
@@ -20,19 +20,22 @@ def improvement_plan(home: PropertyInput, model: ScoreModel) -> list[dict]:
         changes = {"hvac": equipment}
         if combi and "combination" in home.waterHeater.lower():
             changes["waterHeater"] = equipment
-        add("heating-boiler", "energy", "Assess a Condensing Boiler Upgrade",
+        add("heating-boiler", "energy", "Condensing Boiler Upgrade",
             "Check the boiler's AFUE and sizing. Condensing performance depends on low return-water temperatures; a combination unit also needs enough domestic hot-water capacity. Keep combustion venting and condensate drainage in the installation review.", changes)
     elif home.hvac != "Hydronic Heating" and "heat pump" not in home.hvac.lower() and "geothermal" not in home.hvac.lower():
-        add("energy-hvac", "energy", "Assess Heat Pump Heating",
+        add("energy-hvac", "energy", "Heat Pump Heating",
             "Use a heating and cooling load calculation, climate-rated capacity, and a distribution-system review before selecting equipment. Update existing equipment records first if a heat pump is already installed.", {"hvac": "Heat Pump (Electric)"})
     if home.heatingDistribution in {"Hydronic Radiant", "Hydronic Radiators / Baseboards"}:
         add("heating-controls", "energy", "Optimize Hydronic Heating Controls",
             "Review zoning and outdoor-reset settings with the installer. Reset adjusts water temperature to outdoor conditions; minimum temperatures, floor limits, and boiler compatibility still matter.", {"heatingControls": "Zoning + Outdoor Reset"})
-    add("resilience-wildfire", "resilience", "Assess Ember Hardening and Defensible Space",
+    if home.siding.lower() in {"wood clapboard", "wood siding", "cedar shingles", "engineered wood", "vinyl"}:
+        add("resilience-siding", "resilience", "Noncombustible Siding",
+            "Replace combustible siding with a noncombustible material, such as fiber cement. This can reduce one source of fuel around the home. Have an installer review the complete wall design, and address ember entry points and nearby vegetation as well.", {"siding": "Fiber cement"})
+    add("resilience-wildfire", "resilience", "Ember Hardening and Defensible Space",
         "Where wildfire exposure warrants it, review ember-resistant vents, vulnerable openings, and vegetation near the home. Confirm local requirements and maintain defensible space; these measures do not eliminate wildfire risk.", {"wildfireMitigation": "Ember Hardening + Defensible Space"})
     add("resilience-temperature", "resilience", "Improve Extreme-Temperature Protection",
         "Use an energy assessment to identify air leakage and insulation gaps. Coordinate air sealing with ventilation, moisture control, and combustion safety. A stronger envelope can slow indoor temperature changes during outages.", {"temperatureProtection": "Air Sealing + Insulation"})
-    add("resilience-wind", "resilience", "Assess Wind and Tornado Protection",
+    add("resilience-wind", "resilience", "Wind and Tornado Protection",
         "For tornado exposure, consult a qualified designer about a safe room meeting applicable FEMA guidance and ICC 500. Rated shutters and structural connections serve different purposes and are not substitutes for a tornado safe room.", {"windProtection": "FEMA / ICC Safe Room"})
     add("water-leak-detection", "water", "Add Automatic Leak Shutoff",
         "Review whole-home leak detection and automatic shutoff, including valve access, maintenance, and compatibility with fire-sprinkler systems.", {"leak": "Leak Detection + Auto Shutoff"})

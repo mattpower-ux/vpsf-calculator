@@ -40,6 +40,6 @@ def match_products(c, catalog):
         pillars = p.get("pillars") or [pillar]
         gap = max((c.gap(x.lower()) for x in pillars), default=0)
         group = "verification" if checks else "matched"
-        matches.append(dict(productId=p["id"], group=group, reasons=[n["reason"] for n in relevant], verification=list(dict.fromkeys(checks)), _sort=(group != "matched", not all(n["confirmed"] for n in relevant), -int("fire-resistant-siding" in p.get("needTags", []) and "fire-resistant-siding" in home_needs), -gap, -len(relevant), {"Priority": 0, "Standard": 1, "Downgrade": 2}.get(p.get("weight"), 1), p.get("product", p.get("name", "")), p["id"])))
+        matches.append(dict(productId=p["id"], group=group, reasons=[n["reason"] for n in relevant], verification=list(dict.fromkeys(checks)), _sort=(group != "matched", not all(n["confirmed"] for n in relevant), -int("fire-resistant-siding" in p.get("needTags", []) and "fire-resistant-siding" in home_needs), -gap, -len(relevant), {"Priority": 0, "Standard": 1, "Downgrade": 2}.get(p.get("weight"), 1), not p.get("isSponsored", False), p.get("product", p.get("name", "")), p["id"])))
     matches.sort(key=lambda x: x["_sort"])
     return [{k: v for k, v in m.items() if k != "_sort"} for m in matches]

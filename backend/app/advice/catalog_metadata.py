@@ -5,6 +5,9 @@ from app.advice.schemas import ProductMetadata
 def initial_metadata(product):
     if product.id == "james-hardie-plank":
         return ProductMetadata(needTags=["fire-resistant-siding"],requirements=["siding-assembly"],pillars=["resilience"],sourceUrl="https://www.jameshardie.com/why-james-hardie/siding-performance-durability/fire-resistance/",reviewedAt="2026-11-13",isSponsored=True,sponsorName="James Hardie",verificationNotes="Confirm the exact siding product and complete wall design with the manufacturer or installer.")
+    siding_sources = {'allura-lap': 'https://allurausa.com/resources/lap-siding-submittal-sheet', 'gaf-weatherside-purity': 'https://www.gaf.com/en-us/building-materials/residential-building-materials/fiber-cement-siding/weatherside-purity-fiber-cement-siding', 'nichiha-vintagewood': 'https://www.nichiha.com/products/vintagewood/', 'fiberon-wildwood': 'https://www.fiberoncladding.com/pages/testing-certification-documents'}
+    if product.id in siding_sources:
+        return ProductMetadata(needTags=["fire-resistant-siding"], requirements=["siding-assembly"], pillars=["resilience"], sourceUrl=siding_sources[product.id], reviewedAt="2026-11-13", verificationNotes="Confirm exact product fire documentation and local approval for the complete wall assembly. A WUI listing or ignition-resistance claim is not a noncombustible material classification.")
     category = product.category.lower()
     mapping = {
         "condensing boiler": (["heating"], ["hydronic", "gas"], "https://www.usboiler.net/high-efficiency-boiler.html"),

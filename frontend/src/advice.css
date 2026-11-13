@@ -3,3 +3,10 @@
 
 /* Product headings and actions must retain their height inside the scrolling shell. */
 .productDetailScreen > * { flex-shrink: 0; }
+
+.products .productCard.productCardWithPhoto {grid-template-columns:1fr;}
+.products .productCardWithPhoto .productImage {width:100%;height:180px;overflow:hidden;border-radius:10px;}
+.products .productCardWithPhoto .productImage img {width:100%;height:100%;object-fit:cover;object-position:center 65%;}
+.productHeroCard img {object-position:center 65%;}
+.productPhotoCredit {display:block;font-size:11px;line-height:1.4;color:var(--muted);margin-bottom:10px;}
+.resilienceSummary {white-space:pre-line;}

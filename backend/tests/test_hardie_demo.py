@@ -57,10 +57,12 @@ def test_full_api_flow_recommends_hardie_without_saving_fictional_home():
     assert advice.status_code == 200, advice.text
     advice = advice.json()
     assert advice["matches"][0]["productId"] == "james-hardie-plank"
-    assert advice["advisoryRecommendations"][0]["id"] == "resilience-siding"
-    assert advice["advisoryRecommendations"][0]["gainPoints"] is None
+    assert advice["advisoryRecommendations"] == []
+    assert next(r for r in body["improvements"] if r["id"] == "resilience-siding")["gainPoints"] == 30
     catalog = client.get("/api/products/recommendations").json()
     hardie = next(p for p in catalog if p["id"] == "james-hardie-plank")
+    assert len([p for p in catalog if p["category"] == "Siding"]) >= 5
+    assert any(p["id"] == "fiberon-wildwood" for p in catalog)
     assert hardie["isSponsored"] and hardie["sponsorName"] == "James Hardie"
     assert hardie["sourceUrl"].startswith("https://www.jameshardie.com/")
     alternate = client.post("/api/products/advice",json={"home":{**home,"siding":"Fiber cement"}}).json()
@@ -99,3 +101,17 @@ def test_preview_uses_published_epa_rules_and_returns_evidence(monkeypatch):
     assert response.status_code == 200
     assert response.json()["walkability"] is None
     assert len(calls) == 1
+
+
+def test_demo_summary_is_readable_and_recommendations_are_direct():
+    from app.scoring.engine import explain_score
+    from app.scoring.improvements import improvement_plan
+    home = hardie_demo_home()
+    model = seed_model_v1()
+    summary = explain_score(home, evaluate_model(home, model))["resilience"]
+    assert "wood clapboard siding" in summary
+    assert "20 years" in summary
+    assert "Still to confirm: flood protection" in summary
+    assert "lowers the Resilience score by 20 points" in summary
+    assert "'None'" not in summary and "'Unknown'" not in summary
+    assert all(not r["title"].startswith("Assess") for r in improvement_plan(home, model))

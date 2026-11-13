@@ -32,8 +32,15 @@ def wildfire_explanation(home: PropertyInput) -> str:
         return "USFS area wildfire risk is unknown; no wildfire score adjustment was applied."
     if not has_matching_wildfire_risk(home):
         return "USFS area wildfire risk could not be matched to this location; no wildfire score adjustment was applied."
+    if adjustment < 0:
+        score_note = f"This regional risk lowers the Resilience score by {abs(adjustment)} points."
+    elif adjustment > 0:
+        score_note = f"This regional rating adds {adjustment} points to the Resilience score."
+    else:
+        score_note = "This regional rating does not change the Resilience score."
+    area = (risk.areaName or "the surrounding area").replace(" CDP,", ",")
     return (
-        f"USFS area wildfire risk: {risk_level(risk.nationalPercentile)} ({risk.areaName}; {risk.areaType} scale). "
-        f"VPSF wildfire adjustment: {adjustment:+d} Resilience points, subject to the 0-200 pillar limit. "
-        "This is regional exposure, not a home fire-resistance assessment or current fire warning."
+        f"The U.S. Forest Service rates wildfire risk around {area} as {risk_level(risk.nationalPercentile).lower()}. "
+        f"{score_note} The score stays between 0 and 200. "
+        "This regional rating is not an inspection of the home's fire resistance or a current fire warning."
     )

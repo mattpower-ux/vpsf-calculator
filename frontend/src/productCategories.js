@@ -14,3 +14,12 @@ export function catalogCategories(products) {
 export function productsInCategory(products, category) {
   return category ? products.filter(product => categoryId(product) === category) : products;
 }
+
+export function recommendationCategory(rec) {
+  return {'resilience-siding':'siding','heating-boiler':'condensing boiler','energy-water-heating':'water heating','water-fixtures':'fixtures','roof-risk':'roofing','health-ventilation':'ventilation','water-irrigation':'irrigation'}[rec.id] || null;
+}
+export function focusedProducts(products, category) {
+  const selected = productsInCategory(products, category);
+  if (!category) return selected;
+  return [...selected].sort((a,b) => Number(!!b.isSponsored)-Number(!!a.isSponsored) || Number(b.id==='james-hardie-plank' && !!b.isSponsored)-Number(a.id==='james-hardie-plank' && !!a.isSponsored)).slice(0,10);
+}

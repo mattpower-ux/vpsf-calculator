@@ -63,8 +63,8 @@ def test_official_bands_adjust_only_resilience(percentile, level, delta):
     assert after["resilience"] == before["resilience"] + delta
     assert {k: v for k, v in after.items() if k != "resilience"} == {k: v for k, v in before.items() if k != "resilience"}
     explanation = explain_score(home, after)["resilience"]
-    assert f"{delta:+d} Resilience points" in explanation
-    assert "not a home fire-resistance assessment" in explanation
+    assert (f"by {abs(delta)} points" if delta < 0 else f"adds {delta} points" if delta > 0 else "does not change the Resilience score") in explanation
+    assert "not an inspection of the home's fire resistance" in explanation
 
 
 @pytest.mark.parametrize("overrides", [

@@ -1,8 +1,8 @@
 import React,{useState} from 'react';
 import {saveProductMetadata} from '../api/client';
 import './editor.css';
-const tags=['heating','water-heating','irrigation','leaks','fixtures','rainwater','ventilation','roofing'];
-const requirements=['hydronic','gas','irrigation','space-and-electrical','ventilation-design','roof-design','reuse-code','fixture-fit'];
+const tags=['heating','water-heating','irrigation','leaks','fixtures','rainwater','ventilation','roofing','fire-resistant-siding'];
+const requirements=['hydronic','gas','irrigation','space-and-electrical','ventilation-design','roof-design','reuse-code','fixture-fit','siding-assembly'];
 const pillars=['energy','water','health','resilience','carbon','financial','community'];
 export default function ProductMetadataEditor({products,setProducts,token}){
  const [id,setId]=useState(''),[draft,setDraft]=useState(null),[revision,setRevision]=useState(0),[status,setStatus]=useState(''),[busy,setBusy]=useState(false),[dirty,setDirty]=useState(false);

@@ -70,7 +70,7 @@ async function optionalRequest(path, options = {}) {
 }
 
 export async function scoreProperty(propertyInput) {
-  return request("/api/score", {
+  return request(propertyInput.demoScenario === "hardie-wildfire" ? "/api/demos/hardie-wildfire/score" : "/api/score", {
     method: "POST",
     body: JSON.stringify(propertyInput)
   });
@@ -217,3 +217,5 @@ export const getAdminEcoTips=token=>request('/api/admin/eco-tips',adminOptions(t
 export const saveAdminEcoTip=(token,id,data,revision)=>request(`/api/admin/eco-tips/${encodeURIComponent(id)}`,adminOptions(token,{method:'PUT',body:JSON.stringify({data,revision})}));
 export const publishAdminEcoTip=(token,id,action,revision,version)=>request(`/api/admin/eco-tips/${encodeURIComponent(id)}/${action}`,adminOptions(token,{method:'POST',body:JSON.stringify({revision,version})}));
 export const saveProductMetadata=(token,id,data,revision)=>request(`/api/admin/products/${encodeURIComponent(id)}/metadata`,adminOptions(token,{method:'PUT',body:JSON.stringify({data,revision})}));
+
+export const getHardieDemo = () => request("/api/demos/hardie-wildfire");

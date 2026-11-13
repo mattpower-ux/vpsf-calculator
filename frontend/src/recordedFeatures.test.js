@@ -10,3 +10,7 @@ test('recorded equipment remains visible and unknown homes have an honest empty 
   assert.deepEqual(recordedPillarFeatures({ solar: '5.2 kW Solar PV + Battery' }, 'energy'), ['Recorded: 5.2 kW Solar PV + Battery']);
   assert.deepEqual(recordedPillarFeatures({ materials: 'Unknown', healthCert: 'None' }, 'health'), ['No qualifying features recorded yet.']);
 });
+
+test('roof material alone is not presented as a verified resilience strength', () => {
+  assert.deepEqual(recordedPillarFeatures({roof:'Asphalt shingles',roofAge:'20 years'},'resilience'), ['No qualifying features recorded yet.']);
+});

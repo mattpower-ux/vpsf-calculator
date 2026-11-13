@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import DocumentUpload from "./DocumentUpload.jsx";
-import { cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { getHardieDemo, cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { presentationAddress, isPresentationAddress } from "./presentationHome";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { buildReportModel } from "./reportModel";
@@ -461,6 +462,7 @@ function scoreHome(home) {
 
 
 function resultFromDemoProperty(property) {
+  if (!property?.scores) return null;
   return {
     scores: property.scores,
     total: Object.values(property.scores).reduce((sum, value) => sum + value, 0),
@@ -896,14 +898,14 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
 }
 
 function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted }) {
-  const [address, setAddress] = useState("1313 Cognition Drive, Orlando, FL");
+  const [address, setAddress] = useState(presentationAddress);
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
   const [savedMatch, setSavedMatch] = useState(null);
 
   useEffect(() => {
     const parsedAddress = parseAddressParts(address);
-    if (!parsedAddress.address || parsedAddress.address.length < 5) {
+    if (isPresentationAddress(address) || !parsedAddress.address || parsedAddress.address.length < 5) {
       setSavedMatch(null);
       return undefined;
     }
@@ -927,6 +929,23 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   const startExistingHomeScan = async () => {
     if (isScanningAddress) return;
 
+    if (isPresentationAddress(address)) {
+      setIsScanningAddress(true);
+      setScanNote("");
+      try {
+        const {home: profile} = await getHardieDemo();
+        setHome(profile);
+        setSelectedProperty(null);
+        setResultMode("manual");
+        await onQueryStarted(profile, "presentation");
+        setScreen(3);
+      } catch {
+        setScanNote("We couldn't load the home details. Please try again.");
+      } finally {
+        setIsScanningAddress(false);
+      }
+      return;
+    }
     const existingHome = demoProperties[0];
     setIsScanningAddress(true);
     setScanNote("");
@@ -1292,6 +1311,8 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
         <Field wide label="Extreme-Temperature Protection" value={home.temperatureProtection || "Unknown"} onChange={(v) => update("temperatureProtection", v)} options={heatingResilienceOptions.temperatureProtection} />
         <Field wide label="Wind / Tornado Protection" value={home.windProtection || "Unknown"} onChange={(v) => update("windProtection", v)} options={heatingResilienceOptions.windProtection} />
         <details className="field fieldWide"><summary>Which protections qualify?</summary><p>Select installed features supported by product specifications, installation records, or an inspection. Choose Unknown when unsure. Each selection replaces the previous option; points do not stack within a field.</p><p>A safe room protects occupants, not the whole house. Opening protection is not tornado shelter. Use a qualified designer to verify applicable FEMA guidance and ICC 500. Wildfire mitigation does not change the area's mapped risk.</p></details>
+        <Field wide label="Siding material" value={home.siding || "Unknown"} onChange={v=>update("siding",v)} options={["Unknown","Wood clapboard","Wood siding","Cedar shingles","Engineered wood","Vinyl","Fiber cement","Brick","Stucco","Metal","Other"]} />
+        <Field label="Roof type" value={home.roof} onChange={v=>update("roof",v)} options={["Unknown","Asphalt shingles","Architectural Shingle","Metal","Clay tile","Concrete tile","Other"]} />
         <Field label="Roof Age" value={home.roofAge} onChange={(v) => update("roofAge", v)} />
         <Field label="Ventilation" value={home.ventilation} onChange={(v) => update("ventilation", v)} options={selectOptions.ventilation} />
         <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
@@ -1354,6 +1375,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
     [Zap, "Heat Distribution", home.heatingDistribution || "Unknown"],
     [Zap, "Hydronic Heat Source", home.hydronicSource || "Unknown"],
     [Zap, "Hydronic Controls", home.heatingControls || "Unknown"],
+    [Shield, "Siding", home.siding || "Unknown"],
     [Shield, "Wildfire Mitigation", home.wildfireMitigation || "Unknown"],
     [Shield, "Temperature Protection", home.temperatureProtection || "Unknown"],
     [Shield, "Wind / Tornado Protection", home.windProtection || "Unknown"],
@@ -2202,8 +2224,8 @@ function IapmoWaterResources() {
   </section>;
 }
 
-function Recommendations({ result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
-  const filteredRecommendations = assessmentImprovements(result).map(rec => ({ ...rec, gain: `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
+function Recommendations({ onProductOptions, advice, result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
+  const filteredRecommendations = [...(advice?.data?.advisoryRecommendations || []), ...assessmentImprovements(result)].map(rec => ({ ...rec, gain: rec.gainPoints == null ? "Assessment" : `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
   const activeLabel = activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
@@ -2241,10 +2263,7 @@ function Recommendations({ result, setScreen, setSelectedRecommendation, setSele
                 setSelectedRecommendation(rec);
                 openEducationForRecommendation(rec, setScreen, setSelectedEducation, setEducationReturnScreen, 6);
               }}>Learn More <ArrowRight size={15} /></button>
-              <button onClick={() => {
-                setSelectedRecommendation(rec);
-                setScreen(16);
-              }}>Product Options <ArrowRight size={15} /></button>
+              <button onClick={() => onProductOptions(rec)}>Product Options <ArrowRight size={15} /></button>
             </div>
           </article>
         );
@@ -3296,6 +3315,13 @@ export default function App() {
   }, [queryId]);
 
   const handleQueryStarted = async (property, source) => {
+    if (property.demoScenario) {
+      setQueryId(null);
+      queryIdRef.current = null;
+      previousArchivedHomeRef.current = property;
+      setApiResult(null);
+      return;
+    }
     setHasAssessedHome(true);
     setApiResult(null);
     setScoreError("");
@@ -3356,6 +3382,7 @@ export default function App() {
   };
 
   const handleSubmitLead = async (lead) => {
+    if (home.demoScenario) throw new Error("Demo inquiries are disabled; no lead was submitted.");
     await submitLead({ ...lead, propertyAddress: home.address, zip: home.zip });
     if (queryId) {
       await trackProgress({
@@ -3373,7 +3400,7 @@ export default function App() {
   };
 
   const handleProductClick = async (product, context) => {
-    if (!queryId) return;
+    if (home.demoScenario || !queryId) return;
     await trackProductClick({
       sessionId,
       queryId,
@@ -3385,6 +3412,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (home.demoScenario) {previousArchivedHomeRef.current=home;return;}
     const timer = window.setTimeout(async () => {
       const previousHome = previousArchivedHomeRef.current;
       const detailChanges = Object.keys(home)
@@ -3600,7 +3628,7 @@ export default function App() {
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
         {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
-        {screen === 6 && result && <Recommendations result={result} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
+        {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); setActiveCategory(null); navigateFromUI(7);}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}

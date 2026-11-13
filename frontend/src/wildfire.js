@@ -25,6 +25,5 @@ export function wildfireExplanation(home) {
   const { level, adjustment } = assessment;
   const risk = home.wildfire;
   return `USFS area wildfire risk: ${level} (${risk.areaName}; ${risk.areaType} scale). `
-    + `VPSF wildfire adjustment: ${adjustment >= 0 ? "+" : ""}${adjustment} Resilience points, subject to the 0-200 pillar limit. `
-    + "This is regional exposure, not a home fire-resistance assessment or current fire warning.";
+    + `VPSF wildfire adjustment: ${adjustment >= 0 ? "+" : ""}${adjustment} Resilience points, subject to the 0-200 pillar limit.`;
 }

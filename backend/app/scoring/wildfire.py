@@ -42,5 +42,4 @@ def wildfire_explanation(home: PropertyInput) -> str:
     return (
         f"The U.S. Forest Service rates wildfire risk around {area} as {risk_level(risk.nationalPercentile).lower()}. "
         f"{score_note} The score stays between 0 and 200. "
-        "This regional rating is not an inspection of the home's fire resistance or a current fire warning."
     )

@@ -111,7 +111,8 @@ def test_demo_summary_is_readable_and_recommendations_are_direct():
     summary = explain_score(home, evaluate_model(home, model))["resilience"]
     assert "wood clapboard siding" in summary
     assert "20 years" in summary
-    assert "Still to confirm: flood protection" in summary
+    assert "Still to confirm:" not in summary
+    assert "Not recorded:" not in summary
     assert "lowers the Resilience score by 20 points" in summary
     assert "'None'" not in summary and "'Unknown'" not in summary
     assert all(not r["title"].startswith("Assess") for r in improvement_plan(home, model))

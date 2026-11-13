@@ -44,7 +44,8 @@ import rachioThumb from "./assets/rachio.jpg";
 import sprinklerTipImage from "./assets/eco-tip-sprinkler.jpg";
 import waterHeaterTipImage from "./assets/products/rheem-proterra.jpg";
 import { demoProperties } from "./demo/demoProperties";
-import hardieSidingPhoto from "./assets/products/james-hardie-siding.jpg";
+import { productPhotos } from "./productPhotos.js";
+import { resilienceFeatures } from "./resilienceFeatures.js";
 import { demoProducts } from "./demo/demoProducts";
 import {
   ArrowRight,
@@ -1527,7 +1528,7 @@ function TakeawayCard({ title, pillar, value, isBest, onOpenKnowHow }) {
 
 function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar, home, resultMode }) {
   const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
-  const details = resultMode === "demo" ? PILLAR_DETAILS[pillar.key] : {
+  const details = pillar.key === "resilience" ? { ...PILLAR_DETAILS.resilience, ...resilienceFeatures(home) } : resultMode === "demo" ? PILLAR_DETAILS[pillar.key] : {
     ...PILLAR_DETAILS[pillar.key],
     pros: recordedPillarFeatures(home, pillar.key),
     cons: ["Unrecorded features have not been verified. Review your home details to add supporting information."]
@@ -1560,7 +1561,7 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
         </div>
         <div>
           <em>{pillarPerformanceLabel(value, pillar.max)}</em>
-          <p>{details.summary}</p>
+          <p>{pillar.key === "resilience" && value < 140 && <><strong>MORE RESILIENCE NEEDED</strong><br /></>}{details.summary}</p>
         </div>
       </section>
 
@@ -3496,9 +3497,9 @@ export default function App() {
         if (!isMounted) return;
         setProducts(apiProducts.map((product) => ({
           ...product,
-          image: product.image || (product.id === "james-hardie-plank" ? hardieSidingPhoto : demoProducts.find(item => item.id === product.id)?.image),
-          imageAlt: product.id === "james-hardie-plank" ? "White lap siding on a home featured by James Hardie" : product.name,
-          imageCredit: product.id === "james-hardie-plank" ? "Photo: James Hardie · Example installation" : null
+          image: product.image || productPhotos[product.id]?.image || demoProducts.find(item => item.id === product.id)?.image,
+          imageAlt: product.image ? product.name : productPhotos[product.id]?.imageAlt || product.name,
+          imageCredit: product.image ? null : productPhotos[product.id]?.imageCredit
         })));
       })
       .catch(() => {

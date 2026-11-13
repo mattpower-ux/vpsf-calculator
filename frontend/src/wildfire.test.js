@@ -15,7 +15,7 @@ test("fallback uses the same percentile thresholds and weights as the backend", 
   for (const [rank, delta] of [[0, 10], [39.99, 10], [40, 0], [69.99, 0], [70, -10], [89.99, -10], [90, -20], [100, -20]]) {
     const input = { ...home, wildfire: { ...home.wildfire, nationalPercentile: rank } };
     assert.equal(wildfireAdjustment(input), delta);
-    assert.match(wildfireExplanation(input), /not a home fire-resistance assessment/);
+    assert.doesNotMatch(wildfireExplanation(input), /not a home fire-resistance assessment/);
   }
 });
 

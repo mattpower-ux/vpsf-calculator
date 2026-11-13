@@ -182,23 +182,15 @@ def resilience_explanation(home: PropertyInput) -> str:
             roof += " (recorded age: " + home.roofAge + ")"
         features.append(roof)
     sentences = ["The home has " + readable_list(features) + "."] if features else []
-    missing, unknown, recorded = [], [], []
+    recorded = []
     for key, label in [
         ("fortified", "resilience certification"), ("wildfireMitigation", "wildfire protection"),
         ("backup", "backup power"), ("flood", "flood protection"), ("moisture", "moisture control"),
         ("temperatureProtection", "extreme-temperature protection"), ("windProtection", "wind protection")
     ]:
         value = getattr(home, key).strip()
-        if value.lower() == "none":
-            missing.append(label)
-        elif value.lower() in {"", "unknown", "none / unknown"}:
-            unknown.append(label)
-        else:
+        if value.lower() not in {"", "none", "unknown", "none / unknown"}:
             recorded.append(f"{label}: {value}")
-    if missing:
-        sentences.append("Not recorded: " + readable_list(missing) + ".")
-    if unknown:
-        sentences.append("Still to confirm: " + readable_list(unknown) + ".")
     if recorded:
         sentences.append("Recorded protections include " + "; ".join(recorded) + ".")
     return " ".join(sentences) + "\n\n" + wildfire_explanation(home)

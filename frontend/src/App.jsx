@@ -45,7 +45,7 @@ import sprinklerTipImage from "./assets/eco-tip-sprinkler.jpg";
 import waterHeaterTipImage from "./assets/products/rheem-proterra.jpg";
 import { demoProperties } from "./demo/demoProperties";
 import { productPhotos } from "./productPhotos.js";
-import { resilienceFeatures } from "./resilienceFeatures.js";
+import { resilienceFeatures, resilienceRecordNotes } from "./resilienceFeatures.js";
 import { demoProducts } from "./demo/demoProducts";
 import {
   ArrowRight,
@@ -1566,7 +1566,7 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
       </section>
 
       {pillar.key === "resilience" && result.explanations?.resilience && (
-        <p className="sourceNote resilienceSummary">{result.explanations.resilience}</p>
+        <div className="sourceNote resilienceSummary"><p>{result.explanations.resilience}</p>{resilienceRecordNotes(home) && <p><em>{resilienceRecordNotes(home)}</em></p>}</div>
       )}
       {pillar.key === "resilience" && <section className="copyCard">
         <h3>Understanding Resilience</h3>

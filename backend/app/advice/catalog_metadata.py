@@ -3,6 +3,8 @@ from app.advice.schemas import ProductMetadata
 
 
 def initial_metadata(product):
+    if product.id == "james-hardie-plank":
+        return ProductMetadata(needTags=["fire-resistant-siding"],requirements=["siding-assembly"],pillars=["resilience"],sourceUrl="https://www.jameshardie.com/why-james-hardie/siding-performance-durability/fire-resistance/",reviewedAt="2026-11-13",isSponsored=True,sponsorName="James Hardie",verificationNotes="Confirm the exact siding product and complete wall design with the manufacturer or installer.")
     category = product.category.lower()
     mapping = {
         "condensing boiler": (["heating"], ["hydronic", "gas"], "https://www.usboiler.net/high-efficiency-boiler.html"),

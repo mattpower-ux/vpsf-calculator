@@ -34,6 +34,14 @@ def validate_extra_inputs(values: dict[str, object], model: ScoreModel) -> dict[
     return values
 
 
+async def prepare_scoring_evidence(property_input: PropertyInput, model: ScoreModel, db: Session):
+    """Use identical location evidence for persisted and presentation scores."""
+    if any(factor.active and factor.mode == "epa_range" for factor in model.factors):
+        property_input.epaWalkability = await cached_walkability(db, property_input.latitude, property_input.longitude)
+    else:
+        property_input.epaWalkability = None
+
+
 @router.get("/scoring/form-fields")
 def form_fields(db: Session = Depends(get_db)) -> list[dict]:
     try:
@@ -53,10 +61,7 @@ async def score_property(property_input: PropertyInput, db: Session = Depends(ge
         validate_extra_inputs(property_input.extraInputs, model)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    if any(factor.active and factor.mode == "epa_range" for factor in model.factors):
-        property_input.epaWalkability = await cached_walkability(db, property_input.latitude, property_input.longitude)
-    else:
-        property_input.epaWalkability = None
+    await prepare_scoring_evidence(property_input, model, db)
     property_record = create_property(db, property_input, source="score_request")
     scores = evaluate_model(property_input, model)
     total = sum(scores.values())

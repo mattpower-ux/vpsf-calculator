@@ -2,6 +2,7 @@ from app.schemas import ProductRecommendation
 
 
 SEED_PRODUCTS = [
+    ProductRecommendation(id="james-hardie-plank",brand="James Hardie",product="Hardie Plank Fiber Cement Lap Siding",pillar="Resilience",category="Siding",weight="Standard",summary="Noncombustible fiber cement cladding, verified by the manufacturer to ASTM E136. Consider it when replacing combustible siding in wildfire-exposed areas. Coordinate the wall assembly, flashing, clearances and installation with ember-resistant openings and defensible space. Siding alone does not make a home fireproof or establish a fire-rated wall. Manufacturer documentation reviewed November 13, 2026."),
     ProductRecommendation(
         id="us-boiler-alta-altac-200", brand="U.S. Boiler", product="ALTA ALTAC-200 Combi Boiler",
         pillar="Energy", category="Condensing Boiler", weight="Standard",

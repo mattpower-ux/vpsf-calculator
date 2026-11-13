@@ -31,12 +31,14 @@ class WalkabilityEvidence(BaseModel):
 
 
 class FieldProvenance(BaseModel):
-    origin: Literal["user-confirmed", "imported", "inferred", "unknown"] = "unknown"
+    origin: Literal["user-confirmed", "imported", "inferred", "unknown", "demo-assumption"] = "unknown"
     source: str = Field(default="", max_length=300)
     date: str = Field(default="", max_length=40)
 
 
 class PropertyInput(BaseModel):
+    demoScenario: str = ""
+    siding: str = "Unknown"
     provenance: dict[str, FieldProvenance] = Field(default_factory=dict)
     address: str = ""
     city: str = ""

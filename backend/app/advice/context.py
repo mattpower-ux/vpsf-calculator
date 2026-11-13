@@ -1,6 +1,7 @@
 """Evidence-aware advisory facts; never changes scoring inputs."""
 from dataclasses import dataclass
 from app.schemas import PropertyInput
+from app.scoring.wildfire import has_matching_wildfire_risk
 
 AMBIGUOUS = {"", "unknown", "none / unknown", "none", "code-minimum", "standard landscaping", "standard", "no accounting"}
 
@@ -26,10 +27,10 @@ class HomeContext:
         value = self.value(key).lower()
         if value in {"", "unknown", "none / unknown"}:
             return False
-        return self.confirmed(key) or value not in AMBIGUOUS
+        return self.confirmed(key) or self.origin(key) == "demo-assumption" or value not in AMBIGUOUS
 
     def evidence(self, key):
-        return {"user-confirmed": "Homeowner-confirmed", "imported": "Imported record; verify details", "inferred": "Inferred; confirmation needed"}.get(self.origin(key), "Recorded; confirm details")
+        return {"demo-assumption": "Provided home details; confirm conditions", "user-confirmed": "Homeowner-confirmed", "imported": "Imported record; verify details", "inferred": "Inferred; confirmation needed"}.get(self.origin(key), "Recorded; confirm details")
 
     def gap(self, pillar):
         budget = self.budgets.get(pillar, 0)
@@ -46,6 +47,8 @@ def needs(context):
     result = {}
     def add(tag, field, reason):
         result[tag] = {"field": field, "reason": reason, "confirmed": c.confirmed(field)}
+    if has_matching_wildfire_risk(c.home) and c.home.wildfire.nationalPercentile >= 70 and c.known("siding") and c.value("siding").lower() in {"wood clapboard", "wood siding", "cedar shingles", "engineered wood", "vinyl"}:
+        add("fire-resistant-siding", "siding", f"{c.value('siding')} is recorded in an area with elevated USFS wildfire exposure; assess noncombustible cladding.")
     hvac = c.value("hvac").lower()
     if c.known("hvac") and not any(x in hvac for x in ["heat pump", "geothermal", "condensing"]):
         if c.value("hydronicSource") not in {"Ground-Source Heat Pump", "Air-to-Water Heat Pump"}:

@@ -35,7 +35,7 @@ from app.models import ScoringModelRecord
 from app.scoring.catalog import ScoreModel, evaluate_model
 from app.scoring.store import load_published
 from app.advice.schemas import AdviceRequest
-from app.advice.context import build_home_context
+from app.advice.context import build_home_context, needs
 from app.advice.takeaways import build_takeaways
 from app.advice.products import match_products
 
@@ -52,4 +52,5 @@ async def home_advice(payload: AdviceRequest, db: Session = Depends(get_db)):
     scores = evaluate_model(payload.home, model)
     context = build_home_context(payload.home, {}, scores, model.pillars)
     return {"ruleVersion": "advice-1", "modelVersion": model.version,
+            "advisoryRecommendations": ([{"id":"resilience-siding","pillar":"resilience","title":"Assess Noncombustible Siding","copy":"Elevated regional wildfire exposure and recorded combustible siding make exterior-wall hardening a relevant next step. Review noncombustible cladding, the complete wall assembly, ember-resistant openings and defensible space. No siding-specific point gain has been assigned in the current scoring model.","gainPoints":None}] if "fire-resistant-siding" in needs(context) else []),
             "takeaways": build_takeaways(context), "matches": match_products(context, list_products(db))}

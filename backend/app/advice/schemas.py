@@ -17,9 +17,9 @@ def https_url(value):
 
 
 class ProductMetadata(BaseModel):
-    needTags: list[str] = Field(default_factory=list, max_length=8)
+    needTags: list[str] = Field(default_factory=list, max_length=16)
     pillars: list[str] = Field(default_factory=list, max_length=7)
-    requirements: list[str] = Field(default_factory=list, max_length=8)
+    requirements: list[str] = Field(default_factory=list, max_length=16)
     verificationNotes: str = Field(default="", max_length=600)
     sourceUrl: str = Field(default="", max_length=1000)
     reviewedAt: str = ""

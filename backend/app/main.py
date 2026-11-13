@@ -56,3 +56,6 @@ async def health(db: Session = Depends(get_db)) -> dict[str, str]:
     except ModelUnavailableError as error:
         raise HTTPException(status_code=503, detail="Scoring model unavailable") from error
     return {"status": "ok", "modelVersion": version}
+
+from app.routers.demos import router as demos_router
+app.include_router(demos_router)

@@ -1,3 +1,4 @@
+import { companyWebsite, leadForHome } from "./productInquiry";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import DocumentUpload from "./DocumentUpload.jsx";
@@ -2201,7 +2202,7 @@ async function openEducationForRecommendation(recommendation, setScreen, setSele
 }
 
 function canRequestProductSpecs(product) {
-  return Boolean(product?.requestSpecs || product?.technicalWriteup);
+  return Boolean(product?.id);
 }
 
 const pillarLabelMap = {
@@ -2580,7 +2581,8 @@ function ProductRequestForm({ product, onSubmitLead, onBack }) {
     catch { setStatus("error"); }
   };
   return <form className="leadFormCard productLeadFormCard" onSubmit={submit}>
-    <h3>Request Specs and Pricing</h3>
+    <h3>Request Specifications/Pricing</h3>
+    <p><strong>{product.name}</strong></p>
     <p>Your name, email, and product selection will be saved with VPSF for follow-up.</p>
     {status === "success" ? <p role="status">Your request has been saved for the VPSF team to follow up.</p> : <>
       <label className="field fieldWide"><span>Name</span><input required maxLength={120} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label>
@@ -2649,6 +2651,11 @@ function Products({ isDemo = false, browseAll, setBrowseAll, products, recommend
               <span>{product.category}</span>
               <h3>{product.name}</h3>
               <SponsoredLabel product={product}/>
+              <button className="primaryButton" onClick={() => {
+                onProductClick(product, "product_request");
+                setSelectedProduct({...product, openRequest: true});
+                setScreen(13);
+              }}>Request Specifications/Pricing <ArrowRight size={15} /></button>
               <p>{product.description}</p>
               <MatchExplanation product={product} isDemo={isDemo}/>
               {!isDemo && <em>{product.improvement}</em>}
@@ -2671,12 +2678,14 @@ function Products({ isDemo = false, browseAll, setBrowseAll, products, recommend
 }
 
 function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
-  const [showLeadForm, setShowLeadForm] = useState(false);
+  const [showLeadForm, setShowLeadForm] = useState(!!product.openRequest);
   const allowSpecRequest = canRequestProductSpecs(product);
 
   return (
     <div className="screen productDetailScreen withNav">
       <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
+
+      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
 
       <section className="productHeroCard">
         {product.image ? <img src={product.image} alt={product.imageAlt || product.name} /> : <Package size={44} aria-hidden="true" />}
@@ -2691,18 +2700,8 @@ function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
 
       {!showLeadForm && (
         <>
-          <section className="copyCard">
-            <h3>Technical Overview</h3>
-            <p>{product.technicalWriteup}</p>
-            <MatchExplanation product={product} isDemo={isDemo}/>
-            {product.sourceUrl && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer">Product reference</a>}
-          </section>
-
-          {allowSpecRequest && (
-            <button className="primaryButton" onClick={() => setShowLeadForm(true)}>
-              Request Specs and Pricing <ArrowRight size={18} />
-            </button>
-          )}
+          {allowSpecRequest && <button className="primaryButton" onClick={() => setShowLeadForm(true)}>Request Specifications/Pricing <ArrowRight size={18} /></button>}
+          {companyWebsite(product) && <a className="secondaryButton" href={companyWebsite(product)} target="_blank" rel="noopener noreferrer">Company Website <ArrowRight size={18} /></a>}
 
           <button className="secondaryButton" onClick={() => setScreen(7)}>
             Return to Products
@@ -2710,7 +2709,7 @@ function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
         </>
       )}
 
-      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
+
 
       <BottomNav active="Menu" setScreen={setScreen} />
     </div>
@@ -3413,9 +3412,8 @@ export default function App() {
   };
 
   const handleSubmitLead = async (lead) => {
-    if (home.demoScenario) throw new Error("Demo inquiries are disabled; no lead was submitted.");
-    await submitLead({ ...lead, propertyAddress: home.address, zip: home.zip });
-    if (queryId) {
+    await submitLead(leadForHome(lead, home));
+    if (queryId && !home.demoScenario) {
       await trackProgress({
         sessionId,
         queryId,

@@ -22,3 +22,12 @@ test("offline product requests reject so the form can retain input for retry", a
   t.mock.method(globalThis, "fetch", async () => { throw new TypeError("Failed to fetch"); });
   await assert.rejects(submitLead({}), /Failed to fetch/);
 });
+
+import { leadForHome, companyWebsite } from './productInquiry.js';
+test('demo inquiries omit fictional address and preserve real customer contact',()=>{
+ const lead={name:'Local QA',email:'qa@example.com',productId:'james-hardie-plank'};
+ assert.deepEqual(leadForHome(lead,{demoScenario:'hardie-wildfire',address:'Fictional',zip:'92549'}),lead);
+ assert.equal(leadForHome(lead,{address:'Real',zip:'12345'}).propertyAddress,'Real');
+ assert.equal(companyWebsite({brand:'James Hardie'}),'https://www.jameshardie.com/');
+ assert.equal(companyWebsite({brand:'Moen',sourceUrl:'https://www.epa.gov/watersense/'}),'https://www.moen.com/');
+});

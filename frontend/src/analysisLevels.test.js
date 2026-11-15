@@ -4,7 +4,7 @@ import { normalizeAnalysisLevel, analysisLevelLabel, routeAfterLookup, prepareHo
 import { importedHome } from './homeAdvice.js';
 
 test('levels normalize safely and route independently of saved home state', () => {
-  for (const [input, level, label, route] of [[' BROAD ', 'broad', '1. Essentials', 3], ['Moderate', 'moderate', '2. Systems', 1], ['inclusive', 'inclusive', '3. Full Audit', 29]]) {
+  for (const [input, level, label, route] of [[' BROAD ', 'broad', '1. Essentials', 3], ['Moderate', 'moderate', '2. Systems', 1], ['inclusive', 'inclusive', '3. Integral', 29]]) {
     assert.equal(normalizeAnalysisLevel(input), level);
     assert.equal(analysisLevelLabel(input), label);
     assert.equal(routeAfterLookup(input), route);
@@ -76,7 +76,7 @@ test('parent-facing aliases preserve contracts and provide full analysis labels'
   assert.equal(analysisRoute, routeAfterLookup);
   assert.equal(analysisLabel('broad'), '1. Essentials');
   assert.equal(analysisLabel('moderate'), '2. Systems');
-  assert.equal(analysisLabel('inclusive'), '3. Full Audit');
+  assert.equal(analysisLabel('inclusive'), '3. Integral');
   assert.equal(analysisLabel(undefined), '2. Systems');
   assert.equal(analysisRoute('inclusive'), 29);
 });

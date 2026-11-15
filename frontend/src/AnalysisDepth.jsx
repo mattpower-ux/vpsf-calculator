@@ -12,7 +12,7 @@ export function ModerateReview({home,update,Field,options,onReview,onInclusive})
     <p className="subhead">A quick homeowner review. Confirm what you know; leave anything uncertain unanswered.</p>
     <section className="formSection">{quickFields.map(([key,label])=><Field key={key} emptyLabel="Not sure" label={label} value={home[key] ?? ''} onChange={value=>update(key,value)} options={options[key]}/>)}</section>
     <button className="primaryButton" onClick={onReview}>Review &amp; Generate Score <ArrowRight size={18}/></button>
-    <button className="secondaryButton" onClick={onInclusive}>Switch to 3. Full Audit: document more details</button>
+    <button className="secondaryButton" onClick={onInclusive}>Switch to 3. Integral: document more details</button>
   </div>;
 }
 export function CompletenessSummary({home,expanded=false}) {
@@ -20,7 +20,7 @@ export function CompletenessSummary({home,expanded=false}) {
   return <section className="completenessSummary" aria-label="Assessment completeness"><h3>Assessment completeness</h3>
     <p>{data.documented + data.reported} of {data.total} key details supported by records or homeowner answers.</p>
     <dl className="completenessCounts"><div><dt>Documented</dt><dd>{data.documented}</dd></div><div><dt>Homeowner-reported</dt><dd>{data.reported}</dd></div><div><dt>Needs review</dt><dd>{data.review}</dd></div><div><dt>Unanswered</dt><dd>{data.unanswered}</dd></div></dl>
-    <p className="completenessNote">Completeness is separate from your VPSF score. More detail can raise or lower the score; choosing Full Audit adds no points.</p>
+    <p className="completenessNote">Completeness is separate from your VPSF score. More detail can raise or lower the score; choosing Integral adds no points.</p>
     {expanded && <details><summary>Supporting findings and next steps</summary>{data.groups.map(group=><section className="evidenceFinding" key={group.name}><h4>{group.name}</h4><ul>{group.fields.filter(f=>f.status !== 'unanswered').map(f=><li key={f.key}><strong>{f.label}:</strong> {factText(home[f.key])} <small>({{reported:'homeowner-reported',documented:'recorded evidence',review:'needs review'}[f.status]})</small></li>)}</ul><p>Useful evidence: {group.description}</p></section>)}</details>}
   </section>;
 }

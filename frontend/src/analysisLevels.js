@@ -3,7 +3,7 @@ import { wildfireAssessment } from './wildfire.js';
 const LEVELS = {
   broad: {label: '1. Essentials', route: 3},
   moderate: {label: '2. Systems', route: 1},
-  inclusive: {label: '3. Full Audit', route: 29}
+  inclusive: {label: '3. Integral', route: 29}
 };
 
 /** Unknown/non-string input preserves the legacy full-form flow, Moderate. */

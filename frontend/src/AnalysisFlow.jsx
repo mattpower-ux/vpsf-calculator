@@ -28,7 +28,7 @@ export function AnalysisEvidence({ home, onApply, onListingSelect }) {
 
 export function InclusiveIntroduction({ onContinue }) {
   return <div className="screen inclusiveIntroduction">
-    <h2>3. Full Audit</h2>
+    <h2>3. Integral</h2>
     <p className="inclusiveLead">This method will give you the most accurate VPSF score for your home.</p>
     <p>We’ll ask you to fill in some details. The more, the better.</p>
     <ul><li>Start with the property information we found.</li><li>Add details about your home’s systems and features.</li><li>Use documents or a guided photo walk to fill in gaps.</li><li>Review your information, then generate your score.</li></ul>

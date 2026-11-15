@@ -1,0 +1,36 @@
+.leadReports { color: #243141; min-width: 0; }
+.leadReports button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #bccdd8; border-radius: 8px; padding: 10px 14px; background: #fff; color: #126478; font: inherit; font-weight: 650; cursor: pointer; min-height: 44px; }
+.leadReports button:disabled { opacity: .55; cursor: default; }
+.leadReports button:hover:not(:disabled) { background: #eff6f7; }
+.leadReports :focus-visible { outline: 3px solid #15788b; outline-offset: 3px; }
+.leadReportTitle, .leadReportSummary { display: flex; justify-content: space-between; gap: 20px; align-items: center; flex-wrap: wrap; }
+.leadReportTitle h2 { margin: 0; font-size: 1.4rem; }
+.leadReportTitle p { margin: 8px 0 0; }
+.leadFilters { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; padding: 24px 0; margin: 20px 0; border-block: 1px solid #d4dfe7; }
+.leadReports label { display: grid; gap: 7px; font-weight: 650; min-width: 0; }
+.leadReports input:not([type=checkbox]), .leadReports select, .leadReports textarea { font: inherit; font-size: 16px; color: #243141; border: 1px solid #b9cbd7; border-radius: 7px; min-height: 44px; padding: 10px; width: 100%; min-width: 0; background: white; }
+.leadReports .leadCheckbox { display: flex; align-items: center; font-weight: 500; }
+.leadCheckbox input { width: 20px; height: 20px; accent-color: #13788a; }
+.leadReportHint { font-size: .9rem; color: #4d6072; max-width: 80ch; }
+.leadStatusCounts { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 16px 0; font-size: .9rem; }
+.leadRows { border-top: 1px solid #ccdbe3; }
+.leadRow { padding: 20px 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr); gap: 20px; border-bottom: 1px solid #ccdbe3; }
+.leadRow > div { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.leadRow h3 { margin: 0; font-size: 1rem; }
+.leadRow small { color: #4d6072; font-size: .875rem; }
+.leadRow button { margin-top: 4px; }
+.leadPagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+.leadReview { margin-top: 24px; padding: 24px; background: #fff; border: 1px solid #ccdbe3; border-radius: 12px; scroll-margin-top: 20px; overflow-wrap: anywhere; }
+.leadFacts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.leadFacts dt { color: #506476; font-size: .85rem; margin-bottom: 4px; }
+.leadFacts dd { margin: 0; }
+.leadAssessment { margin: 24px 0; padding-block: 16px; border-block: 1px solid #d4dfe7; }
+.leadAssessment summary { cursor: pointer; font-weight: 650; }
+.leadReview form { display: grid; gap: 16px; }
+.leadReview form p { margin: 0; font-size: .9rem; }
+.leadReports .leadPrimary { background: #13788a; color: white; justify-self: start; }
+.leadReports .leadPrimary:hover:not(:disabled) { background: #105e6c; }
+.leadError { color: #9c3023; }
+.leadEmpty { padding: 20px 0; max-width: 65ch; }
+@media (max-width: 700px) { .leadFilters { grid-template-columns: 1fr 1fr; } .leadRow { grid-template-columns: 1fr; gap: 12px; } .leadRow > div { gap: 4px; } .leadReview { padding: 16px; } }
+@media (max-width: 430px) { .leadFilters, .leadFacts { grid-template-columns: 1fr; } .leadPagination span { order: -1; width: 100%; } }

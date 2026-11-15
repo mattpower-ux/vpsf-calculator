@@ -1,3 +1,4 @@
+import WhyWeighting from "./WhyWeighting.jsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronRight, GitBranch, Plus, RotateCcw, Save, Search, Trash2 } from "lucide-react";
 import { getAdminScoredProperties, getScoringAvailableFields, getScoringCandidates, getScoringDraft, getScoringHistory, getScoringModel, previewScoringDraft, publishScoringDraft, saveScoringDraft, validateScoringDraft } from "../api/client";
@@ -110,6 +111,7 @@ export default function ScoresAndWeighting({ token }) {
       <div className="scoreBudgetHeader"><h2>Point budget</h2><strong className={total === 1000 ? "" : "invalid"}>{total} / 1,000</strong></div>
       {total !== 1000 && <div className="scoreBudgetWarning" role="alert"><AlertTriangle size={18} /> {total > 1000 ? `${total - 1000} points over budget` : `${1000 - total} points unallocated`}. Adjust pillar sliders before publishing.</div>}
       <div className="scoreBudgetGrid">{Object.entries(model.pillars).map(([id, cap]) => <label key={id}><span>{NAMES[id]}</span><input type="range" min="0" max="300" value={cap} onChange={(event) => setBudget(id, event.target.value)} /><input type="number" min="0" max="1000" value={cap} onChange={(event) => setBudget(id, event.target.value)} /></label>)}</div>
+      <WhyWeighting model={model} published={published}/>
       <div className="scoreEditorBody">
         <nav className="scorePillars" aria-label="Scoring pillars">{Object.entries(NAMES).map(([id, label]) => <button key={id} className={pillar === id ? "active" : ""} onClick={() => setPillar(id)}>{label}<span>{model.factors.filter((factor) => factor.pillar === id && factor.active).length}</span></button>)}</nav>
         <div className="scoreFactorPanel">

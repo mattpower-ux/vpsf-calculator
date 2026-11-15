@@ -56,6 +56,8 @@ def test_products_and_leads_endpoints():
         "/api/leads",
         json={
             "name": "Demo User",
+            "contactConsent": True,
+            "isDemo": True,
             "email": "demo@example.com",
             "productId": products_response.json()[0]["id"],
             "propertyAddress": "1313 Cognition Drive",

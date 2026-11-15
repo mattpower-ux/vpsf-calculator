@@ -1,4 +1,5 @@
-import { companyWebsite, leadForHome } from "./productInquiry";
+import ProductRequestForm from "./ProductRequestForm.jsx";
+import { companyWebsite, leadForHome, inquiryHomeFor } from "./productInquiry";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import DocumentUpload from "./DocumentUpload.jsx";
@@ -1042,7 +1043,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       {captureMode === "documents" && <CaptureDialog title="Upload Documents / Photos" onClose={() => setCaptureMode(null)}><DocumentUpload onApply={applyCaptureFacts}/></CaptureDialog>}
 
       <h1>Analyze an existing home</h1>
-      <p className="centerCopy">Start with an address. VPSF will prefill public records, permits, risk layers, and likely missing specs.</p>
+      <p className="centerCopy">Enter any address and the calculator will score the home's current and potential “value.”</p>
 
       <section className="existingHomeCard">
         <div className="addressLookup">
@@ -2574,31 +2575,6 @@ function EducationDetail({ education, setScreen, returnScreen }) {
 }
 
 
-function ProductRequestForm({ product, onSubmitLead, onBack }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle");
-  const submit = async event => {
-    event.preventDefault();
-    if (status === "sending" || status === "success") return;
-    setStatus("sending");
-    try { await onSubmitLead({ name: name.trim(), email: email.trim(), productId: product.id, action: "Requested specs and pricing" }); setStatus("success"); }
-    catch { setStatus("error"); }
-  };
-  return <form className="leadFormCard productLeadFormCard" onSubmit={submit}>
-    <h3>Request Specifications/Pricing</h3>
-    <p><strong>{product.name}</strong></p>
-    <p>Your name, email, and product selection will be saved with VPSF for follow-up.</p>
-    {status === "success" ? <p role="status">Your request has been saved for the VPSF team to follow up.</p> : <>
-      <label className="field fieldWide"><span>Name</span><input required maxLength={120} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label>
-      <label className="field fieldWide"><span>Email</span><input required type="email" maxLength={254} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
-      {status === "error" && <p role="alert">Your request could not be saved. Please try again. Your details are still here.</p>}
-      <button className="primaryButton" type="submit" disabled={status === "sending" || !name.trim()}>{status === "sending" ? "Submitting..." : "Submit Request"}</button>
-    </>}
-    <button className="secondaryButton" type="button" onClick={onBack}>Back to Product</button>
-  </form>;
-}
-
 function ProductCategories({ products, onChoose, setScreen }) {
   const categories = catalogCategories(products);
   return <div className="screen withNav categoryDirectory">
@@ -2681,7 +2657,7 @@ function Products({ isDemo = false, browseAll, setBrowseAll, products, recommend
   );
 }
 
-function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
+function ProductDetail({ isDemo = false, product, home, setScreen, onSubmitLead }) {
   const [showLeadForm, setShowLeadForm] = useState(!!product.openRequest);
   const allowSpecRequest = canRequestProductSpecs(product);
 
@@ -2689,7 +2665,7 @@ function ProductDetail({ isDemo = false, product, setScreen, onSubmitLead }) {
     <div className="screen productDetailScreen withNav">
       <header className="screenTop"><h2>Product Details</h2><Package size={18} /></header>
 
-      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
+      {showLeadForm && allowSpecRequest && <ProductRequestForm product={product} home={home} onSubmitLead={onSubmitLead} onBack={() => setShowLeadForm(false)} />}
 
       <section className="productHeroCard">
         {product.image ? <img src={product.image} alt={product.imageAlt || product.name} /> : <Package size={44} aria-hidden="true" />}
@@ -3422,8 +3398,9 @@ export default function App() {
     }
   };
 
+  const inquiryHome = inquiryHomeFor({resultMode, selectedProperty, hasAssessedHome, home});
   const handleSubmitLead = async (lead) => {
-    await submitLead(leadForHome(lead, home));
+    await submitLead(leadForHome(lead, inquiryHome, result, selectedProduct));
     if (queryId && !home.demoScenario) {
       await trackProgress({
         sessionId,
@@ -3679,7 +3656,7 @@ export default function App() {
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
         {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{handleCaptureApply({...parseAddressParts(facts.address || ""),...facts}); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1);}} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
-        {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
+        {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} home={inquiryHome} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={streetAddress} />}

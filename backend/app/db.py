@@ -38,6 +38,7 @@ def init_db() -> None:
     backup_before_advice_schema()
     Base.metadata.create_all(bind=engine)
     ensure_runtime_schema()
+    ensure_lead_schema()
     from app.scoring.store import seed_published
 
     with SessionLocal() as db:
@@ -117,3 +118,80 @@ def backup_before_advice_schema():
         return
     with sqlite3.connect(path) as source, sqlite3.connect(str(backup)) as target:
         source.backup(target)
+
+
+def ensure_lead_schema(bind=None) -> None:
+    """Add columns/indexes only; retain legacy contact data and unknown consent.
+
+    PostgreSQL gets a transaction advisory lock; SQLite serializes migration with
+    BEGIN IMMEDIATE. No destructive table rebuild or consent backfill is used.
+    """
+    from sqlalchemy.schema import CreateColumn
+    from app.models import LeadRecord
+    bind = bind or engine
+    backup_before_lead_schema(bind)
+    with bind.begin() as connection:
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("SELECT pg_advisory_xact_lock(789236104)"))
+        elif connection.dialect.name == "sqlite":
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
+        inspector = inspect(connection)
+        if "leads" not in inspector.get_table_names():
+            return
+        existing = {column["name"] for column in inspector.get_columns("leads")}
+        for column in LeadRecord.__table__.columns:
+            if column.name not in existing:
+                definition = str(CreateColumn(column).compile(dialect=connection.dialect))
+                connection.execute(text("ALTER TABLE leads ADD COLUMN " + definition))
+        for index in LeadRecord.__table__.indexes:
+            index.create(bind=connection, checkfirst=True)
+        connection.execute(text("UPDATE leads SET updated_at = created_at WHERE updated_at IS NULL"))
+
+
+def backup_before_lead_schema(bind=None) -> None:
+    """Publish one complete, consistent pre-migration SQLite snapshot on Render.
+
+    A temporary sibling plus atomic link avoids treating a partial backup as
+    complete or overwriting the first backup during concurrent worker startup.
+    Failure aborts migration, leaving the original database unchanged.
+    """
+    import os
+    import sqlite3
+    import tempfile
+    from contextlib import closing
+    from app.models import LeadRecord
+
+    bind = bind or engine
+    if not os.getenv("RENDER") or bind.dialect.name != "sqlite":
+        return
+    database = bind.url.database
+    if not database or database == ":memory:":
+        return
+    path = Path(database).resolve()
+    if not path.is_file():
+        return
+    backup = path.with_name("vpsf-before-leads-2026-11-15.sqlite.bak")
+    if backup.exists():
+        return
+    inspector = inspect(bind)
+    if "leads" not in inspector.get_table_names():
+        return
+    existing = {column["name"] for column in inspector.get_columns("leads")}
+    if set(LeadRecord.__table__.columns.keys()) <= existing:
+        return
+    handle, temporary_name = tempfile.mkstemp(prefix=".vpsf-leads-backup-", suffix=".tmp", dir=path.parent)
+    os.close(handle)
+    temporary = Path(temporary_name)
+    try:
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as source:
+            with closing(sqlite3.connect(str(temporary))) as target:
+                source.backup(target)
+        # Ensure database bytes are durable before the final filename is visible.
+        with temporary.open("rb+") as contents:
+            os.fsync(contents.fileno())
+        try:
+            os.link(temporary, backup)
+        except FileExistsError:
+            pass  # Another worker already published the one-time snapshot.
+    finally:
+        temporary.unlink(missing_ok=True)

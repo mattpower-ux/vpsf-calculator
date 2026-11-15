@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import false, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -190,6 +190,22 @@ class LeadRecord(Base):
     zip: Mapped[str | None] = mapped_column(String(20), nullable=True)
     action: Mapped[str] = mapped_column(String(120), default="Requested info")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    intent: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    timeline: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    scope: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    product_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    manufacturer: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_consent: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    share_consent: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    assessment_context: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
+    status: Mapped[str] = mapped_column(String(30), default="new", server_default="new", index=True)
+    admin_notes: Mapped[str] = mapped_column(Text, default="", server_default="")
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=True)
+    dedup_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
 
 
 class ApiUsageRecord(Base):

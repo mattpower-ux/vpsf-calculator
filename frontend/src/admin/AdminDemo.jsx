@@ -1,3 +1,4 @@
+import LeadReports from "./LeadReports.jsx";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, loginAdmin, updateProductWeighting } from "../api/client";
 import cognitionIcon from "../assets/cognition-icon.png";
@@ -220,13 +221,6 @@ const users = [
   }
 ];
 
-const reports = [
-  { name: "Manufacturer Lead Summary", period: "Last 30 days", metric: "82 leads", trend: "+18%" },
-  { name: "Top Viewed Products", period: "Last 30 days", metric: "416 views", trend: "+34%" },
-  { name: "Property Query Volume", period: "Last 30 days", metric: "129 homes", trend: "+22%" },
-  { name: "Water Upgrade Demand", period: "Last 30 days", metric: "47 matches", trend: "+41%" }
-];
-
 function Badge({ children, tone }) {
   return <span className={`badge ${tone || ""}`}>{children}</span>;
 }
@@ -311,10 +305,10 @@ function Header({ active }) {
             ? "Manage brand and product priority weighting across the seven VPSF pillars."
             : active === "Scores and Weighting"
               ? "Inspect and publish the seven-pillar scoring model."
-            : "Demo admin workspace for monitoring prototype activity, product interest, and property scoring."}
+            : active === "Reports" ? "Review inquiries and build reports from saved product requests." : "VPSF administration"}
         </p>
       </div>
-      {active !== "Scores and Weighting" && <div className="headerActions">
+      {!["Scores and Weighting", "Reports"].includes(active) && <div className="headerActions">
         <button><Download size={17} /> Export</button>
         <button className="primary">Save Changes</button>
       </div>}
@@ -614,225 +608,6 @@ function UsersPage() {
 }
 
 
-const certainTeedLeads = [
-  {
-    user: "realtor.demo@brokerage.com",
-    role: "Realtor",
-    product: "CertainTeed Solaris Cool Roof Shingles",
-    property: "1313 Cognition Drive",
-    zip: "32101",
-    vpsfScore: 520,
-    ip: "104.28.78.12",
-    action: "Requested specs",
-    date: "Today 10:42 AM"
-  },
-  {
-    user: "builder.demo@company.com",
-    role: "Builder",
-    product: "CertainTeed Solaris Cool Roof Shingles",
-    property: "902 Palm Ridge Ct.",
-    zip: "32601",
-    vpsfScore: 488,
-    ip: "172.68.12.50",
-    action: "Viewed matching product",
-    date: "Yesterday"
-  },
-  {
-    user: "m.power@greenbuildermedia.com",
-    role: "Admin Demo",
-    product: "CertainTeed Solaris Cool Roof Shingles",
-    property: "44 Harbor View Dr.",
-    zip: "32202",
-    vpsfScore: 742,
-    ip: "172.59.67.154",
-    action: "Created score card",
-    date: "May 30"
-  }
-];
-
-function Reports({ products }) {
-  const [summaryProduct, setSummaryProduct] = useState("CertainTeed Solaris Cool Roof Shingles");
-  const [manufacturer, setManufacturer] = useState("CertainTeed");
-  const [reportType, setReportType] = useState("CSV spreadsheet");
-  const [isAssembling, setIsAssembling] = useState(false);
-  const [showLeadPreview, setShowLeadPreview] = useState(false);
-
-  const productNames = products.map((item) => `${item.brand} ${item.product}`);
-  const matchedProducts = products.filter((item) =>
-    `${item.brand} ${item.product}`.toLowerCase().includes(manufacturer.toLowerCase())
-  );
-
-  const runLeadReport = () => {
-    setShowLeadPreview(false);
-    setIsAssembling(true);
-    window.setTimeout(() => {
-      setIsAssembling(false);
-      setShowLeadPreview(true);
-    }, 3000);
-  };
-
-  return (
-    <div className="reportsPage">
-      <div className="gridPage">
-        {reports.map((item) => (
-          <section className="reportCard" key={item.name}>
-            <FileText size={22} />
-            <h2>{item.name}</h2>
-            <p>{item.period}</p>
-            <strong>{item.metric}</strong>
-            <Badge tone="green">{item.trend}</Badge>
-          </section>
-        ))}
-      </div>
-
-      <section className="customReportGrid">
-        <article className="customReportCard">
-          <h2>Create Custom Summary</h2>
-          <p>Select a brand/product currently in the recommendation database.</p>
-          <label>
-            <span>Brand / Product</span>
-            <select value={summaryProduct} onChange={(event) => setSummaryProduct(event.target.value)}>
-              {productNames.map((name) => <option key={name}>{name}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Report Format</span>
-            <select>
-              <option>.txt summary</option>
-              <option>.CSV spreadsheet</option>
-              <option>Other</option>
-            </select>
-          </label>
-          <button className="primaryReportButton">Create Summary</button>
-        </article>
-
-        <article className="customReportCard">
-          <h2>Create Custom Lead Report</h2>
-          <p>Type a manufacturer name. Matching products will populate automatically.</p>
-          <label>
-            <span>Manufacturer</span>
-            <input value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} />
-          </label>
-          <div className="matchedProductBox">
-            <strong>Matched Products</strong>
-            {matchedProducts.length ? matchedProducts.map((item) => (
-              <span key={`${item.brand}-${item.product}`}>{item.product}</span>
-            )) : <em>No products found</em>}
-          </div>
-          <label>
-            <span>Report Format</span>
-            <select value={reportType} onChange={(event) => setReportType(event.target.value)}>
-              <option>.CSV spreadsheet</option>
-              <option>.txt file</option>
-              <option>Other</option>
-            </select>
-          </label>
-          <button className="primaryReportButton" onClick={runLeadReport}>Generate Lead Report</button>
-        </article>
-      </section>
-
-      {isAssembling && (
-        <section className="assemblingReport">
-          <div className="reportSpinner" />
-          <h2>Assembling custom lead report</h2>
-          <p>{manufacturer} · {reportType}</p>
-        </section>
-      )}
-
-      {showLeadPreview && (
-        <section className="tablePanel fullPanel leadPreviewPanel fullWidthLeadPreview">
-          <div className="tablePanelHeader">
-            <div><FileText size={30} /><span><h2>CertainTeed Lead Report Preview</h2><p>Demo export preview for CertainTeed Solaris Cool Roof Shingles.</p></span></div>
-            <button><Download size={16} /> Download CSV</button>
-          </div>
-          <table className="spreadsheetTable">
-            <thead>
-              <tr>
-                <th>User / Email</th>
-                <th>Role</th>
-                <th>Product</th>
-                <th>Property</th>
-                <th>ZIP</th>
-                <th>VPSF Score</th>
-                <th>IP Address</th>
-                <th>Action</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {certainTeedLeads.map((item) => (
-                <tr key={`${item.user}-${item.date}`}>
-                  <td><strong>{item.user}</strong></td>
-                  <td>{item.role}</td>
-                  <td>{item.product}</td>
-                  <td>{item.property}</td>
-                  <td>{item.zip}</td>
-                  <td>{item.vpsfScore}</td>
-                  <td>{item.ip}</td>
-                  <td>{item.action}</td>
-                  <td>{item.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      <section className="prospectAnalysisPanel">
-        <div className="prospectHeader">
-          <div>
-            <h2>Prospect Analysis</h2>
-            <p>AI-assisted lead context for CertainTeed Solaris roofing opportunities.</p>
-          </div>
-          <Badge tone="green">OpenAI Context Layer</Badge>
-        </div>
-
-        <div className="prospectGrid">
-          <article className="prospectCard">
-            <span>Client Region</span>
-            <strong>Florida / Southeast</strong>
-            <div className="regionChips">
-              <em>Orlando</em>
-              <em>Jacksonville</em>
-              <em>Gainesville</em>
-            </div>
-            <p>Lead activity is clustering in hot, humid markets with storm exposure and rising cooling-cost sensitivity.</p>
-          </article>
-
-          <article className="prospectCard">
-            <span>Age of Current Roof / Product</span>
-            <strong>12–17 years</strong>
-            <div className="roofAgeMeter">
-              <i style={{ width: "76%" }} />
-            </div>
-            <p>Many queried homes are near or past the typical replacement planning window for asphalt shingles.</p>
-          </article>
-
-          <article className="prospectCard">
-            <span>Lead Temperature</span>
-            <div className="leadTempWrap">
-              <div className="leadTempGauge"><b>74%</b></div>
-              <strong>Warm / Ready Soon</strong>
-            </div>
-            <p>Signals suggest strong near-term interest: multiple product views, older roof age, and repeated roofing recommendation clicks.</p>
-          </article>
-
-          <article className="prospectCard smartContextCard">
-            <span>Smart Context</span>
-            <strong>3 lead clusters detected</strong>
-            <ul>
-              <li><b>Storm Recovery:</b> regions with severe hurricane damage and insurance pressure.</li>
-              <li><b>Heat Failure:</b> markets where high heat may accelerate roof aging.</li>
-              <li><b>HOA Constraint:</b> communities requiring asphalt-style appearance.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-
 function ScoringControlsPage() {
   const [activeProfile, setActiveProfile] = useState("Midwest Rural");
   const [factorValues, setFactorValues] = useState(() => cloneFactors(regionalWeightingProfiles["Midwest Rural"].factors));
@@ -1011,7 +786,7 @@ export default function AdminDemo() {
     "Eco-Tips": <EcoTips token={adminToken}/>,
     "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
     Users: <UsersPage />,
-    Reports: <Reports products={products} />,
+    Reports: <LeadReports products={products} token={adminToken} />,
     Settings: <GenericPage title="Settings" />
   }[active];
 

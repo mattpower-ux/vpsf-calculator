@@ -156,6 +156,17 @@ export async function submitLead(lead) {
   });
 }
 
+function leadReportQuery(filters = {}) {
+  return new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== "" && value != null)).toString();
+}
+export const getLeadReport = (token, filters) => request(`/api/admin/reports/leads?${leadReportQuery(filters)}`, adminOptions(token));
+export const updateLead = (token, id, payload) => request(`/api/admin/leads/${id}`, adminOptions(token, {method: "PATCH", body: JSON.stringify(payload)}));
+export async function exportLeadReport(token, filters) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/reports/leads/export?${leadReportQuery(filters)}`, adminOptions(token));
+  if (!response.ok) throw new Error("The report could not be exported. Please retry or sign in again.");
+  return response.blob();
+}
+
 export async function trackPropertyQuery(payload) {
   return optionalRequest("/api/tracking/property-query", {
     method: "POST",

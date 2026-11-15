@@ -199,35 +199,6 @@ async def leads(_: None = Depends(require_admin_session), db: Session = Depends(
     ]
 
 
-@router.get("/reports/leads")
-async def lead_report(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> dict:
-    records = db.scalars(select(LeadRecord).order_by(LeadRecord.created_at.desc()).limit(500)).all()
-    by_product: dict[str, int] = {}
-    by_zip: dict[str, int] = {}
-    for record in records:
-        if record.product_id:
-            by_product[record.product_id] = by_product.get(record.product_id, 0) + 1
-        if record.zip:
-            by_zip[record.zip] = by_zip.get(record.zip, 0) + 1
-    return {
-        "total": len(records),
-        "byProduct": by_product,
-        "byZip": by_zip,
-        "rows": [
-            {
-                "id": record.id,
-                "email": record.email,
-                "productId": record.product_id,
-                "propertyAddress": record.property_address,
-                "zip": record.zip,
-                "action": record.action,
-                "createdAt": record.created_at,
-            }
-            for record in records
-        ],
-    }
-
-
 @router.get("/property-queries")
 async def property_queries(_: None = Depends(require_admin_session), db: Session = Depends(get_db)) -> list[dict]:
     return list_property_queries(db)
@@ -267,3 +238,8 @@ async def product_metadata(product_id: str, payload: MetadataUpdate, _: None = D
             raise HTTPException(409, "Product changed; reload before saving")
         db.commit()
     return next(p for p in list_products(db) if p.id == product_id)
+
+
+# Shared authenticated report/export/lifecycle routes.
+from app.routers.admin_leads import router as lead_reports_router
+router.include_router(lead_reports_router)

@@ -190,19 +190,8 @@ def upsert_educational_content(
 
 
 def create_lead(db: Session, lead: LeadRequest) -> LeadRecord:
-    record = LeadRecord(
-        email=lead.email,
-        name=lead.name,
-        role=lead.role,
-        product_id=lead.productId,
-        property_address=lead.propertyAddress,
-        zip=lead.zip,
-        action=lead.action,
-    )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
-    return record
+    from app.lead_workflow import create_lead as save_lead
+    return save_lead(db, lead)
 
 
 def current_usage_period() -> str:

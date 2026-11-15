@@ -1,0 +1,16 @@
+.productLeadFormCard { text-align: left; }
+.productLeadFormCard fieldset { border: 0; padding: 0; margin: 24px 0; min-width: 0; display: grid; gap: 14px; }
+.productLeadFormCard legend { font-weight: 750; font-size: 1.15rem; margin-bottom: 12px; }
+.productLeadFormCard .inquiryProduct { margin-top: 6px; }
+.productLeadFormCard .field { min-width: 0; margin: 0; }
+.productLeadFormCard input:not([type=checkbox]), .productLeadFormCard select, .productLeadFormCard textarea { width: 100%; min-width: 0; font: inherit; font-size: 16px; padding: 12px; border: 1px solid #b9cdd2; border-radius: 9px; background: white; color: #243141; }
+.productLeadFormCard textarea { resize: vertical; }
+.productLeadFormCard small { font-weight: 400; color: #526675; }
+.inquiryGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.inquiryConsent { display: flex; gap: 10px; align-items: flex-start; font-size: .94rem; line-height: 1.4; cursor: pointer; }
+.inquiryConsent input { flex: 0 0 20px; width: 20px; height: 20px; margin: 3px 0 0; accent-color: #13788a; }
+.inquiryProperty, .inquirySuccess { background: #eff7f6; padding: 12px; border-radius: 10px; }
+.inquirySuccess h4 { margin: 0; }
+.productLeadFormCard :focus-visible { outline: 3px solid #13788a; outline-offset: 3px; }
+.productLeadFormCard button:disabled { opacity: .65; cursor: wait; }
+@media(max-width: 390px) { .inquiryGrid { grid-template-columns: 1fr; } }

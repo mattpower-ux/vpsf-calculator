@@ -1,3 +1,4 @@
+from app.lead_schemas import LeadRequest, LeadResponse
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
@@ -218,21 +219,6 @@ class EducationalContentUpsert(BaseModel):
     vpsf: str
     source: str = "deepthink"
     sourceUrl: str | None = None
-
-
-class LeadRequest(BaseModel):
-    name: str | None = None
-    email: str | None = None
-    role: str | None = None
-    productId: str | None = None
-    propertyAddress: str | None = None
-    zip: str | None = None
-    action: str = "Requested info"
-
-
-class LeadResponse(BaseModel):
-    id: int
-    status: str = "accepted"
 
 
 class AdminSummary(BaseModel):

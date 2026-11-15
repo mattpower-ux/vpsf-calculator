@@ -1571,12 +1571,7 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
       {pillar.key === "resilience" && result.explanations?.resilience && (
         <div className="sourceNote resilienceSummary"><p>{result.explanations.resilience}</p>{resilienceRecordNotes(home) && <p><em>{resilienceRecordNotes(home)}</em></p>}</div>
       )}
-      {pillar.key === "resilience" && <section className="copyCard">
-        <h3>Understanding Resilience</h3>
-        <p>{educationFallbacks.resilience.intro}</p>
-        <p>{educationFallbacks.resilience.background}</p>
-        <ul className="smartSummaryList">{educationFallbacks.resilience.howItWorks.map(item => <li key={item}><Check size={15} />{item}</li>)}</ul>
-      </section>}
+      <button type="button" className="textLink" onClick={()=>setScreen(26)}>About this pillar <ArrowRight size={15}/></button>
       {assessedCommunity && result.walkability?.status === "available" && <p className="sourceNote">EPA National Walkability Index: {result.walkability.value.toFixed(1)} / 20, 2019 census block group {result.walkability.blockGroup}. <a href={result.walkability.sourceUrl} target="_blank" rel="noreferrer">EPA source</a></p>}
 
       <section className="prosConsGrid">
@@ -1625,6 +1620,12 @@ function PillarDefinitionScreen({ selectedPillar, setScreen, onOpenArchive }) {
     <div className="screen pillarDefinitionScreen withNav">
       <header className="screenTop"><h2>{PILLAR_DETAILS[pillar.key].title}</h2><Icon size={19} /></header>
       <p className="pillarDefinitionIntro">{content.intro}</p>
+      {pillar.key === "resilience" && <section className="copyCard">
+        <h3>Understanding Resilience</h3>
+        <p>{educationFallbacks.resilience.intro}</p>
+        <p>{educationFallbacks.resilience.background}</p>
+        <ul className="smartSummaryList">{educationFallbacks.resilience.howItWorks.map(item => <li key={item}><Check size={15} />{item}</li>)}</ul>
+      </section>}
       <section className="pillarDefinitionTopics">
         <h3>What This Pillar Covers</h3>
         <ul>
@@ -3297,7 +3298,9 @@ export default function App() {
   const advice = useHomeAdvice(adviceHome, resultMode === "demo" ? undefined : result?.modelVersion, Boolean(result));
   const recommendedProducts = joinAdviceProducts(products, advice.data);
   const ecoTip = useEcoTip(menuVisit, home.climateZone);
+  const pillarAboutReturnRef = useRef(null);
   const navigateFromUI = (target) => {
+    if (target === 26) pillarAboutReturnRef.current = screen === 10 ? 10 : null;
     if (target === 16) { setBrowseAll(false); setActivePillar(selectedRecommendation.pillar); setActiveCategory(null); }
     if (target === 28) { setActiveCategory(null); setActivePillar(null); }
     if (target === 7 && ![28, 13].includes(screen)) setActiveCategory(null);
@@ -3518,6 +3521,7 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
+    if (screen === 26 && pillarAboutReturnRef.current !== null) {setScreen(pillarAboutReturnRef.current);pillarAboutReturnRef.current=null;return;}
     if (screen === 11) { setScreen(0); return; }
     if (screen === 27) {
       setScreen(25);

@@ -10,13 +10,15 @@
 - Exterior image follows the address input; Change exterior photo opens a file picker. Real-address Street View lookup requires GOOGLE_STREET_VIEW_API_KEY on the API service and otherwise offers upload fallback.
 - Four visible listing tiles open source-specific URL/ID forms. Public structured listing data can be imported; restricted listings and number-only searches offer address/document fallback rather than fabricated data.
 - Removed the source-note callout on Review & Confirm. No Add Photos action is present there.
+- Every scored pillar has an About this pillar link to its score-free definition, with Back returning to the scored pillar. The full Understanding Resilience background is on the definition page, not the individual home's results.
 
 ## Verification
 
 - Frontend: 101 tests; production build passes (existing bundle-size advisory remains).
-- Backend: full regression suite, including URL SSRF protection, multipart bounds, photo evidence schema, structured listing imports, and shared inference rate/concurrency limits.
+- Backend: 243 tests passed, including URL SSRF protection, multipart bounds, photo evidence schema, structured listing imports, and shared inference rate/concurrency limits.
 - Browser: phone portrait, phone landscape, and laptop dialog bounds; six thumbnails; animated processing; automatic editable-details return; correction persists into Home Specs; review callout absent. Deterministic local provider fixtures used for transition testing; production provider smoke test performed after release.
 - Physical iOS/Android camera hardware is not available in desktop browser testing. The photo input uses capture="environment"; users can upload when native capture is unavailable.
+- Production Mistral smoke test returned HTTP 200 and eight reviewable observations from the six generated photos. The live UI returned to editable details. Public PDF URL extraction and API health both returned 200. Both tested real-address photo requests returned not_configured; a Street View key is still required for automatic real-address photos.
 
 ## Assets and limits
 

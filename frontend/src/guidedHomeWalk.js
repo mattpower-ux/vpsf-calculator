@@ -1,14 +1,14 @@
 export const MAX_PHOTOS = 12;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const STEPS = [
-  ['kitchen', 'Kitchen appliances', 'Capture appliance fronts and readable model labels. Appliance details do not currently map to an assessment field.'],
+  ['kitchen', 'Kitchen appliances', 'Capture appliance fronts and readable model labels. Visible details are saved as review notes; efficiency requires readable labels.'],
   ['roof', 'Exterior roof', 'From the ground, capture roof covering and any solar panels. Never climb onto the roof.'],
   ['siding', 'Exterior siding', 'Capture a wall and a close-up of the siding. A product label helps distinguish lookalike materials.'],
   ['landscaping', 'Exterior landscaping', 'Capture planting beds and visible irrigation or rainwater equipment.'],
   ['bath', 'Bath fixtures', 'Capture fixtures and readable product labels. Include water-heating or leak equipment if safely accessible.'],
   ['hvac', 'HVAC equipment', 'Capture equipment and its readable nameplate. Do not remove covers or touch wiring.'],
-  ['flooring', 'Flooring', 'Capture the floor surface. Flooring does not currently map to an assessment field; appearance cannot verify VOCs.'],
-  ['windows', 'Windows', 'Capture windows and readable labels. Glazing and insulation performance need documentation; photos cannot establish them.'],
+  ['flooring', 'Flooring', 'Capture the floor surface. Include installation records for age. Appearance cannot verify age or VOCs.'],
+  ['windows', 'Windows', 'Capture windows and readable labels. Glazing performance needs a readable product label or record, not appearance.'],
 ];
 export const OPTIONS = {
   hvac: ['Heat Pump (Electric)', 'Geothermal', 'Gas Furnace', 'Electric Resistance', 'Boiler', 'Combination Boiler', 'Hydronic Heating'],
@@ -20,8 +20,32 @@ export const OPTIONS = {
   reuse: ['Rainwater Harvesting', 'Greywater'],
   landscape: ['Drought-Tolerant Landscaping', 'Standard Landscaping', 'High-Water Landscaping'],
 };
+export const TEXT_FIELDS = new Set(["kitchenAppliances", "faucetBrandModel", "faucetRatedFlow", "toiletBrandModel", "toiletRatedFlush", "lightingRatedPower", "thermostatBrandModel", "windowGlazing", "soffitEmberResistance"]);
+const CORE_FIELDS = new Set([...Object.keys(OPTIONS), 'hvacAge', 'roofAge']);
+for (const field of ["hvacAge", "roofAge", "sidingAge", "flooringAge"]) OPTIONS[field] = Array.from({length: 151}, (_, age) => String(age));
+for (const field of TEXT_FIELDS) OPTIONS[field] = [];
+Object.assign(OPTIONS, {"paintCondition": ["Peeling or flaking paint visible", "Cracking or blistering paint visible", "Staining visible on painted surface", "Painted surface visible; condition unclear"], "landscapingFuelHazards": ["Vegetation touches siding", "Combustible debris visible near building", "Wood mulch visible against building", "Dense vegetation visible near building", "Landscaping visible; fuel hazards unclear"], "soffitCondition": ["Open gaps visible", "Screened vent visible; rating unverified", "Solid soffit visible; rating unverified"], "flooringType": ["Wood-like flooring visible", "Tile flooring visible", "Carpet visible", "Resilient flooring visible", "Floor surface visible; material unclear"], "lightingType": ["LED (label verified)", "Incandescent (label verified)", "Fluorescent tube visible", "Lighting fixture visible; lamp type unverified"], "thermostatControls": ["Programmable (documented)", "Smart (documented)"], "windowCondition": ["Condensation visible", "Cracked glass visible", "Window visible; glazing performance unverified"]});
+export const FIELD_META = Object.fromEntries(Object.keys(OPTIONS).map(field => [field, {
+  target: CORE_FIELDS.has(field) ? field : 'photoObservations',
+  input: TEXT_FIELDS.has(field) ? 'text' : 'select', maxLength: 300,
+}]));
+export function validWalkValue(field, value) {
+  if (!Object.hasOwn(OPTIONS, field) || typeof value !== 'string' || !value.trim() || value.length > 300 || /[\x00-\x1f\x7f]/.test(value) || ['unknown', 'n/a', 'none', 'not visible', 'unverified'].includes(value.trim().toLowerCase())) return false;
+  if (!TEXT_FIELDS.has(field)) return OPTIONS[field].includes(value);
+  if (field === 'faucetRatedFlow') return /\b\d+(?:\.\d+)?\s*(?:gpm|l\/min|lit(?:er|re)s? per minute)\b/i.test(value);
+  if (field === 'toiletRatedFlush') return /\b\d+(?:\.\d+)?\s*(?:gpf|lpf|lit(?:er|re)s? per flush)\b/i.test(value);
+  if (field === 'lightingRatedPower') return /\b\d+(?:\.\d+)?\s*(?:w|watts?)\b/i.test(value);
+  return true;
+}
 export function confirmedFacts(rows) {
-  return Object.fromEntries(rows.filter(row => row.confirmed === true && Object.hasOwn(OPTIONS, row.field) && OPTIONS[row.field].includes(row.value)).map(row => [row.field, row.value]));
+  const facts = {}, observations = {};
+  for (const row of rows) {
+    if (!row || row.confirmed !== true || !validWalkValue(row.field, row.value)) continue;
+    if (CORE_FIELDS.has(row.field)) facts[row.field] = row.value;
+    else observations[row.field] = row.value;
+  }
+  if (Object.keys(observations).length) facts.photoObservations = observations;
+  return facts;
 }
 export function validateVideo(file) {
   if (!file.size || file.size > 100 * 1024 * 1024) throw new Error('Choose a video no larger than 100 MB.');
@@ -96,7 +120,7 @@ export async function analyzeWalkImages(images, topic, signal) {
   try { data = await response.json(); } catch { throw new Error('Home Walk service returned an unreadable response.'); }
   if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Home Walk analysis failed. Please try again.');
   if (!Array.isArray(data.suggestions)) throw new Error('Home Walk returned invalid suggestions.');
-  return data.suggestions.filter(row => Object.hasOwn(OPTIONS, row.field) && OPTIONS[row.field].includes(row.value) && typeof row.evidence === 'string' && typeof row.uncertainty === 'string' && Array.isArray(row.image_indices) && row.image_indices.length && row.image_indices.every(i => Number.isInteger(i) && i >= 1 && i <= images.length));
+  return data.suggestions.filter(row => row && validWalkValue(row.field, row.value) && typeof row.evidence === 'string' && typeof row.uncertainty === 'string' && Array.isArray(row.image_indices) && row.image_indices.length && row.image_indices.every(i => Number.isInteger(i) && i >= 1 && i <= images.length));
 }
 
 export function imageBatches(images) {
@@ -111,3 +135,19 @@ export function imageBatches(images) {
   if (batch.length) batches.push(batch);
   return batches;
 }
+
+export const FIELD_LABELS = {
+  hvac: 'HVAC type', hvacAge: 'HVAC age (documented years)',
+  waterHeater: 'Water heater type', roof: 'Roofing type', roofAge: 'Roof age (documented years)',
+  siding: 'Siding type', sidingAge: 'Siding age (documented years)', solar: 'Solar equipment',
+  leak: 'Leak detection', reuse: 'Water reuse', landscape: 'Landscaping',
+  kitchenAppliances: 'Kitchen appliance observations', paintCondition: 'Visible paint condition',
+  landscapingFuelHazards: 'Visible landscaping fuel hazards', soffitCondition: 'Visible soffit condition',
+  soffitEmberResistance: 'Documented soffit ember resistance', flooringType: 'Visible flooring type',
+  flooringAge: 'Flooring age (documented years)', faucetBrandModel: 'Faucet brand / model',
+  faucetRatedFlow: 'Faucet label flow rating', toiletBrandModel: 'Toilet brand / model',
+  toiletRatedFlush: 'Toilet label flush rating', lightingType: 'Lighting type',
+  lightingRatedPower: 'Lighting label power rating', thermostatBrandModel: 'Thermostat brand / model',
+  thermostatControls: 'Documented thermostat controls', windowGlazing: 'Documented window glazing',
+  windowCondition: 'Visible window condition',
+};

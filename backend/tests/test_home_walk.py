@@ -100,5 +100,58 @@ def test_unknown_topics_cannot_be_injected(client):
 
 def test_allowlist_is_a_subset_of_actual_property_fields():
     from app.schemas import PropertyInput
-    from app.ocr.home_walk import OPTIONS
-    assert set(OPTIONS) <= set(PropertyInput.model_fields)
+    from app.ocr.home_walk import CORE_FIELDS
+    assert CORE_FIELDS <= set(PropertyInput.model_fields)
+
+
+def test_new_observations_are_whitelisted_and_sensitive_labels_required():
+    visible = suggestion('paintCondition', 'Peeling or flaking paint visible')
+    assert clean_suggestions({'suggestions': [visible]}, 'siding', 1) == [visible]
+    for field, value in [('faucetBrandModel', 'Acme model A'), ('toiletRatedFlush', '1.28 gpf'), ('soffitEmberResistance', 'ASTM E2886 on label'), ('thermostatControls', 'Smart (documented)')]:
+        item = suggestion(field, value)
+        assert clean_suggestions({'suggestions': [item]}, 'all', 1) == []
+        item['basis'] = 'label'
+        assert clean_suggestions({'suggestions': [item]}, 'all', 1) == [item]
+    assert clean_suggestions({'suggestions': [suggestion('kitchenAppliances', 'x' * 301)]}, 'kitchen', 1) == []
+
+
+def test_age_requires_explicit_installation_date_and_correct_elapsed_years():
+    from datetime import date
+    today = date.today()
+    installed = date(today.year - 5, 1, 1).isoformat()
+    item = {**suggestion('roofAge', '5'), 'basis': 'label', 'evidence': f'Image 1 installation record: installed {installed}.'}
+    assert clean_suggestions({'suggestions': [item]}, 'roof', 1) == [item]
+    for patch in ({'basis': 'visible'}, {'value': '20'}, {'evidence': f'Manufactured {installed}'}, {'evidence': 'Looks about five years old'}):
+        assert clean_suggestions({'suggestions': [{**item, **patch}]}, 'roof', 1) == []
+
+
+def test_photo_observations_round_trip_without_scoring_fields():
+    from app.schemas import PropertyInput
+    from pydantic import ValidationError
+    home = PropertyInput(photoObservations={'paintCondition': 'Peeling or flaking paint visible'})
+    assert home.model_dump()['photoObservations']['paintCondition'] == 'Peeling or flaking paint visible'
+    with pytest.raises(ValidationError): PropertyInput(photoObservations={'paintCondition': 'x' * 301})
+
+
+def test_every_walk_topic_allows_observations():
+    from app.ocr.home_walk import TOPICS
+    assert all(TOPICS[topic] for topic in ['kitchen', 'roof', 'siding', 'landscaping', 'bath', 'hvac', 'flooring', 'windows'])
+
+
+def test_observation_notes_do_not_change_scores():
+    from app.schemas import PropertyInput
+    from app.scoring import score_home
+    before = PropertyInput()
+    after = PropertyInput(photoObservations={'paintCondition': 'Peeling or flaking paint visible', 'thermostatControls': 'Smart (documented)'})
+    assert score_home(before) == score_home(after)
+
+
+def test_provider_kitchen_observation_is_preserved(client, monkeypatch):
+    item = {**suggestion('kitchenAppliances', 'Refrigerator and electric range visible'), 'evidence': 'Image 1 shows a refrigerator and a range with a smooth cooktop.'}
+    async def post(self, url, **kwargs):
+        assert 'kitchenAppliances' in kwargs['json']['messages'][0]['content']
+        return httpx.Response(200, request=httpx.Request('POST', url), json={'choices': [{'message': {'content': json.dumps({'suggestions': [item]})}}]})
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
+    response = client.post('/api/home-walk/analyze', data={'topic': 'kitchen'}, files=[('images', ('kitchen.png', PNG, 'image/png'))])
+    assert response.status_code == 200
+    assert response.json()['suggestions'] == [item]

@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 
 class WildfireRisk(BaseModel):
@@ -39,6 +39,7 @@ class FieldProvenance(BaseModel):
 class PropertyInput(BaseModel):
     demoScenario: str = ""
     siding: str = "Unknown"
+    photoObservations: dict[Annotated[str, StringConstraints(max_length=80)], Annotated[str, StringConstraints(max_length=300, strict=True)]] = Field(default_factory=dict, max_length=32)
     provenance: dict[str, FieldProvenance] = Field(default_factory=dict)
     address: str = ""
     city: str = ""

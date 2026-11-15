@@ -70,3 +70,26 @@ test('batches bound both count and multipart bytes without dropping images', asy
   assert.equal(batches.flat().length, 12);
   assert.deepEqual(imageBatches(large.map(() => ({ file: { size: 50 } }))).map(batch => batch.length), [6, 6]);
 });
+
+test('confirmed observations remain separate from core assessment fields', () => {
+  assert.deepEqual(confirmedFacts([
+    { field: 'roof', value: 'Metal Roof', confirmed: true },
+    { field: 'paintCondition', value: 'Peeling or flaking paint visible', confirmed: true },
+    { field: 'faucetBrandModel', value: 'Acme model A', confirmed: true },
+    { field: 'toiletRatedFlush', value: '1.28 gpf', confirmed: false },
+    { field: 'kitchenAppliances', value: 'x'.repeat(301), confirmed: true },
+  ]), { roof: 'Metal Roof', photoObservations: {paintCondition: 'Peeling or flaking paint visible', faucetBrandModel: 'Acme model A'} });
+});
+
+test('every observation field has input metadata and a review label', async () => {
+  const { OPTIONS, TEXT_FIELDS, FIELD_META, FIELD_LABELS, validWalkValue } = await import('./guidedHomeWalk.js');
+  for (const field of Object.keys(OPTIONS)) {
+    assert.ok(FIELD_LABELS[field], field);
+    assert.equal(FIELD_META[field].input, TEXT_FIELDS.has(field) ? 'text' : 'select');
+  }
+  assert.equal(FIELD_META.faucetBrandModel.target, 'photoObservations');
+  assert.equal(FIELD_META.roofAge.target, 'roofAge');
+  assert.equal(validWalkValue('faucetRatedFlow', 'efficient'), false);
+  assert.equal(validWalkValue('faucetRatedFlow', '1.5 gpm'), true);
+  assert.equal(validWalkValue('toiletRatedFlush', 'Unknown'), false);
+});

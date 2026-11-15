@@ -30,7 +30,7 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
   const canSketch = Boolean(imported || demo || found?.derivativesAllowed);
   const options = [['broad',analysisLevelLabel('broad'),'Public records'],['moderate',analysisLevelLabel('moderate'),'Confirm key features'],['inclusive',analysisLevelLabel('inclusive'),'Document your home']];
   const imageFailed = () => { setRemote(null); setLocal(null); setError('This photo could not be displayed. Please choose another.'); };
-  return <section className="addressPhoto analysisChoices" aria-label="Level of Analysis Desired" aria-busy={busy}>
+  return <section className="addressPhoto analysisChoices" aria-label="Level of Audit Desired" aria-busy={busy}>
     <svg width="0" height="0" aria-hidden="true" className="sketchFilters"><defs>
       <filter id={`${filterId}-line`} colorInterpolationFilters="sRGB">
         <feColorMatrix type="saturate" values="0"/>
@@ -44,7 +44,7 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
       </filter>
     </defs></svg>
     {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
-    <h2>Level of Analysis Desired</h2>
+    <h2>Level of Audit Desired</h2>
     <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label}: ${caption}`}>
       <span className="analysisChoiceImage">
         <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>

@@ -1,3 +1,4 @@
+import { pillarActionSummary } from './pillarActionSummary.js';
 import { ModerateReview, InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { AnalysisEvidence, InclusiveIntroduction, BroadReview } from './AnalysisFlow.jsx';
@@ -1561,12 +1562,11 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
         </div>
         <div>
           <em>{pillarPerformanceLabel(value, pillar.max)}</em>
-          <p>{pillar.key === "resilience" && value < 140 && <><strong>MORE RESILIENCE NEEDED</strong><br /></>}{details.summary}</p>
+          <p>{pillar.key === "resilience" && value < 140 && <><strong>MORE RESILIENCE NEEDED</strong><br /></>}{pillarActionSummary(pillar.key, home)}</p>
         </div>
       </section>
 
-      <button type="button" className="textLink" onClick={()=>setScreen(26)}>About this pillar <ArrowRight size={15}/></button>
-      {assessedCommunity && result.walkability?.status === "available" && <p className="sourceNote">EPA National Walkability Index: {result.walkability.value.toFixed(1)} / 20, 2019 census block group {result.walkability.blockGroup}. <a href={result.walkability.sourceUrl} target="_blank" rel="noreferrer">EPA source</a></p>}
+
 
       <section className="prosConsGrid">
         <article className="prosCard">
@@ -1588,6 +1588,10 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
           </ul>
         </article>
       </section>
+
+      {pillar.key !== "resilience" && <div className="sourceNote"><p>{details.summary}</p>{result.explanations?.[pillar.key] && <p>{result.explanations[pillar.key]}</p>}</div>}
+      <button type="button" className="textLink" onClick={()=>setScreen(26)}>About this pillar <ArrowRight size={15}/></button>
+      {assessedCommunity && result.walkability?.status === "available" && <p className="sourceNote">EPA National Walkability Index: {result.walkability.value.toFixed(1)} / 20, 2019 census block group {result.walkability.blockGroup}. <a href={result.walkability.sourceUrl} target="_blank" rel="noreferrer">EPA source</a></p>}
 
       {pillar.key === "resilience" && result.explanations?.resilience && (
         <div className="sourceNote resilienceSummary"><p>{result.explanations.resilience}</p>{resilienceRecordNotes(home) && <p><em>{resilienceRecordNotes(home)}</em></p>}</div>

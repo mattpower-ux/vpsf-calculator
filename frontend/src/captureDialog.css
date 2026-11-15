@@ -1,0 +1,20 @@
+.captureDialog{box-sizing:border-box;width:min(580px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line,#d6dfdb);border-radius:18px;background:var(--card,#fff);color:var(--ink,#202938);font-family:inherit;overflow:auto;box-shadow:0 20px 60px #102d3850}
+.captureDialog::backdrop{background:#102d3870}
+.captureDialogHeader{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;background:var(--card,#fff);border-bottom:1px solid var(--line,#d6dfdb)}
+.captureDialogHeader h2{font-size:22px;margin:0;line-height:1.2}
+.captureDialogHeader button{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border:0;border-radius:50%;background:var(--pale,#eef5f5);color:var(--ink,#202938);cursor:pointer}
+.captureDialogBody{padding:20px}
+.captureDialogBody .field{min-width:0}
+.captureDialogBody .field input,.captureDialogBody textarea{box-sizing:border-box;width:100%;max-width:100%;font:inherit}
+.captureDialogBody textarea{padding:12px;border:1px solid var(--line,#ccd8d1);border-radius:10px;resize:vertical;background:var(--card,#fff);color:inherit;font-size:16px}
+.documentFileList{margin:0;padding-left:20px;overflow-wrap:anywhere;font-size:14px}
+.captureDialogBody .documentUpload input[type=file]{font-size:14px}
+.captureDialogBody .primaryButton,.captureDialogBody .secondaryButton{margin-top:10px;min-height:48px}
+.captureDialogBody button:focus-visible,.captureDialogBody input:focus-visible,.captureDialogBody textarea:focus-visible{outline:3px solid var(--blue,#14778b);outline-offset:2px}
+
+.documentSuggestions h3{font-size:16px;margin:0 0 8px;text-transform:none!important;letter-spacing:normal!important}
+.documentSuggestions ul{padding-left:20px;margin:0 0 16px;list-style:disc}
+.documentSuggestions li{padding:0;margin:3px 0;font-size:14px;line-height:1.4}
+.documentSuggestions strong{display:block;font-size:10px;color:var(--blue,#14778b);letter-spacing:.04em;margin-bottom:3px}
+
+.documentUpload textarea { width: 100%; box-sizing: border-box; min-height: 96px; padding: 12px; border: 1px solid var(--line, #ccd8d1); border-radius: 10px; font: inherit; font-size: 16px; resize: vertical; }

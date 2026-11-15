@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { themeFromSearch } from "./theme.js";
 
-test("selects the GreenPro skin from the theme query parameter", () => {
-  assert.equal(themeFromSearch("?theme=greenpro"), "greenpro");
+test("legacy GreenPro links use the current approved brand", () => {
+  assert.equal(themeFromSearch("?theme=greenpro"), "brand");
 });
 
 test("uses the approved brand styling by default and keeps the preview URL compatible", () => {

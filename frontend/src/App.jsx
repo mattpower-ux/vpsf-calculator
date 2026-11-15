@@ -2,6 +2,12 @@ import { companyWebsite, leadForHome } from "./productInquiry";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import DocumentUpload from "./DocumentUpload.jsx";
+import ListingImport, { LISTING_SOURCES, ListingLogo } from "./ListingImport.jsx";
+import AddressPhoto from "./AddressPhoto.jsx";
+import CaptureDialog from "./CaptureDialog.jsx";
+import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
+import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
+import { applyCapturedFacts } from "./captureFacts.js";
 import { getHardieDemo, cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { presentationAddress, isPresentationAddress } from "./presentationHome";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
@@ -541,7 +547,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
         <img src={isBrandTheme ? brandPreviewLogo : VPSF_BANNER} alt="VPSF Value Per Square Foot" />
         <span className="brandCredit">POWERED BY GREEN BUILDER MEDIA</span>
       </div>
-      {screen > 0 && screen !== 11 && (
+      {screen > 0 && screen !== 12 && (
         <button className="backButton" onClick={() => (onBack ? onBack() : setScreen(Math.max(0, screen - 1)))} aria-label="Go back">
           <ChevronLeft size={24} strokeWidth={4} />
         </button>
@@ -597,12 +603,7 @@ const quickScanSources = [
   ["Risk layers", "Flood, wind, climate, utility, and location context"]
 ];
 
-const uploadCaptureOptions = [
-  ["Inspection report", "PDF"],
-  ["Utility bill", "PDF"],
-  ["Equipment label", "Photo"],
-  ["Upgrade invoice", "Photo"]
-];
+
 
 const stateNameToCode = {
   alabama: "AL",
@@ -900,7 +901,13 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted }) {
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect }) {
+  const [captureMode, setCaptureMode] = useState(null);
+  const applyCaptureFacts = (facts, photoReview) => {
+    const captureAddress = facts.address || (photoReview || !isPresentationAddress(address) ? address : "");
+    onCaptureApply({ ...(captureAddress ? parseAddressParts(captureAddress) : {}), ...facts }, photoReview);
+    setSelectedProperty(null); setResultMode("manual"); setCaptureMode(null); setScreen(1);
+  };
   const [address, setAddress] = useState(presentationAddress);
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
@@ -1031,6 +1038,8 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
 
   return (
     <div className="screen startScreen">
+      {captureMode === "walk" && <CaptureDialog title="Guided Home Walk" onClose={() => setCaptureMode(null)}><GuidedHomeWalk demo={isPresentationAddress(address)} onApply={applyCaptureFacts} onClose={() => setCaptureMode(null)}/></CaptureDialog>}
+      {captureMode === "documents" && <CaptureDialog title="Upload Documents / Photos" onClose={() => setCaptureMode(null)}><DocumentUpload onApply={applyCaptureFacts}/></CaptureDialog>}
 
       <h1>Analyze an existing home</h1>
       <p className="centerCopy">Start with an address. VPSF will prefill public records, permits, risk layers, and likely missing specs.</p>
@@ -1051,6 +1060,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
             placeholder="Enter home address"
           />
         </div>
+        <AddressPhoto address={address} />
         <button className="primaryButton quickScanButton" onClick={startExistingHomeScan} disabled={isScanningAddress}>
           {isScanningAddress ? "Checking Address..." : "Start Existing Home Scan"} <ArrowRight size={18} />
         </button>
@@ -1060,56 +1070,28 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
             Autofill saved address: {formatSavedAddress(savedMatch)}
           </button>
         )}
-        <div className="quickScanGrid">
-          {quickScanSources.map(([title, description]) => (
-            <div key={title}>
-              <CheckCircle2 size={15} />
-              <strong>{title}</strong>
-              <span>{description}</span>
-            </div>
-          ))}
-        </div>
+
       </section>
 
       <div className="startActions modernStartActions">
-        <button onClick={() => setScreen(1)}>
+        <button onClick={() => setCaptureMode("documents")}>
           <span className="actionIcon"><Upload size={26} /></span>
           <div><strong>Upload Documents / Photos</strong><em>Inspection report, invoices, energy bills, permits, or equipment labels.</em></div>
         </button>
-        <button onClick={() => setScreen(1)}>
+        <button onClick={() => setCaptureMode("walk")}>
           <span className="actionIcon"><ClipboardList size={26} /></span>
-          <div><strong>Guided Home Walk</strong><em>Capture roof, HVAC, panel, water heater, windows, solar, and water fixtures.</em></div>
+          <div><strong>Guided Home Walk</strong><em>Take photos or a short video of your home, fixtures, and equipment.</em></div>
         </button>
       </div>
 
-      <section className="captureStrip">
-        {uploadCaptureOptions.map(([label, type]) => (
-          <span key={label}><strong>{type}</strong>{label}</span>
-        ))}
+
+
+      <section className="listingImportPanel" aria-label="Listing import options">
+        <h3>Import a listing</h3>
+        <div className="listingImportGrid">{Object.entries(LISTING_SOURCES).map(([source,brand])=><button key={source} aria-label={`Import ${brand.name} Listing`} onClick={()=>onListingSelect(source)}><ListingLogo source={source}/><span>Import listing <ArrowRight size={15} aria-hidden="true"/></span></button>)}</div>
       </section>
 
-      <details className="listingImportPanel">
-        <summary>Import an active listing instead</summary>
-        <div className="listingImportGrid">
-          {listingSources.map(([source, Icon, title]) => (
-            <button key={source} onClick={() => setScreen(11)}>
-              <Icon size={17} />
-              <span>{title}</span>
-            </button>
-          ))}
-        </div>
-      </details>
 
-      <aside className="smartParse existingSmartParse">
-        <Sparkles size={16} />
-        <strong>Ask only for the gaps</strong>
-        <p>Each field is tracked as public-record, document-extracted, photo-inferred, or homeowner-confirmed before scoring.</p>
-        <div className="confidenceLegend">
-          <span><i className="sourcePublic" /> Found</span>
-          <span><i className="sourceInferred" /> Inferred</span>
-          <span><i className="sourceMissing" /> Missing</span>
-        </div>
-      </aside>
 
     </div>
   );
@@ -1251,6 +1233,28 @@ function PropertyDetails({ home, update, setScreen }) {
       <ProgressDots step={1} />
       <h2>Add Property Details</h2>
       <p className="subhead">Enter key property information and home characteristics.</p>
+      {Array.isArray(home.photoReview) && <section className="photoFindings formSection">
+        <h3>Review photo findings</h3>
+        <p className="photoReviewIntro">Check the suggested details below and correct anything that does not match your home. Then complete the remaining property details.</p>
+        {!home.photoReview.length && <p>No clear details could be extracted. Add details below or try close-ups of equipment labels.</p>}
+        {home.photoReview.filter(row=>FIELD_META[row.field]).map(row=>{
+          const meta=FIELD_META[row.field], isNote=meta.target==='photoObservations';
+          const value=(isNote ? home.photoObservations?.[row.field] : home[row.field]) || '';
+          const change=value=>isNote ? update('photoObservations',{...home.photoObservations,[row.field]:value}) : update(row.field,value);
+          return <div className="photoFinding" key={row.field}>
+            <label>{FIELD_LABELS[row.field] || row.field}
+              {meta.input==='text' ? <input value={value} maxLength={300} onChange={event=>change(event.target.value)}/> : <select value={value} onChange={event=>change(event.target.value)}>
+                <option value="">Not specified</option>
+                {value && !WALK_OPTIONS[row.field].includes(value) && <option>{value}</option>}
+                {WALK_OPTIONS[row.field].map(option=><option key={option}>{option}</option>)}
+              </select>}
+            </label>
+            {row.conflict && <p>Photos suggest different values. Choose the correct detail above.</p>}
+            <details><summary>What the photos show</summary><p>{row.evidence}</p><p>{row.uncertainty}</p></details>
+          </div>;
+        })}
+      </section>}
+
 
       <section className="formSection">
         <h3>Property Information</h3>
@@ -1390,7 +1394,6 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
       <ProgressDots step={3} />
       <h2>Review & Confirm</h2>
       <p className="subhead">Review your information before generating your score.</p>
-      {home.sourceNote && <p className="sourceNote">{home.sourceNote}</p>}
 
       <section className="summaryCard">
         <div className="summaryHeader"><h3>Property Summary</h3><button onClick={() => setScreen(1)}>Edit/Add Details</button></div>
@@ -3275,6 +3278,7 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
+  const [listingSource, setListingSource] = useState("mls");
   const [customFields, setCustomFields] = useState([]);
   const [hasAssessedHome, setHasAssessedHome] = useState(false);
   const [apiResult, setApiResult] = useState(null);
@@ -3332,6 +3336,11 @@ export default function App() {
         } : {})
       };
     });
+  };
+  const handleCaptureApply = (facts, photoReview, preserveExisting = false) => {
+    setApiResult(null); setScoreError(""); setHasAssessedHome(false);
+    setQueryId(null); queryIdRef.current = null;
+    setHome(current => applyCapturedFacts(current, facts, !preserveExisting && (current === defaultHome || !!current.demoScenario), photoReview));
   };
   const updateExtra = (key, value) => update("extraInputs", { ...(home.extraInputs || {}), [key]: value });
 
@@ -3509,6 +3518,7 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
+    if (screen === 11) { setScreen(0); return; }
     if (screen === 27) {
       setScreen(25);
       return;
@@ -3643,7 +3653,7 @@ export default function App() {
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
-        {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} />}
+        {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{setListingSource(source); navigateFromUI(11);}} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 3 && (
@@ -3663,7 +3673,7 @@ export default function App() {
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
-        {screen === 11 && <DemoMlsImportScreen selectedProperty={selectedProperty} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setScreen={navigateFromUI} onUploadApply={facts => { Object.entries(facts).forEach(([key,value]) => update(key,value)); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1); }} />}
+        {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{handleCaptureApply({...parseAddressParts(facts.address || ""),...facts}); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1);}} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}

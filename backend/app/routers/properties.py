@@ -3,6 +3,8 @@ import asyncio
 import json
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pydantic import BaseModel, Field
+from app.ocr.document_urls import extract_property_from_url
 from httpx import HTTPError, HTTPStatusError
 from sqlalchemy.orm import Session
 
@@ -623,3 +625,12 @@ async def import_property(request: ListingImportRequest, db: Session = Depends(g
 async def import_property_from_ocr(file: UploadFile = File(...)) -> PropertyInput:
     # Extraction is a preview: do not archive unconfirmed facts or retain source files.
     return await extract_property_from_upload(file)
+
+
+class DocumentUrlRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=4096)
+
+
+@router.post("/ocr-url", response_model=PropertyInput)
+async def import_property_from_document_url(request: DocumentUrlRequest) -> PropertyInput:
+    return await extract_property_from_url(request.url)

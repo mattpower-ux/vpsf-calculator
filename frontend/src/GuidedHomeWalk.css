@@ -32,3 +32,41 @@
 .walkEvidence img { width: 76px; height: 76px; object-fit: cover; border-radius: 6px; }
 .walkConfirm { display: flex; align-items: start; gap: 8px; }
 @media (max-width: 420px) { .guidedWalk { padding: 12px; } .walkCapture { padding: 16px; } .walkSteps { gap: 5px; } .walkSteps button { width: 32px; height: 32px; } }
+
+.captureDialog .guidedWalk { padding: 0; }
+.walkHeader h3 { margin: 0; font-size: 24px; text-transform: none; }
+.walkSteps button[aria-current] { background: var(--blue, #14778b); }
+.walkCapture { background: var(--pale, #f0f7f8); padding: 18px; }
+.walkProcessing { min-height: min(450px, 60dvh); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:20px 4px; }
+.walkProcessing h3 { font-size:24px; text-transform:none; line-height:1.3; margin:0; }
+.walkProcessing p { margin:0; }
+.walkCognition { width:130px; height:130px; position:relative; display:grid; place-items:center; }
+.walkCognition img { width:85px; height:85px; object-fit:contain; animation:walkPulse 1.8s ease-in-out infinite; }
+.walkCognition span { position:absolute; inset:0; border:3px solid #d9edef; border-top-color:var(--blue,#14778b); border-radius:50%; animation:walkSpin 1.4s linear infinite; }
+.walkProcessButton { width:100%; min-height:48px; }
+.walkCaptureDetails > summary {padding:16px; border:1px solid #cedde0; border-radius:12px; color:var(--blue,#14778b); font-weight:700; cursor:pointer;}
+.walkCaptureDetails[open] > summary {margin-bottom:12px;}
+.walkAreaRow {display:flex; justify-content:space-between; gap:12px; align-items:baseline; margin-bottom:6px; font-size:14px;}
+.walkAreaRow label {font-weight:700;}
+.walkAreaRow span {color:var(--muted,#46616d); font-variant-numeric:tabular-nums;}
+.walkAreaSelect {box-sizing:border-box; width:100%; min-width:0; padding:10px 12px; min-height:46px; border:1px solid #bed0d6; border-radius:8px; font:inherit; font-size:18px; font-weight:650; color:inherit; background:white;}
+.guidedWalk .walkPrompt {font-size:14px; line-height:1.4; text-align:left; margin:8px 0 14px;}
+.walkThumbnails figure > div button {background:transparent; border:0; color:var(--blue,#14778b); min-height:40px; padding:6px; font:inherit; font-size:13px; text-decoration:underline; text-underline-offset:3px;}
+.photoFindings.formSection { display:block; }
+.photoFindings .photoReviewIntro {margin:0 0 16px;}
+.photoFinding {padding:16px 0; border-top:1px solid #d9e5e8;}
+.photoFinding label {display:block; font-weight:700;}
+.photoFinding input,.photoFinding select {display:block; width:100%; min-width:0; padding:12px; margin-top:8px; font:inherit; border:1px solid #cbdde2; border-radius:10px; box-sizing:border-box; background:white; color:inherit;}
+.photoFinding details {margin-top:10px; font-size:14px;}
+.photoFinding summary {cursor:pointer; color:var(--blue,#14778b);}
+.walkThumbnails {grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0;}
+.walkThumbnails img {height:78px;}
+.walkThumbnails figcaption {padding:5px 6px 0;font-size:12px;line-height:1.2;min-height:29px;}
+.walkThumbnails figure > div {padding:0;gap:0;justify-content:space-between;}
+.walkThumbnails figure > div button {display:grid;place-items:center;min-height:44px;min-width:44px;padding:0;}
+.walkThumbnails figure {border-radius:8px;}
+.walkDisclosure {font-size:13px;padding:10px;margin:10px 0;}
+@media(max-width:360px){.walkThumbnails{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@keyframes walkPulse { 50% { transform:scale(1.08); opacity:.7; } }
+@keyframes walkSpin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .walkCognition img,.walkCognition span {animation:none;} }

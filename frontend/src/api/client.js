@@ -219,3 +219,27 @@ export const publishAdminEcoTip=(token,id,action,revision,version)=>request(`/ap
 export const saveProductMetadata=(token,id,data,revision)=>request(`/api/admin/products/${encodeURIComponent(id)}/metadata`,adminOptions(token,{method:'PUT',body:JSON.stringify({data,revision})}));
 
 export const getHardieDemo = () => request("/api/demos/hardie-wildfire");
+
+
+export async function extractDocumentUrl(url) {
+  const response = await fetch(`${API_BASE_URL}/api/properties/ocr-url`, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({url}), signal: AbortSignal.timeout(150000)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : "The document link could not be processed.");
+  return data;
+}
+
+export async function getPropertyPhoto(address, signal) {
+  const response = await fetch(`${API_BASE_URL}/api/property-photo?${new URLSearchParams({address})}`, {signal});
+  if (!response.ok) throw new Error('Photo unavailable');
+  return response.json();
+}
+
+export async function importListing(payload) {
+  const response = await fetch(`${API_BASE_URL}/api/listing-import`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(40000)});
+  const data = await response.json();
+  if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Listing unavailable. Use the address or a listing sheet instead.');
+  return data;
+}

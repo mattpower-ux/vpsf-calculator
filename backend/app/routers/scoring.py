@@ -80,6 +80,7 @@ async def score_property(property_input: PropertyInput, db: Session = Depends(ge
         **classification,
     )
     return ScoreResponse(
+        analysisLevel=property_input.analysisLevel,
         scores=scores,
         total=total,
         modelVersion=model.version,

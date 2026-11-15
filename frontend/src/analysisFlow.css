@@ -1,0 +1,49 @@
+.analysisChoices { margin-top: 6px; }
+.analysisChoices h2 { font-size: 20px; text-align: center; margin: 0 0 12px; }
+.sketchFilters { position: absolute; pointer-events: none; }
+.analysisChoiceGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.analysisChoice { min-width: 0; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #fff; color: var(--ink,#232c3b); padding: 6px 6px 10px; text-align: center; cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; transition: border-color .15s, box-shadow .15s; }
+.analysisChoice:hover:not(:disabled), .analysisChoice:focus-visible { border-color: var(--blue,#14778b); box-shadow: 0 0 0 2px var(--blue,#14778b); outline: 0; }
+.analysisChoice:disabled { opacity: .55; cursor: default; }
+.analysisChoiceImage { display: flex; width: 100%; aspect-ratio: 1.6; border-radius: 10px; overflow: hidden; background: #f2f8f9; align-items: center; justify-content: center; }
+.analysisChoiceImage img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; }
+.analysisChoice strong { font-size: 17px; line-height: 1.3; margin-top: 6px; }
+.analysisChoice small { font-size: 13px; color: var(--muted,#526d78); margin-top: 4px; line-height: 1.3; }
+.analysisPhotoMissing { font-size: 12px; line-height: 1.35; padding: 8px; color: var(--muted,#526d78); }
+.analysisChoices .addressPhotoUpload { margin-top: 8px; min-height: 44px; }
+.analysisChoices .photoAttribution, .analysisChoices .photoAvailability { font-size: 12px; color: var(--muted,#526d78); }
+.analysisLevelBadge { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--blue,#14778b); text-align: center; padding: 8px 60px 0; letter-spacing: .02em; }
+.analysisEvidence { margin: 20px 0; padding: 16px; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #f5f9f9; }
+.analysisEvidence h3 { font-size: 16px; margin: 0 0 6px; }
+.analysisEvidence p { font-size: 14px; margin: 0 0 12px; color: var(--muted,#526d78); }
+.analysisEvidence > div { display: grid; gap: 10px; }
+.analysisEvidence > div > button { border: 0; background: transparent; color: var(--blue,#14778b); display: flex; gap: 10px; align-items: center; text-align: left; padding: 8px 0; font: inherit; font-weight: 700; min-height: 44px; cursor: pointer; }
+.inclusiveIntroduction .inclusiveLead { font-size: 20px; font-weight: 650; color: var(--ink); margin-top: 6px; }
+.inclusiveIntroduction p, .inclusiveIntroduction li { line-height: 1.6; }
+.inclusiveIntroduction ul { padding-left: 22px; margin: 24px 0; }
+.inclusiveIntroduction li { margin-bottom: 12px; }
+.knownFacts { margin: 12px 0 0; }
+.knownFacts > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line,#d7e6e8); font-size: 15px; }
+.knownFacts dt { color: var(--muted,#526d78); flex: 1; }
+.knownFacts dd { margin: 0; flex: 1; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
+.broadReview > .textLink { margin-top: 18px; }
+@media(max-width:480px) {
+  .analysisChoiceGrid { gap: 8px; }
+  .analysisChoice { padding: 5px 5px 8px; border-radius: 12px; }
+  .analysisChoice strong { font-size: 15px; }
+  .analysisChoice small { font-size: 12px; }
+  .analysisChoices h2 { font-size: 19px; }
+}
+
+.analysisChoices .mainExteriorPhoto { margin: 0 0 16px; }
+.analysisChoices .mainExteriorPhoto img { width: 100%; height: auto; max-height: 200px; object-fit: contain; display: block; border-radius: 12px; }
+.knownFacts dd small { display: block; font-size: 12px; font-weight: 400; margin-top: 4px; }
+
+.startScreen .addressPhoto.analysisChoices { margin: 12px 0 0; }
+.screen.startScreen { padding-top: 16px; }
+.startScreen > .centerCopy { margin-bottom: 12px; }
+.startScreen .existingHomeCard { margin-top: 12px; }
+
+.supportingListingImport { margin-top: 8px; border-top: 1px solid var(--line,#d7e6e8); padding-top: 8px; }
+.supportingListingImport summary { cursor: pointer; color: var(--blue,#14778b); font-weight: 700; padding: 10px 0; min-height: 44px; box-sizing: border-box; }
+.supportingListingImport[open] .listingImportGrid { margin-top: 8px; }

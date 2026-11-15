@@ -1,5 +1,32 @@
 import { confirmedEdit } from './homeAdvice.js';
 import { heatingSelectionPatch } from './heatingResilience.js';
+import { normalizeAnalysisLevel, prepareAnalysisHome } from './analysisLevels.js';
+
+const addressKey = value => typeof value === 'string' ? value.trim().toLowerCase().replace(/\s+/g, ' ') : '';
+
+/**
+ * Apply reviewed evidence while preserving the selected analysis level. A new,
+ * nonblank address (or explicit fresh flag) starts a clean, non-demo home.
+ * Missing/blank parsed location parts are not edits. Same-home evidence keeps
+ * the existing demo marker; imported metadata cannot change level or identity.
+ */
+export function applyAnalysisEvidence(current, facts, photoReview, {fresh = false} = {}) {
+  const reviewed = {...facts};
+  for (const key of ['address','city','state','zip']) {
+    if (reviewed[key] == null || String(reviewed[key]).trim() === '') delete reviewed[key];
+  }
+  for (const key of ['analysisLevel','demoScenario','provenance']) delete reviewed[key];
+  const moved = Boolean(addressKey(reviewed.address)) && addressKey(reviewed.address) !== addressKey(current.address);
+  if (!moved && reviewed.address !== undefined) reviewed.address = current.address;
+  const reset = fresh || moved;
+  const level = normalizeAnalysisLevel(current.analysisLevel);
+  const next = {
+    ...applyCapturedFacts(current, reviewed, reset, photoReview),
+    analysisLevel: level,
+    demoScenario: reset ? '' : current.demoScenario || ''
+  };
+  return reset ? prepareAnalysisHome(next, level) : next;
+}
 
 export function applyCapturedFacts(current, facts, fresh = false, photoReview) {
   let home = fresh ? Object.fromEntries(Object.entries(current).map(([key, value]) => [key, typeof value === 'string' ? 'Unknown' : null])) : { ...current };

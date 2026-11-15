@@ -38,6 +38,8 @@ class FieldProvenance(BaseModel):
 
 
 class PropertyInput(BaseModel):
+    # Capture depth only: never a feature claim or scoring multiplier.
+    analysisLevel: Literal["broad", "moderate", "inclusive"] = "moderate"
     demoScenario: str = ""
     siding: str = "Unknown"
     photoObservations: dict[Annotated[str, StringConstraints(max_length=80)], Annotated[str, StringConstraints(max_length=300, strict=True)]] = Field(default_factory=dict, max_length=32)
@@ -160,6 +162,7 @@ class RiskEnrichmentResponse(BaseModel):
 
 
 class ScoreResponse(BaseModel):
+    analysisLevel: Literal["broad", "moderate", "inclusive"] = "moderate"
     scores: dict[str, int]
     total: int
     grade: str

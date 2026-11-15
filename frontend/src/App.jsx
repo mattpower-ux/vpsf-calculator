@@ -1,3 +1,6 @@
+import { AnalysisEvidence, InclusiveIntroduction, BroadReview } from './AnalysisFlow.jsx';
+import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLevels.js';
+import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
 import ProductRequestForm from "./ProductRequestForm.jsx";
 import { companyWebsite, leadForHome, inquiryHomeFor } from "./productInquiry";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -8,7 +11,7 @@ import AddressPhoto from "./AddressPhoto.jsx";
 import CaptureDialog from "./CaptureDialog.jsx";
 import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
 import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
-import { applyCapturedFacts } from "./captureFacts.js";
+import { applyAnalysisEvidence } from "./captureFacts.js";
 import { getHardieDemo, cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { presentationAddress, isPresentationAddress } from "./presentationHome";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
@@ -485,14 +488,15 @@ function Field({ label, value, onChange, options, wide = false }) {
     <label className={wide ? "field fieldWide" : "field"}>
       <span>{label}</span>
       {options ? (
-        <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+          <option value="">Select if known</option>
           {value && !options.includes(value) && <option value={value}>{value}</option>}
           {options.map((option) => (
             <option key={option}>{option}</option>
           ))}
         </select>
       ) : (
-        <input value={value} onChange={(e) => onChange(e.target.value)} />
+        <input value={value ?? ""} placeholder="Not provided" onChange={(e) => onChange(e.target.value)} />
       )}
     </label>
   );
@@ -767,12 +771,7 @@ function mergePropertyFacts(primary, fallback) {
   if (!primary) return fallback;
   if (!fallback) return primary;
 
-  const merged = { ...primary };
-  Object.entries(fallback).forEach(([key, value]) => {
-    if (!hasUsableValue(merged[key]) && hasUsableValue(value)) {
-      merged[key] = value;
-    }
-  });
+  const merged = mergeProviderFields(primary, fallback);
   merged.sourceNote = joinUniqueNotes(primary.sourceNote, fallback.sourceNote);
   return merged;
 }
@@ -833,6 +832,18 @@ function formatSavedAddress(record) {
 }
 
 function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
+  const home = rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment);
+  const provenance = {...home.provenance};
+  for (const key of ['address','city','state','zip']) {
+    if (home[key] && home[key] !== 'Unknown') provenance[key] = {origin:'imported',source:'Address lookup'};
+  }
+  if (riskEnrichment) for (const key of ['climateZone']) {
+    if (home[key] && home[key] !== 'Unknown') provenance[key] = {origin:'imported',source:'Geographic risk enrichment'};
+  }
+  return {...home,provenance};
+}
+
+function rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
   const publicRecordProperty = mergePropertyFacts(rentcastProperty, attomProperty);
   const enteredParts = parseAddressParts(enteredAddress);
 
@@ -849,7 +860,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
       state: normalizeState(enteredParts.state || geocode?.state || publicRecordProperty.state || ""),
       zip: enteredParts.zip || geocode?.zip || publicRecordProperty.zip || "",
       climateZone: riskEnrichment?.climateZone || publicRecordProperty.climateZone || "Unknown",
-      flood: riskEnrichment?.flood || publicRecordProperty.flood || "Unknown",
+      flood: publicRecordProperty.flood || "Unknown",
       sourceNote: `${publicRecordProperty.sourceNote || "Public property facts returned."} ${riskEnrichment?.sourceNote || ""}`.trim(),
     };
   }
@@ -888,7 +899,7 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
     hers: "Code-Minimum",
     evReady: "None",
     fortified: "None",
-    flood: riskEnrichment?.flood || "Unknown",
+    flood: "Unknown",
     ventilation: "Exhaust Only",
     healthCert: "None",
     carbonStrategy: "No Accounting",
@@ -902,31 +913,27 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect }) {
-  const [captureMode, setCaptureMode] = useState(null);
-  const applyCaptureFacts = (facts, photoReview) => {
-    const captureAddress = facts.address || (photoReview || !isPresentationAddress(address) ? address : "");
-    onCaptureApply({ ...(captureAddress ? parseAddressParts(captureAddress) : {}), ...facts }, photoReview);
-    setSelectedProperty(null); setResultMode("manual"); setCaptureMode(null); setScreen(1);
-  };
-  const [address, setAddress] = useState(presentationAddress);
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress }) {
+  const [address, setAddress] = useState(initialAddress || presentationAddress);
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
-  const [savedMatch, setSavedMatch] = useState(null);
+  const [savedLookup, setSavedLookup] = useState(null);
+  const savedMatch = savedMatchForAddress(savedLookup, address);
 
   useEffect(() => {
+    let current = true;
+    setSavedLookup(null);
     const parsedAddress = parseAddressParts(address);
     if (isPresentationAddress(address) || !parsedAddress.address || parsedAddress.address.length < 5) {
-      setSavedMatch(null);
       return undefined;
     }
 
     const timer = window.setTimeout(async () => {
       const result = await findSavedProperty(parsedAddress);
-      setSavedMatch(result?.found ? result.property : null);
+      if (current) setSavedLookup({lookupAddress:address, property:result?.found ? result.property : null});
     }, 350);
 
-    return () => window.clearTimeout(timer);
+    return () => { current = false; window.clearTimeout(timer); };
   }, [address]);
 
   const applySavedAutofill = () => {
@@ -937,19 +944,21 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
     setScanNote("Saved property details loaded from the VPSF archive.");
   };
 
-  const startExistingHomeScan = async () => {
+  const startExistingHomeScan = async (level) => {
     if (isScanningAddress) return;
+    if (address.trim().length < 5) { setScanNote("Enter a property address first."); return; }
 
     if (isPresentationAddress(address)) {
       setIsScanningAddress(true);
       setScanNote("");
       try {
         const {home: profile} = await getHardieDemo();
-        setHome(profile);
+        const prepared = prepareAnalysisHome(profile, level);
+        setHome(prepared);
         setSelectedProperty(null);
         setResultMode("manual");
-        await onQueryStarted(profile, "presentation");
-        setScreen(3);
+        await onQueryStarted(prepared, "presentation");
+        setScreen(analysisRoute(level));
       } catch {
         setScanNote("We couldn't load the home details. Please try again.");
       } finally {
@@ -985,11 +994,14 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         } catch (error) {
           console.warn("Saved location risk lookup unavailable.", error);
         }
+        savedHome.provenance = {...savedHome.provenance};
+        for (const key of ['address','city','state','zip']) if (savedHome[key] && savedHome[key] !== 'Unknown') savedHome.provenance[key] = {origin:'imported',source:'Address lookup'};
+        savedHome = prepareAnalysisHome(savedHome, level);
         setHome(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
         await onQueryStarted(savedHome, "saved_archive");
         setResultMode("manual");
-        setScreen(3);
+        setScreen(analysisRoute(level));
         return;
       }
 
@@ -1022,26 +1034,24 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         console.warn("Risk enrichment unavailable.", riskError);
       }
       const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, attomProperty, riskEnrichment);
-      setHome(importedHome(scannedHome));
+      const prepared = prepareAnalysisHome(importedHome(scannedHome), level);
+      setHome(prepared);
       setScanNote(`${rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}${attomNote}`);
-      await onQueryStarted(importedHome(scannedHome), rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
+      await onQueryStarted(prepared, rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
     } catch (error) {
-      const fallbackHome = homeFromExistingScan(address);
+      const fallbackHome = prepareAnalysisHome(homeFromExistingScan(address), level);
       setHome(fallbackHome);
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");
       await onQueryStarted(fallbackHome, "manual_fallback");
     } finally {
       setResultMode("manual");
       setIsScanningAddress(false);
-      setScreen(3);
+      setScreen(analysisRoute(level));
     }
   };
 
   return (
     <div className="screen startScreen">
-      {captureMode === "walk" && <CaptureDialog title="Guided Home Walk" onClose={() => setCaptureMode(null)}><GuidedHomeWalk demo={isPresentationAddress(address)} onApply={applyCaptureFacts} onClose={() => setCaptureMode(null)}/></CaptureDialog>}
-      {captureMode === "documents" && <CaptureDialog title="Upload Documents / Photos" onClose={() => setCaptureMode(null)}><DocumentUpload onApply={applyCaptureFacts}/></CaptureDialog>}
-
       <h1>Analyze an existing home</h1>
       <p className="centerCopy">Enter any address and the calculator will score the home's current and potential “value.”</p>
 
@@ -1050,21 +1060,13 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
           <MapPin size={18} />
           <input
             value={address}
+            disabled={isScanningAddress}
             onChange={(event) => setAddress(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                startExistingHomeScan();
-              }
-            }}
             aria-label="Property address"
             placeholder="Enter home address"
           />
         </div>
-        <AddressPhoto address={address} />
-        <button className="primaryButton quickScanButton" onClick={startExistingHomeScan} disabled={isScanningAddress}>
-          {isScanningAddress ? "Checking Address..." : "Start Existing Home Scan"} <ArrowRight size={18} />
-        </button>
+        <AddressPhoto address={address} onChooseLevel={startExistingHomeScan} busy={isScanningAddress} />
         {scanNote && <p className="addressScanNote">{scanNote}</p>}
         {savedMatch && (
           <button className="savedAddressAutofill" type="button" onClick={applySavedAutofill}>
@@ -1074,23 +1076,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
 
       </section>
 
-      <div className="startActions modernStartActions">
-        <button onClick={() => setCaptureMode("documents")}>
-          <span className="actionIcon"><Upload size={26} /></span>
-          <div><strong>Upload Documents / Photos</strong><em>Inspection report, invoices, energy bills, permits, or equipment labels.</em></div>
-        </button>
-        <button onClick={() => setCaptureMode("walk")}>
-          <span className="actionIcon"><ClipboardList size={26} /></span>
-          <div><strong>Guided Home Walk</strong><em>Take photos or a short video of your home, fixtures, and equipment.</em></div>
-        </button>
-      </div>
 
-
-
-      <section className="listingImportPanel" aria-label="Listing import options">
-        <h3>Import a listing</h3>
-        <div className="listingImportGrid">{Object.entries(LISTING_SOURCES).map(([source,brand])=><button key={source} aria-label={`Import ${brand.name} Listing`} onClick={()=>onListingSelect(source)}><ListingLogo source={source}/><span>Import listing <ArrowRight size={15} aria-hidden="true"/></span></button>)}</div>
-      </section>
 
 
 
@@ -1228,12 +1214,12 @@ function DemoAnalyzingScreen({ setScreen, autoAdvance = true }) {
   );
 }
 
-function PropertyDetails({ home, update, setScreen }) {
+function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect }) {
   return (
     <div className="screen formScreen">
       <ProgressDots step={1} />
       <h2>Add Property Details</h2>
-      <p className="subhead">Enter key property information and home characteristics.</p>
+      <p className="subhead">Review the details we found and fill in what you know.</p>
       {Array.isArray(home.photoReview) && <section className="photoFindings formSection">
         <h3>Review photo findings</h3>
         <p className="photoReviewIntro">Check the suggested details below and correct anything that does not match your home. Then complete the remaining property details.</p>
@@ -1277,10 +1263,9 @@ function PropertyDetails({ home, update, setScreen }) {
         <Field wide label="Garage / Parking" value={home.garage} onChange={(v) => update("garage", v)} />
       </section>
 
-      <section className="formSection photoUploadSection">
-        <h3>Documents and Photos</h3>
-        <DocumentUpload onApply={facts => Object.entries(facts).forEach(([key,value]) => update(key,value))} />
-      </section>
+
+
+      {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
 
       <button className="primaryButton stickyButton" onClick={() => setScreen(2)}>
         Next: Home Specs <ArrowRight size={18} />
@@ -1300,9 +1285,9 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
         <h3>Energy</h3>
         <Field label="HERS Score" value={home.hers} onChange={(v) => update("hers", v)} options={selectOptions.hers} />
         <Field wide label="HVAC System" value={home.hvac} onChange={(v) => update("hvac", v)} options={selectOptions.hvac} />
-        {(/boiler/i.test(home.hvac) || home.hvac === "Hydronic Heating") && <Field wide label="Hydronic Heat Source" value={home.hydronicSource || "Unknown"} onChange={(v) => update("hydronicSource", v)} options={heatingResilienceOptions.hydronicSource} />}
-        <Field wide label="Heat Distribution" value={home.heatingDistribution || "Unknown"} onChange={(v) => update("heatingDistribution", v)} options={heatingResilienceOptions.heatingDistribution} />
-        {["Hydronic Radiant", "Hydronic Radiators / Baseboards"].includes(home.heatingDistribution) && <Field wide label="Hydronic Controls" value={home.heatingControls || "Unknown"} onChange={(v) => update("heatingControls", v)} options={heatingResilienceOptions.heatingControls} />}
+        {(/boiler/i.test(home.hvac) || home.hvac === "Hydronic Heating") && <Field wide label="Hydronic Heat Source" value={home.hydronicSource ?? ""} onChange={(v) => update("hydronicSource", v)} options={heatingResilienceOptions.hydronicSource} />}
+        <Field wide label="Heat Distribution" value={home.heatingDistribution ?? ""} onChange={(v) => update("heatingDistribution", v)} options={heatingResilienceOptions.heatingDistribution} />
+        {["Hydronic Radiant", "Hydronic Radiators / Baseboards"].includes(home.heatingDistribution) && <Field wide label="Hydronic Controls" value={home.heatingControls ?? ""} onChange={(v) => update("heatingControls", v)} options={heatingResilienceOptions.heatingControls} />}
         <details className="field fieldWide"><summary>Boiler, heat pump, or radiant heat?</summary><p>A combination boiler supplies space heating and domestic hot water. Radiant describes heat delivery, not the fuel or efficiency.</p><p>Use the equipment label to confirm AFUE for a fuel-burning boiler. Heat pumps use COP, which varies with operating conditions. Ground-source systems use ground heat; air-to-water systems use outdoor air.</p><p>Natural gas ranks above heating oil in this model; ground-source heat pumps rank higher. These are model weights, not measured carbon savings. For a heat pump serving water-based heating, select Hydronic Heating and its heat source.</p></details>
         <Field label="HVAC Age" value={home.hvacAge} onChange={(v) => update("hvacAge", v)} />
         <Field wide label="Water Heating" value={home.waterHeater} onChange={(v) => update("waterHeater", v)} options={selectOptions.waterHeater} />
@@ -1315,11 +1300,11 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
         <h3>Resilience + Health</h3>
         <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)} options={selectOptions.fortified} />
         <Field label="Flood Design" value={home.flood} onChange={(v) => update("flood", v)} options={selectOptions.flood} />
-        <Field wide label="Wildfire Mitigation" value={home.wildfireMitigation || "Unknown"} onChange={(v) => update("wildfireMitigation", v)} options={heatingResilienceOptions.wildfireMitigation} />
-        <Field wide label="Extreme-Temperature Protection" value={home.temperatureProtection || "Unknown"} onChange={(v) => update("temperatureProtection", v)} options={heatingResilienceOptions.temperatureProtection} />
-        <Field wide label="Wind / Tornado Protection" value={home.windProtection || "Unknown"} onChange={(v) => update("windProtection", v)} options={heatingResilienceOptions.windProtection} />
+        <Field wide label="Wildfire Mitigation" value={home.wildfireMitigation ?? ""} onChange={(v) => update("wildfireMitigation", v)} options={heatingResilienceOptions.wildfireMitigation} />
+        <Field wide label="Extreme-Temperature Protection" value={home.temperatureProtection ?? ""} onChange={(v) => update("temperatureProtection", v)} options={heatingResilienceOptions.temperatureProtection} />
+        <Field wide label="Wind / Tornado Protection" value={home.windProtection ?? ""} onChange={(v) => update("windProtection", v)} options={heatingResilienceOptions.windProtection} />
         <details className="field fieldWide"><summary>Which protections qualify?</summary><p>Select installed features supported by product specifications, installation records, or an inspection. Choose Unknown when unsure. Each selection replaces the previous option; points do not stack within a field.</p><p>A safe room protects occupants, not the whole house. Opening protection is not tornado shelter. Use a qualified designer to verify applicable FEMA guidance and ICC 500. Wildfire mitigation does not change the area's mapped risk.</p></details>
-        <Field wide label="Siding material" value={home.siding || "Unknown"} onChange={v=>update("siding",v)} options={["Unknown","Wood clapboard","Wood siding","Cedar shingles","Engineered wood","Vinyl","Fiber cement","Brick","Stucco","Metal","Other"]} />
+        <Field wide label="Siding material" value={home.siding ?? ""} onChange={v=>update("siding",v)} options={["Unknown","Wood clapboard","Wood siding","Cedar shingles","Engineered wood","Vinyl","Fiber cement","Brick","Stucco","Metal","Other"]} />
         <Field label="Roof type" value={home.roof} onChange={v=>update("roof",v)} options={["Unknown","Asphalt shingles","Architectural Shingle","Metal","Clay tile","Concrete tile","Other"]} />
         <Field label="Roof Age" value={home.roofAge} onChange={(v) => update("roofAge", v)} />
         <Field label="Ventilation" value={home.ventilation} onChange={(v) => update("ventilation", v)} options={selectOptions.ventilation} />
@@ -1345,7 +1330,7 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
         <h3>Carbon, Water + Financial</h3>
         <Field label="Carbon Strategy" value={home.carbonStrategy} onChange={(v) => update("carbonStrategy", v)} options={selectOptions.carbonStrategy} />
         <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)} options={selectOptions.waterStandard} />
-        <Field label="Irrigation system" value={home.irrigation || "Unknown"} onChange={(v) => update("irrigation", v)} options={["Unknown", "No irrigation", "Conventional Irrigation", "Smart Irrigation", "Drip Irrigation", "Xeriscaping"]} />
+        <Field label="Irrigation system" value={home.irrigation ?? ""} onChange={(v) => update("irrigation", v)} options={["Unknown", "No irrigation", "Conventional Irrigation", "Smart Irrigation", "Drip Irrigation", "Xeriscaping"]} />
         <Field label="Leak Protection" value={home.leak} onChange={(v) => update("leak", v)} options={selectOptions.leak} />
         <details className="field fieldWide"><summary>What is PIETIM?</summary><p>Principal, interest, energy, taxes, insurance, and maintenance: the monthly cost of owning the home. Choose the range for these costs as a percentage of gross monthly household income. This is an ownership-cost estimate, not lender qualification.</p></details>
         <Field label="PIETIM" value={home.pietim} onChange={(v) => update("pietim", v)} options={selectOptions.pietim} />
@@ -3319,7 +3304,7 @@ export default function App() {
   const handleCaptureApply = (facts, photoReview, preserveExisting = false) => {
     setApiResult(null); setScoreError(""); setHasAssessedHome(false);
     setQueryId(null); queryIdRef.current = null;
-    setHome(current => applyCapturedFacts(current, facts, !preserveExisting && (current === defaultHome || !!current.demoScenario), photoReview));
+    setHome(current => applyAnalysisEvidence(current, facts, photoReview, {fresh: !preserveExisting && (current === defaultHome || !!current.demoScenario)}));
   };
   const updateExtra = (key, value) => update("extraInputs", { ...(home.extraInputs || {}), [key]: value });
 
@@ -3354,7 +3339,7 @@ export default function App() {
     if (record?.id) {
       setQueryId(record.id);
       queryIdRef.current = record.id;
-      const archivedProperty = mergeSavedPropertySnapshot(property, record.latestSnapshot);
+      const archivedProperty = prepareAnalysisHome(property.analysisLevel === "broad" ? property : mergeSavedPropertySnapshot(property, record.latestSnapshot), property.analysisLevel);
       setHome(archivedProperty);
       previousArchivedHomeRef.current = archivedProperty;
     }
@@ -3499,7 +3484,10 @@ export default function App() {
 
   const handleBack = () => {
     if (screen === 26 && pillarAboutReturnRef.current !== null) {setScreen(pillarAboutReturnRef.current);pillarAboutReturnRef.current=null;return;}
-    if (screen === 11) { setScreen(0); return; }
+    if (screen === 14) { setScreen(2); return; }
+    if (screen === 3 && home.analysisLevel && home.analysisLevel !== "broad") { setScreen(14); return; }
+    if (screen === 29 || screen === 1 || (screen === 3 && home.analysisLevel === "broad")) { setScreen(screen === 1 && home.analysisLevel === "inclusive" ? 29 : 0); return; }
+    if (screen === 11) { setScreen(1); return; }
     if (screen === 27) {
       setScreen(25);
       return;
@@ -3634,10 +3622,13 @@ export default function App() {
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
-        {screen === 0 && <StartScreen setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{setListingSource(source); navigateFromUI(11);}} />}
-        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} />}
+        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
+        {screen === 0 && <StartScreen initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{setListingSource(source); navigateFromUI(11);}} />}
+        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} onEvidence={(facts,review)=>handleCaptureApply(facts,review,true)} onListingSelect={source=>{setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
-        {screen === 3 && (
+        {screen === 29 && <InclusiveIntroduction onContinue={()=>setScreen(1)}/>}
+        {screen === 3 && home.analysisLevel === "broad" && <BroadReview home={home} onSubmit={handleGenerateScore} onBack={()=>setScreen(0)} busy={isScoring} error={scoreError}/>}
+        {screen === 3 && home.analysisLevel !== "broad" && (
           <ReviewScreen
             home={home}
             setScreen={navigateFromUI}
@@ -3654,7 +3645,7 @@ export default function App() {
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
-        {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{handleCaptureApply({...parseAddressParts(facts.address || ""),...facts}); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1);}} />}
+        {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{const parsed = parseAddressParts(facts.address || ""); handleCaptureApply({...parsed,...facts,address:parsed.address || facts.address}, undefined, true); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1);}} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} home={inquiryHome} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}

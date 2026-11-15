@@ -5,7 +5,7 @@ const item = (id, label, screen, subsection) => ({
   ...(subsection ? { subsection } : {})
 });
 
-const entryScreens = new Set([0, 1, 2, 3, 14]);
+const entryScreens = new Set([0, 1, 2, 3, 14, 29]);
 
 export const hasEntryNavigation = (screen) => entryScreens.has(screen);
 

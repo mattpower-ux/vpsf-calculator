@@ -25,4 +25,4 @@ async def hardie_score(home:PropertyInput,db:Session=Depends(get_db)):
     await prepare_scoring_evidence(home, model, db)
     scores=evaluate_model(home,model)
     total=sum(scores.values())
-    return ScoreResponse(walkability=home.epaWalkability,scores=scores,total=total,modelVersion=model.version,explanations=explain_score(home,scores),confidence=confidence_for_input(home),improvements=improvement_plan(home,model),**classify_score(total))
+    return ScoreResponse(analysisLevel=home.analysisLevel,walkability=home.epaWalkability,scores=scores,total=total,modelVersion=model.version,explanations=explain_score(home,scores),confidence=confidence_for_input(home),improvements=improvement_plan(home,model),**classify_score(total))

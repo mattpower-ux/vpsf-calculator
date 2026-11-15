@@ -1,6 +1,7 @@
 from app.inference_limits import InferenceLimitedRoute
 import asyncio
 import json
+import math
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
@@ -21,7 +22,7 @@ from app.integrations.wildfire import cached_wildfire_risk
 from app.notifications import send_email
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
-from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput, RiskEnrichmentRequest, RiskEnrichmentResponse
+from app.schemas import FieldProvenance, GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput, RiskEnrichmentRequest, RiskEnrichmentResponse
 
 router = APIRouter(prefix="/api/properties", tags=["properties"], route_class=InferenceLimitedRoute)
 
@@ -81,11 +82,40 @@ async def geocode_property(
     return geocode_response_from_mapbox(request.address, data)
 
 
+def provider_fact_text(value: object) -> str:
+    # Do not turn absent markers, collections, or booleans into property facts.
+    if not isinstance(value, (str, int, float)) or isinstance(value, bool):
+        return ""
+    if isinstance(value, float) and not math.isfinite(value):
+        return ""
+    text = str(value).strip()
+    if text.casefold() in {"", "unknown", "n/a", "null", "not available", "none / unknown"}:
+        return ""
+    return text
+
+
+def provider_provenance(home: PropertyInput, source: str) -> PropertyInput:
+    # Explicit unknown entries prevent clients treating schema defaults as facts.
+    mapped_fields = {
+        "address", "city", "state", "zip", "squareFeet", "yearBuilt",
+        "homeType", "stories", "bedrooms", "bathrooms", "garage", "lotSize",
+        "hvac", "roof", "waterHeater",
+    }
+    home.provenance = {
+        field: FieldProvenance(origin="imported", source=source)
+        if field in mapped_fields and field in home.model_fields_set
+        and provider_fact_text(getattr(home, field))
+        else FieldProvenance()
+        for field in PropertyInput.model_fields if field != "provenance"
+    }
+    return home
+
+
 def first_value(record: dict, *keys: str) -> str:
     for key in keys:
-        value = record.get(key)
-        if value is not None and value != "":
-            return str(value)
+        value = provider_fact_text(record.get(key))
+        if value:
+            return value
     return ""
 
 
@@ -122,12 +152,12 @@ def property_input_from_rentcast(record: dict) -> PropertyInput:
         bathrooms=known_or_unknown(first_value(record, "bathrooms")),
         garage=f"{garage_spaces} Car Garage" if garage_spaces else known_or_unknown(first_value(features, "garageType")),
         lotSize=acres_from_square_feet(lot_size) if lot_size else "Unknown",
-        occupancy="Owner Occupied",
+        occupancy="Unknown",
         hvac=heating_type or cooling_type or "Unknown",
         roof=first_value(features, "roofType") or "Unknown",
         sourceNote="RentCast returned public property facts. Energy, resilience, water, health, and upgrade details still need documents, photos, or homeowner confirmation.",
     )
-    return property_input
+    return provider_provenance(property_input, "RentCast")
 
 
 def nested_value(record: dict, *path: str) -> object:
@@ -141,9 +171,9 @@ def nested_value(record: dict, *path: str) -> object:
 
 def first_nested_value(record: dict, *paths: tuple[str, ...]) -> str:
     for path in paths:
-        value = nested_value(record, *path)
-        if value is not None and value != "":
-            return str(value)
+        value = provider_fact_text(nested_value(record, *path))
+        if value:
+            return value
     return ""
 
 
@@ -230,7 +260,7 @@ def property_input_from_attom(record: dict) -> PropertyInput:
     if amount:
         note_parts.append("Sale/valuation context was available.")
 
-    return PropertyInput(
+    property_input = PropertyInput(
         address=first_value(address, "line1", "oneLine"),
         city=first_value(address, "locality"),
         state=normalize_attom_state(first_value(address, "countrySubd")),
@@ -243,7 +273,7 @@ def property_input_from_attom(record: dict) -> PropertyInput:
         bathrooms=known_or_unknown(first_value(rooms, "bathsTotal", "bathstotal", "bathrooms", "bathsFull")),
         garage=f"{garage_spaces} Car Garage" if garage_spaces else "Unknown",
         lotSize=lot_size or "Unknown",
-        occupancy="Owner Occupied",
+        occupancy="Unknown",
         hvac=heating or cooling or "Unknown",
         hvacAge="Unknown",
         waterHeater=water_heater or "Unknown",
@@ -252,6 +282,7 @@ def property_input_from_attom(record: dict) -> PropertyInput:
         roofAge="Unknown",
         sourceNote=" ".join(note_parts),
     )
+    return provider_provenance(property_input, "ATTOM")
 
 
 def permit_records_from_attom(data: dict) -> list[dict]:
@@ -357,6 +388,7 @@ def apply_attom_permit_facts(property_input: PropertyInput, permits: list[dict])
     if not permits:
         return property_input
 
+    before = property_input.model_dump()
     texts = [permit_text(permit) for permit in permits]
     combined = " ".join(texts)
     for permit, text in zip(permits, texts):
@@ -397,6 +429,13 @@ def apply_attom_permit_facts(property_input: PropertyInput, permits: list[dict])
         for text in texts
         if any(term in text for term in ["roof", "hvac", "furnace", "heat pump", "air condition", "mechanical", "water heater", "solar", "window", "insulation"])
     )
+    # A work permit does not establish installation, age, or current equipment.
+    after = property_input.model_dump()
+    for field in PropertyInput.model_fields:
+        if field not in {"provenance", "sourceNote"} and after[field] != before[field]:
+            property_input.provenance[field] = FieldProvenance(
+                origin="inferred", source="ATTOM permit record; work/completion requires confirmation",
+            )
     property_input.sourceNote = f"{property_input.sourceNote} ATTOM returned {len(permits)} permit record(s); {matched_count} matched VPSF key-system categories."
     return property_input
 

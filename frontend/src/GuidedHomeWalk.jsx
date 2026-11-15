@@ -131,7 +131,7 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
     <button type="button" className="secondaryButton" onClick={()=>operation.current?.abort()}>Cancel review</button>
   </section>;
   return <section className="guidedWalk formScreen" aria-label="Guided Home Walk">
-    <div className="walkAreaRow"><label htmlFor="walk-area">Photo area</label><span>{images.length}/{MAX_PHOTOS} photos</span></div>
+    <div className="walkAreaRow"><label htmlFor="walk-area">Recommended photos for analysis</label><span>{images.length}/{MAX_PHOTOS} photos</span></div>
     <select id="walk-area" className="walkAreaSelect" value={Math.min(step,7)} disabled={!!busy} onChange={event=>setStep(Number(event.target.value))}>{STEPS.map((item,index)=><option value={index} key={item[0]}>{item[1]}</option>)}</select>
     <p className="walkPrompt">{SHORT_PROMPTS[topic]}</p>
     <details className="walkCaptureDetails"><summary>Take/Upload Photos</summary><div className="walkCapture">

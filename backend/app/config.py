@@ -14,6 +14,7 @@ class Settings:
     raw_database_url = os.getenv("DATABASE_URL", default_database_url())
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
+    google_street_view_api_key = os.getenv("GOOGLE_STREET_VIEW_API_KEY", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
     attom_monthly_limit = int(os.getenv("ATTOM_MONTHLY_LIMIT", "100"))
     rentcast_api_key = os.getenv("RENTCAST_API_KEY", "")

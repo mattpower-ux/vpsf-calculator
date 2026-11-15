@@ -32,7 +32,7 @@ function customInputs(value) {
 export function prepareDraftHome(input) {
   if (!object(input) || !['moderate', 'inclusive'].includes(input.analysisLevel)
       || !text(input.address).trim()) {
-    throw new Error('Choose Systems or Integral and enter an address before saving a draft.');
+    throw new Error('Choose Informed or Superior and enter an address before saving a draft.');
   }
   const home = Object.fromEntries(BASE_FIELDS.map(key => [key, scalar(input[key])]));
   home.provenance = {};

@@ -4,7 +4,7 @@ import { normalizeAnalysisLevel, analysisLevelLabel, routeAfterLookup, prepareHo
 import { importedHome } from './homeAdvice.js';
 
 test('levels normalize safely and route independently of saved home state', () => {
-  for (const [input, level, label, route] of [[' BROAD ', 'broad', '1. Essentials', 3], ['Moderate', 'moderate', '2. Systems', 1], ['inclusive', 'inclusive', '3. Integral', 29]]) {
+  for (const [input, level, label, route] of [[' BROAD ', 'broad', '1. Basic', 3], ['Moderate', 'moderate', '2. Informed', 1], ['inclusive', 'inclusive', '3. Superior', 29]]) {
     assert.equal(normalizeAnalysisLevel(input), level);
     assert.equal(analysisLevelLabel(input), label);
     assert.equal(routeAfterLookup(input), route);
@@ -74,10 +74,10 @@ test('preparation is detached, idempotent, and cannot inherit a saved analysis l
 test('parent-facing aliases preserve contracts and provide full analysis labels', () => {
   assert.equal(prepareAnalysisHome, prepareHomeForLevel);
   assert.equal(analysisRoute, routeAfterLookup);
-  assert.equal(analysisLabel('broad'), '1. Essentials');
-  assert.equal(analysisLabel('moderate'), '2. Systems');
-  assert.equal(analysisLabel('inclusive'), '3. Integral');
-  assert.equal(analysisLabel(undefined), '2. Systems');
+  assert.equal(analysisLabel('broad'), '1. Basic');
+  assert.equal(analysisLabel('moderate'), '2. Informed');
+  assert.equal(analysisLabel('inclusive'), '3. Superior');
+  assert.equal(analysisLabel(undefined), '2. Informed');
   assert.equal(analysisRoute('inclusive'), 29);
 });
 

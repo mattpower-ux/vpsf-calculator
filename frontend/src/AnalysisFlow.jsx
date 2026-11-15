@@ -8,7 +8,7 @@ import './analysisFlow.css';
 
 export function AnalysisEvidence({ home, onApply, onListingSelect }) {
   const [mode, setMode] = useState(null);
-  const apply = (facts, review) => { onApply(facts, review); setMode(null); };
+  const apply = (facts, review) => { onApply(facts, review, mode); setMode(null); };
   return <section className="analysisEvidence" aria-label="Add supporting information">
     <h3>Add supporting information</h3>
     <p>Fill in what you know, or let documents and photos help.</p>

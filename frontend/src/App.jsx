@@ -1,3 +1,5 @@
+import { ModerateReview, InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
+import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { AnalysisEvidence, InclusiveIntroduction, BroadReview } from './AnalysisFlow.jsx';
 import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLevels.js';
 import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
@@ -375,6 +377,11 @@ const selectOptions = {
   amenities: ["Shared Amenities", "Limited Amenities", "None"],
   bike: ["Bike Infrastructure", "Bikeable Streets", "None / Unknown"]
 };
+const depthOptions = {...selectOptions,...heatingResilienceOptions,
+  siding:["Wood clapboard","Wood siding","Cedar shingles","Engineered wood","Vinyl","Fiber cement","Brick","Stucco","Metal","Other"],
+  roof:["Asphalt shingles","Architectural Shingle","Metal","Clay tile","Concrete tile","Other"],
+  irrigation:["No irrigation","Conventional Irrigation","Smart Irrigation","Drip Irrigation","Xeriscaping"]};
+
 
 function scoreHome(home) {
   const energyBase = {
@@ -483,13 +490,13 @@ function resultFromDemoProperty(property) {
   };
 }
 
-function Field({ label, value, onChange, options, wide = false }) {
+function Field({ label, value, onChange, options, wide = false, emptyLabel = "Select if known" }) {
   return (
     <label className={wide ? "field fieldWide" : "field"}>
       <span>{label}</span>
       {options ? (
         <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
-          <option value="">Select if known</option>
+          <option value="">{emptyLabel}</option>
           {value && !options.includes(value) && <option value={value}>{value}</option>}
           {options.map((option) => (
             <option key={option}>{option}</option>
@@ -913,7 +920,7 @@ function rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, atto
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress }) {
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress, onResume }) {
   const [address, setAddress] = useState(initialAddress || presentationAddress);
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
@@ -1055,6 +1062,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       <h1>Analyze an existing home</h1>
       <p className="centerCopy">Enter any address and the calculator will score the home's current and potential “value.”</p>
 
+      <ResumeAnalysisDraft onResume={onResume}/>
       <section className="existingHomeCard">
         <div className="addressLookup">
           <MapPin size={18} />
@@ -1267,8 +1275,8 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect 
 
       {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
 
-      <button className="primaryButton stickyButton" onClick={() => setScreen(2)}>
-        Next: Home Specs <ArrowRight size={18} />
+      <button className="primaryButton stickyButton" onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>
+        {home.analysisLevel === "moderate" ? "Next: Key Features" : "Next: Home Specs"} <ArrowRight size={18} />
       </button>
     </div>
   );
@@ -1392,7 +1400,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
       </section>
 
       <section className="summaryCard">
-        <div className="summaryHeader"><h3>KEY SYSTEMS</h3><button onClick={() => setScreen(2)}>Edit/Add Details</button></div>
+        <div className="summaryHeader"><h3>KEY SYSTEMS</h3><button onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>Edit/Add Details</button></div>
         {specRows.map(([Icon, a, b]) => (
           <div className="summaryRow compact" key={a}>
             <Icon size={17} />
@@ -1400,9 +1408,11 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
             <span>{b}</span>
           </div>
         ))}
-        <button className="textLink" onClick={() => setScreen(2)}>View all specs</button>
+        <button className="textLink" onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>View all specs</button>
       </section>
 
+      <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>
+      {home.analysisLevel === "inclusive" && <AnalysisDraft home={home}/>}
       <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>
         {isScoring ? "Generating VPSF Score..." : "Generate VPSF Score"} <ArrowRight size={18} />
       </button>
@@ -1426,7 +1436,7 @@ function ResultStreetAddress({ streetAddress }) {
   return streetAddress ? <p className="resultStreetAddress">{streetAddress}</p> : null;
 }
 
-function Dashboard({ result, setScreen, setSelectedPillar, streetAddress }) {
+function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home }) {
   const scoreInfo = classification(result.total);
   const pct = Math.min(100, Math.round((result.total / 1000) * 100));
   return (
@@ -1453,6 +1463,7 @@ function Dashboard({ result, setScreen, setSelectedPillar, streetAddress }) {
         </div>
       </section>
 
+      {home?.analysisLevel && home.analysisLevel !== "broad" && <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>}
       <button className="primaryButton diveButton" onClick={() => setScreen(5)}>
         Next — Learn More <ArrowRight size={18} />
       </button>
@@ -3241,6 +3252,7 @@ export default function App() {
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
   const [listingSource, setListingSource] = useState("mls");
+  const listingReturnRef = useRef(1);
   const [customFields, setCustomFields] = useState([]);
   const [hasAssessedHome, setHasAssessedHome] = useState(false);
   const [apiResult, setApiResult] = useState(null);
@@ -3301,10 +3313,14 @@ export default function App() {
       };
     });
   };
-  const handleCaptureApply = (facts, photoReview, preserveExisting = false) => {
+  const handleCaptureApply = (facts, photoReview, preserveExisting = false, evidenceSource) => {
     setApiResult(null); setScoreError(""); setHasAssessedHome(false);
     setQueryId(null); queryIdRef.current = null;
-    setHome(current => applyAnalysisEvidence(current, facts, photoReview, {fresh: !preserveExisting && (current === defaultHome || !!current.demoScenario)}));
+    setHome(current => {
+      const next=applyAnalysisEvidence(current,facts,photoReview,{fresh:!preserveExisting && (current === defaultHome || !!current.demoScenario)});
+      if(evidenceSource === "documents") for(const key of Object.keys(facts)) if(next[key] === facts[key] && !photoReview?.editedFields?.includes(key)) next.provenance[key]={origin:"imported",source:"Reviewed document extraction",date:new Date().toISOString()};
+      return next;
+    });
   };
   const updateExtra = (key, value) => update("extraInputs", { ...(home.extraInputs || {}), [key]: value });
 
@@ -3484,10 +3500,11 @@ export default function App() {
 
   const handleBack = () => {
     if (screen === 26 && pillarAboutReturnRef.current !== null) {setScreen(pillarAboutReturnRef.current);pillarAboutReturnRef.current=null;return;}
+    if (screen === 30) { setScreen(1); return; }
     if (screen === 14) { setScreen(2); return; }
-    if (screen === 3 && home.analysisLevel && home.analysisLevel !== "broad") { setScreen(14); return; }
+    if (screen === 3 && home.analysisLevel && home.analysisLevel !== "broad") { setScreen(home.analysisLevel === "moderate" ? 30 : 14); return; }
     if (screen === 29 || screen === 1 || (screen === 3 && home.analysisLevel === "broad")) { setScreen(screen === 1 && home.analysisLevel === "inclusive" ? 29 : 0); return; }
-    if (screen === 11) { setScreen(1); return; }
+    if (screen === 11) { setScreen(listingReturnRef.current); return; }
     if (screen === 27) {
       setScreen(25);
       return;
@@ -3622,11 +3639,12 @@ export default function App() {
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
-        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
-        {screen === 0 && <StartScreen initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{setListingSource(source); navigateFromUI(11);}} />}
-        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} onEvidence={(facts,review)=>handleCaptureApply(facts,review,true)} onListingSelect={source=>{setListingSource(source); navigateFromUI(11);}} />}
+        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
+        {screen === 0 && <StartScreen onResume={draft=>{setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
+        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
-        {screen === 29 && <InclusiveIntroduction onContinue={()=>setScreen(1)}/>}
+        {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}
+        {screen === 30 && <ModerateReview home={home} update={update} Field={Field} options={depthOptions} onReview={()=>setScreen(3)} onInclusive={()=>{setHome(current=>({...current,analysisLevel:"inclusive"}));setScreen(29);}}/>}
         {screen === 3 && home.analysisLevel === "broad" && <BroadReview home={home} onSubmit={handleGenerateScore} onBack={()=>setScreen(0)} busy={isScoring} error={scoreError}/>}
         {screen === 3 && home.analysisLevel !== "broad" && (
           <ReviewScreen
@@ -3638,14 +3656,14 @@ export default function App() {
           />
         )}
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
-        {screen === 4 && result && <Dashboard result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
+        {screen === 4 && result && <Dashboard home={home} result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
         {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); navigateFromUI(7); setActiveCategory(recommendationCategory(rec));}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
-        {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{const parsed = parseAddressParts(facts.address || ""); handleCaptureApply({...parsed,...facts,address:parsed.address || facts.address}, undefined, true); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(1);}} />}
+        {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{const parsed = parseAddressParts(facts.address || ""); handleCaptureApply({...parsed,...facts,address:parsed.address || facts.address}, undefined, true); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(listingReturnRef.current);}} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} home={inquiryHome} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
         {screen === 14 && <HomeSpecsMore home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}

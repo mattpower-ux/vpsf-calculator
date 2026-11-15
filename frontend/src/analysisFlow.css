@@ -47,3 +47,22 @@
 .supportingListingImport { margin-top: 8px; border-top: 1px solid var(--line,#d7e6e8); padding-top: 8px; }
 .supportingListingImport summary { cursor: pointer; color: var(--blue,#14778b); font-weight: 700; padding: 10px 0; min-height: 44px; box-sizing: border-box; }
 .supportingListingImport[open] .listingImportGrid { margin-top: 8px; }
+
+.completenessSummary { margin: 16px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-tint,#f2f8f9); }
+.completenessSummary h3 { text-transform: none; letter-spacing: 0; font-size: 18px; margin: 0 0 8px; }
+.completenessSummary p { font-size: 14px; line-height: 1.45; }
+.completenessCounts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 12px 0; }
+.completenessCounts div { display: flex; justify-content: space-between; gap: 8px; }
+.completenessCounts dt { font-size: 13px; color: var(--body-copy); }
+.completenessCounts dd { margin: 0; font-weight: 750; }
+.completenessNote { font-size: 13px; color: var(--body-copy); line-height: 1.5; margin: 12px 0; }
+.evidenceChecklist > details { border-bottom: 1px solid var(--line); padding: 12px 0; }
+.evidenceChecklist summary, .completenessSummary summary { cursor: pointer; padding: 10px 0; font-weight: 700; min-height: 44px; box-sizing: border-box; }
+.evidenceChecklist summary span { display: block; font-size: 13px; font-weight: 400; color: var(--body-copy); margin-top: 4px; }
+.evidenceChecklist p { font-size: 14px; line-height: 1.5; margin: 12px 0; }
+.evidenceFieldGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 4px 0 16px; }
+.depthReview .secondaryButton { margin-top: 12px; }
+.evidenceFinding { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.evidenceFinding h4 { margin: 0 0 8px; }
+.evidenceFinding ul { padding-left: 18px; font-size: 14px; }
+@media(max-width:480px) { .evidenceFieldGrid { grid-template-columns: 1fr; } }

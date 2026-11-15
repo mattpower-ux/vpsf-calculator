@@ -10,8 +10,9 @@ export default function DocumentUpload({onApply}) {
   const [alternatives,setAlternatives] = useState({}), [progress,setProgress] = useState('');
   const [done,setDone] = useState(false);
   const mounted = useRef(true);
+  const editedFields = useRef(new Set());
   useEffect(()=>{mounted.current=true;return ()=>{mounted.current=false;};},[]);
-  function resetResults() {setDraft(null);setDone(false);setErrors([]);}
+  function resetResults() {editedFields.current.clear();setDraft(null);setDone(false);setErrors([]);}
   function choose(next) {
     resetResults();
     const list = Array.from(next || []);
@@ -62,10 +63,10 @@ export default function DocumentUpload({onApply}) {
       <p>{Object.keys(draft).length?'Only checked fields will replace the current home details. Conflicting values are unchecked until you choose what to use.':'No supported property details were found. You can enter them manually; nothing has changed.'}</p>
       {Object.entries(draft).map(([key,value])=><div key={key}>
         <label><input type="checkbox" checked={!!selected[key]} onChange={e=>setSelected({...selected,[key]:e.target.checked})}/> Apply {fields[key]}</label>
-        <label className="field"><span>{fields[key]}</span><input value={value} onChange={e=>setDraft({...draft,[key]:e.target.value})}/></label>
+        <label className="field"><span>{fields[key]}</span><input value={value} onChange={e=>{editedFields.current.add(key);setDraft({...draft,[key]:e.target.value});}}/></label>
         {alternatives[key] && <p>Different values found: {alternatives[key].join(' / ')}. Enter the correct value above.</p>}
       </div>)}
-      <button type="button" className="primaryButton" disabled={!Object.keys(draft).some(key=>selected[key] && draft[key].trim())} onClick={()=>{onApply(Object.fromEntries(Object.entries(draft).filter(([key,value])=>selected[key] && value.trim())));setDraft(null);setDone(true);}}>Apply reviewed details</button>
+      <button type="button" className="primaryButton" disabled={!Object.keys(draft).some(key=>selected[key] && draft[key].trim())} onClick={()=>{onApply(Object.fromEntries(Object.entries(draft).filter(([key,value])=>selected[key] && value.trim())), {editedFields:[...editedFields.current]});setDraft(null);setDone(true);}}>Apply reviewed details</button>
       <button type="button" className="secondaryButton" onClick={()=>setDraft(null)}>Discard extraction</button>
     </div>}
     {done && <p role="status">Reviewed details applied. Generate a new score when ready.</p>}

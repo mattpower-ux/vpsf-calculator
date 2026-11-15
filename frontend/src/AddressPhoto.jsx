@@ -26,7 +26,7 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
   const found = remote?.address === address ? remote : null;
   const image = imported?.image || (demo ? demoExterior : found?.image);
   const canSketch = Boolean(imported || demo || found?.derivativesAllowed);
-  const options = [['broad','Broad','Public records'],['moderate','Moderate','Add evidence'],['inclusive','Inclusive','Add full details']];
+  const options = [['broad','Broad','Public records'],['moderate','Moderate','Confirm key features'],['inclusive','Inclusive','Document your home']];
   const imageFailed = () => { setRemote(null); setLocal(null); setError('This photo could not be displayed. Please choose another.'); };
   return <section className="addressPhoto analysisChoices" aria-label="Level of Analysis Desired" aria-busy={busy}>
     <svg width="0" height="0" aria-hidden="true" className="sketchFilters"><defs>

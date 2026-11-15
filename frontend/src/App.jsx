@@ -57,7 +57,7 @@ import sprinklerTipImage from "./assets/eco-tip-sprinkler.jpg";
 import waterHeaterTipImage from "./assets/products/rheem-proterra.jpg";
 import { demoProperties } from "./demo/demoProperties";
 import { productPhotos } from "./productPhotos.js";
-import { resilienceFeatures, resilienceRecordNotes } from "./resilienceFeatures.js";
+import { resilienceFeatures, resilienceRecordNotes, resilienceActionSummary } from "./resilienceFeatures.js";
 import { demoProducts } from "./demo/demoProducts";
 import {
   ArrowRight,
@@ -1528,7 +1528,7 @@ function TakeawayCard({ title, pillar, value, isBest, onOpenKnowHow }) {
 
 function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar, home, resultMode }) {
   const pillar = PILLARS.find((item) => item.key === selectedPillar) || PILLARS[0];
-  const details = pillar.key === "resilience" ? { ...PILLAR_DETAILS.resilience, ...resilienceFeatures(home) } : resultMode === "demo" ? PILLAR_DETAILS[pillar.key] : {
+  const details = pillar.key === "resilience" ? { ...PILLAR_DETAILS.resilience, ...resilienceFeatures(home), summary: resilienceActionSummary(home) } : resultMode === "demo" ? PILLAR_DETAILS[pillar.key] : {
     ...PILLAR_DETAILS[pillar.key],
     pros: recordedPillarFeatures(home, pillar.key),
     cons: ["Unrecorded features have not been verified. Review your home details to add supporting information."]
@@ -1565,9 +1565,6 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
         </div>
       </section>
 
-      {pillar.key === "resilience" && result.explanations?.resilience && (
-        <div className="sourceNote resilienceSummary"><p>{result.explanations.resilience}</p>{resilienceRecordNotes(home) && <p><em>{resilienceRecordNotes(home)}</em></p>}</div>
-      )}
       <button type="button" className="textLink" onClick={()=>setScreen(26)}>About this pillar <ArrowRight size={15}/></button>
       {assessedCommunity && result.walkability?.status === "available" && <p className="sourceNote">EPA National Walkability Index: {result.walkability.value.toFixed(1)} / 20, 2019 census block group {result.walkability.blockGroup}. <a href={result.walkability.sourceUrl} target="_blank" rel="noreferrer">EPA source</a></p>}
 
@@ -1591,6 +1588,10 @@ function PillarDetailScreen({ result, selectedPillar, setScreen, setActivePillar
           </ul>
         </article>
       </section>
+
+      {pillar.key === "resilience" && result.explanations?.resilience && (
+        <div className="sourceNote resilienceSummary"><p>{result.explanations.resilience}</p>{resilienceRecordNotes(home) && <p><em>{resilienceRecordNotes(home)}</em></p>}</div>
+      )}
 
       <button className="primaryButton" onClick={() => {
         setActivePillar(selectedPillar);

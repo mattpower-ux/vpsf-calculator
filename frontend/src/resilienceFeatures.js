@@ -1,3 +1,5 @@
+import { wildfireAssessment } from './wildfire.js';
+
 const protectionFields = {
   fortified:'Resilience certification', flood:'Flood protection', moisture:'Moisture management',
   backup:'Backup power', wildfireMitigation:'Wildfire protection',
@@ -42,4 +44,22 @@ export function resilienceFeatures(home) {
     pros: pros.length ? pros : ['No resilience-enhancing features recorded.'],
     cons: cons.length ? cons : ['No specific weaknesses identified from the supplied home details.']
   };
+}
+
+export function resilienceActionSummary(home = {}) {
+  const actions = [];
+  const exposed = ['High','Very High'].includes(wildfireAssessment(home)?.level);
+  const siding = home.siding || '', roof = home.roof || '';
+  const age = Number.parseFloat(home.roofAge);
+  if (/wood|cedar|vinyl/i.test(siding)) actions.push(`Replace the ${siding.toLowerCase()} siding with noncombustible siding.`);
+  if (/wood|cedar|shake/i.test(roof) && !/asphalt/i.test(roof)) actions.push('Replace the combustible wood roof with a fire-resistant roofing system.');
+  else if (/asphalt/i.test(roof) && age >= 20) actions.push(`Plan to replace the ${age}-year-old asphalt roof${exposed ? ' with a fire-resistant roofing system' : ' to improve weather protection'}.`);
+  if (exposed && !/defensible/i.test(home.wildfireMitigation || '')) actions.push('Prepare the landscaping for wildfire: clear dry vegetation and debris near the house and create defensible space.');
+  else if (exposed && !/ember/i.test(home.wildfireMitigation || '')) actions.push('Add ember-resistant vents and protect openings where embers can enter.');
+  if (/^none$/i.test(home.backup || '') && actions.length < 3) actions.push('Add backup power for essential equipment during outages.');
+  if (!actions.length) {
+    const strengths = resilienceFeatures(home).pros.filter(text=>!text.startsWith('No resilience'));
+    return strengths.length ? `${strengths.slice(0,2).join(' ')} Keep these protections maintained and review the recommendations for remaining improvements.` : 'Add the roof age, siding material, and existing hazard protections so the calculator can identify this home’s most useful resilience improvements.';
+  }
+  return actions.slice(0,3).join(' ');
 }

@@ -1,9 +1,9 @@
 import { wildfireAssessment } from './wildfire.js';
 
 const LEVELS = {
-  broad: {label: 'Broad', route: 3},
-  moderate: {label: 'Moderate', route: 1},
-  inclusive: {label: 'Inclusive', route: 29}
+  broad: {label: '1. Essentials', route: 3},
+  moderate: {label: '2. Systems', route: 1},
+  inclusive: {label: '3. Full Audit', route: 29}
 };
 
 /** Unknown/non-string input preserves the legacy full-form flow, Moderate. */
@@ -14,7 +14,7 @@ export function normalizeAnalysisLevel(value) {
 
 export const analysisLevelLabel = value => LEVELS[normalizeAnalysisLevel(value)].label;
 export const routeAfterLookup = value => LEVELS[normalizeAnalysisLevel(value)].route;
-export const analysisLabel = value => `${analysisLevelLabel(value)} Analysis`;
+export const analysisLabel = value => analysisLevelLabel(value);
 export const analysisRoute = routeAfterLookup;
 
 const LOCATION_FIELDS = ['address', 'city', 'state', 'zip'];

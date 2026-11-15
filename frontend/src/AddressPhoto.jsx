@@ -3,6 +3,7 @@ import { isPresentationAddress } from './presentationHome.js';
 import { getPropertyPhoto } from './api/client.js';
 import demoExterior from './assets/demo-california-exterior.png';
 import './addressPhoto.css';
+import { analysisLevelLabel } from './analysisLevels.js';
 
 export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
   const filterId = useId().replace(/:/g, "");
@@ -26,7 +27,7 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
   const found = remote?.address === address ? remote : null;
   const image = imported?.image || (demo ? demoExterior : found?.image);
   const canSketch = Boolean(imported || demo || found?.derivativesAllowed);
-  const options = [['broad','Broad','Public records'],['moderate','Moderate','Confirm key features'],['inclusive','Inclusive','Document your home']];
+  const options = [['broad',analysisLevelLabel('broad'),'Public records'],['moderate',analysisLevelLabel('moderate'),'Confirm key features'],['inclusive',analysisLevelLabel('inclusive'),'Document your home']];
   const imageFailed = () => { setRemote(null); setLocal(null); setError('This photo could not be displayed. Please choose another.'); };
   return <section className="addressPhoto analysisChoices" aria-label="Level of Analysis Desired" aria-busy={busy}>
     <svg width="0" height="0" aria-hidden="true" className="sketchFilters"><defs>
@@ -43,9 +44,9 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
     </defs></svg>
     {image && <figure className="mainExteriorPhoto"><img src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
     <h2>Level of Analysis Desired</h2>
-    <div className="analysisChoiceGrid">{options.map(([level,label,caption]) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label} Analysis: ${caption}`}>
+    <div className="analysisChoiceGrid">{options.map(([level,label,caption]) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label}: ${caption}`}>
       <span className="analysisChoiceImage">
-        {image && (canSketch || level === 'inclusive') ? <img src={image} alt={`${label === 'Broad' ? 'Line drawing' : label === 'Moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
+        {image && (canSketch || level === 'inclusive') ? <img src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
       </span>
       <strong>{label}</strong><small>{caption}</small>
     </button>)}</div>

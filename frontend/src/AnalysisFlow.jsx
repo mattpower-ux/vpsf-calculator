@@ -28,7 +28,7 @@ export function AnalysisEvidence({ home, onApply, onListingSelect }) {
 
 export function InclusiveIntroduction({ onContinue }) {
   return <div className="screen inclusiveIntroduction">
-    <h2>Inclusive Analysis</h2>
+    <h2>3. Full Audit</h2>
     <p className="inclusiveLead">This method will give you the most accurate VPSF score for your home.</p>
     <p>We’ll ask you to fill in some details. The more, the better.</p>
     <ul><li>Start with the property information we found.</li><li>Add details about your home’s systems and features.</li><li>Use documents or a guided photo walk to fill in gaps.</li><li>Review your information, then generate your score.</li></ul>
@@ -52,7 +52,7 @@ export function BroadReview({ home, onSubmit, onBack, busy, error }) {
       {home.wildfire?.status === 'available' && <div><dt>USFS area wildfire risk</dt><dd>{home.wildfire.level}<small>{home.wildfire.areaName}</small></dd></div>}
       {home.epaWalkability?.status === 'available' && <div><dt>EPA walkability index</dt><dd>{home.epaWalkability.value} / 20</dd></div>}
     </dl></section>}
-    <button className="primaryButton" onClick={onSubmit} disabled={busy}>{busy ? 'Analyzing…' : 'Generate Broad Analysis'} <ArrowRight size={18}/></button>
+    <button className="primaryButton" onClick={onSubmit} disabled={busy}>{busy ? 'Analyzing…' : 'Generate Essentials Analysis'} <ArrowRight size={18}/></button>
     <button className="textLink" onClick={onBack}>Choose another analysis level</button>
     {error && <p role="alert">{error}</p>}
   </div>;

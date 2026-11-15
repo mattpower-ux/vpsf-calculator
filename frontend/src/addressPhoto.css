@@ -5,3 +5,14 @@
 .addressPhotoUpload { display: block; color: var(--blue, #14778b); font: inherit; font-size: 14px; font-weight: 600; margin-top: 8px; padding: 0; border: 0; background: none; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .addressPhotoUpload input { display: block; max-width: 100%; font: inherit; font-size: 12px; margin-top: 5px; }
 .addressPhoto p { font-size: 14px; }
+
+.exteriorPhotoForm { display: grid; gap: 12px; }
+.exteriorPhotoForm .photoHelp { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted,#526d78); }
+.exteriorPhotoForm form { display: grid; gap: 10px; border-top: 1px solid var(--line,#d7e6e8); padding-top: 16px; }
+.exteriorPhotoForm .field { display: grid; gap: 8px; }
+.exteriorPhotoForm .field input { padding: 12px; border: 1px solid var(--line,#d7e6e8); border-radius: 10px; font-size: 16px; }
+.exteriorPhotoForm .primaryButton,.exteriorPhotoForm .secondaryButton { margin: 0; }
+.exteriorPhotoForm .exteriorPhotoPreview { margin: 0; }
+.exteriorPhotoPreview img { max-height: 180px; width: 100%; object-fit: contain; }
+.exteriorPhotoForm [role=alert] { color: #a43b29; margin: 0; }
+.exteriorPhotoForm button:disabled { opacity: .45; cursor: not-allowed; }

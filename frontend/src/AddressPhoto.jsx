@@ -1,18 +1,19 @@
-import React, { useEffect, useRef, useState, useId } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import { isPresentationAddress } from './presentationHome.js';
 import { getPropertyPhoto } from './api/client.js';
 import demoExterior from './assets/demo-california-exterior.png';
 import './addressPhoto.css';
+import ExteriorPhotoDialog from './ExteriorPhotoDialog.jsx';
 import { analysisLevelLabel } from './analysisLevels.js';
 
 export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
   const filterId = useId().replace(/:/g, "");
-  const picker = useRef(null);
+  const [editing,setEditing] = useState(false);
   const [remote, setRemote] = useState(null), [local, setLocal] = useState(null);
   const [error, setError] = useState('');
   const demo = isPresentationAddress(address);
   useEffect(() => {
-    setRemote(null); setError('');
+    setRemote(null); setError(''); setEditing(false);
     if (demo || address.trim().length < 10) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -42,25 +43,20 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
         <feComponentTransfer><feFuncR type="discrete" tableValues=".15 .3 .5 .7 .85 .98"/><feFuncG type="discrete" tableValues=".2 .38 .56 .74 .89 .99"/><feFuncB type="discrete" tableValues=".22 .4 .58 .76 .9 1"/></feComponentTransfer>
       </filter>
     </defs></svg>
-    {image && <figure className="mainExteriorPhoto"><img src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
+    {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
     <h2>Level of Analysis Desired</h2>
     <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label}: ${caption}`}>
       <span className="analysisChoiceImage">
         <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
-        {image && (canSketch || level === 'inclusive') ? <img src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
+        {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
       </span>
       <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
     </button>)}</div>
     {busy && <p role="status">Loading the available property information…</p>}
     {image && !demo && !imported && <p className="photoAttribution">{found?.attribution || 'Google Street View'}{found?.date ? ` · ${found.date}` : ''}</p>}
-    <button type="button" className="addressPhotoUpload" disabled={busy} onClick={() => picker.current.click()}>{image ? 'Change exterior photo' : 'Upload exterior photo'}</button>
+    <button type="button" className="addressPhotoUpload" disabled={busy} onClick={() => setEditing(true)}>{image ? 'Change exterior photo' : 'Upload exterior photo'}</button>
     {!image && !busy && <p className="photoAvailability">You can choose an analysis level without a photo.</p>}
-    <input ref={picker} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={event => {
-      const file = event.target.files?.[0]; event.target.value = '';
-      if (!file) return;
-      if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 10*1024*1024) { setError('Choose a JPG, PNG, or WebP photo under 10 MB.'); return; }
-      setError(''); setLocal({ address, image:URL.createObjectURL(file) });
-    }}/>
+    {editing && <ExteriorPhotoDialog onClose={()=>setEditing(false)} onUse={image=>{setError('');setLocal({address,image});setEditing(false);}}/>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

@@ -1,11 +1,12 @@
 """Bound the entire multipart body before parsing (including chunked uploads)."""
 from fastapi import APIRouter, HTTPException, Request
+from app.inference_limits import InferenceLimitedRoute
 from starlette.datastructures import UploadFile
 from starlette.formparsers import MultiPartException
 
 from app.ocr.home_walk import TOPICS, analyze_images
 
-router = APIRouter(prefix='/api/home-walk', tags=['home-walk'])
+router = APIRouter(prefix='/api/home-walk', tags=['home-walk'], route_class=InferenceLimitedRoute)
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_BODY_BYTES = 24 * 1024 * 1024
 

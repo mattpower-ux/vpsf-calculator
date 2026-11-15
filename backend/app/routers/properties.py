@@ -1,3 +1,4 @@
+from app.inference_limits import InferenceLimitedRoute
 import asyncio
 import json
 
@@ -20,7 +21,7 @@ from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
 from app.schemas import GeocodeRequest, GeocodeResponse, ListingImportRequest, PropertyInput, RiskEnrichmentRequest, RiskEnrichmentResponse
 
-router = APIRouter(prefix="/api/properties", tags=["properties"])
+router = APIRouter(prefix="/api/properties", tags=["properties"], route_class=InferenceLimitedRoute)
 
 
 def mapbox_context_value(context: dict, key: str) -> str:

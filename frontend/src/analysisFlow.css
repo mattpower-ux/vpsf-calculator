@@ -66,3 +66,15 @@
 .evidenceFinding h4 { margin: 0 0 8px; }
 .evidenceFinding ul { padding-left: 18px; font-size: 14px; }
 @media(max-width:480px) { .evidenceFieldGrid { grid-template-columns: 1fr; } }
+
+/* Keep step numbers separate so short level names share one baseline. */
+.analysisChoiceImage { position: relative; }
+.analysisChoiceNumber { position: absolute; z-index: 1; top: 5px; left: 5px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--blue,#14778b); color: #fff; font-size: 12px; font-weight: 700; line-height: 1; }
+.analysisChoice strong { white-space: nowrap; font-size: 16px; margin-top: 8px; }
+.analysisChoice small { display: block; min-height: 2.6em; max-width: 12ch; margin-top: 4px; }
+@media (max-width: 640px) {
+  .analysisChoiceGrid { gap: 8px; }
+  .analysisChoice strong { font-size: 14px; }
+  .analysisChoiceImage { aspect-ratio: 1.45; }
+  .analysisChoiceNumber { width: 20px; height: 20px; font-size: 11px; top: 4px; left: 4px; }
+}

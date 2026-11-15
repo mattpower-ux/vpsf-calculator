@@ -44,11 +44,12 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
     </defs></svg>
     {image && <figure className="mainExteriorPhoto"><img src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
     <h2>Level of Analysis Desired</h2>
-    <div className="analysisChoiceGrid">{options.map(([level,label,caption]) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label}: ${caption}`}>
+    <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label}: ${caption}`}>
       <span className="analysisChoiceImage">
+        <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
         {image && (canSketch || level === 'inclusive') ? <img src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
       </span>
-      <strong>{label}</strong><small>{caption}</small>
+      <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
     </button>)}</div>
     {busy && <p role="status">Loading the available property information…</p>}
     {image && !demo && !imported && <p className="photoAttribution">{found?.attribution || 'Google Street View'}{found?.date ? ` · ${found.date}` : ''}</p>}

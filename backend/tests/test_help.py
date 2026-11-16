@@ -85,3 +85,29 @@ def test_program_catalog_search_covers_all_eight_families_without_promising_scor
         catalog = next((entry for entry in results if entry["id"] == "certification-programs"), None)
         assert catalog is not None, program
         assert "not automatic scoring" in catalog["body"].lower()
+
+
+def test_help_archive_search_explains_local_history_and_existing_navigation():
+    guide = get_help_response("/api/help/guide").json()
+    assert len([entry for entry in guide["topics"] if not entry.get("faq")]) == 23
+    for query in ["ARCHIVE", "saved evaluations", "download PDF", "product recommendations", "unsaved searches"]:
+        response = get_help_response("/api/help/search", params={"q": query})
+        assert response.status_code == 200
+        entry = next(item for item in response.json()["results"] if item["id"] == "historical-reports")
+        assert entry["screen"] == 31
+        content = " ".join([entry["body"], *[s["text"] for s in entry["sections"]]]).lower()
+        for term in ["my scores", "automatically", "last 50", "completed evaluations", "this browser",
+                     "raw inputs", "pillar scores", "total", "model version", "unchanged", "new score", "remove individual",
+                     "clearing browser data", "download pdf", "keep/share", "current catalog", "refresh", "cannot recover", "before this feature"]:
+            assert term in content, (query, term)
+        assert "email" not in str(entry).lower()
+        assert "pin" not in str(entry).lower()
+        assert "reports remain unchanged" not in content
+
+
+def test_help_restart_search_explains_demo_default_and_explicit_archive_reopening():
+    results = get_help_response("/api/help/search", params={"q": "Restart default address"}).json()["results"]
+    entry = next(item for item in results if item["id"] == "address-and-records")
+    content = " ".join(section["text"] for section in entry["sections"]).lower()
+    for term in ["opening", "restart", "california demo", "explicitly reopen"]:
+        assert term in content

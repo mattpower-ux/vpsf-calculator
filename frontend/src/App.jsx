@@ -1,3 +1,5 @@
+import EvaluationArchive from './EvaluationArchive.jsx';
+import { saveEvaluation } from './evaluationArchive.js';
 import { pillarActionSummary } from './pillarActionSummary.js';
 import Certifications, { CertificationFindings } from './Certifications.jsx';
 import { fixtureFields, fixtureOptions, presentationInput } from './certifications.js';
@@ -142,7 +144,8 @@ const SCREEN_LABELS = {
   25: "Help",
   26: "Pillar Definition",
   27: "VPSF Field Guide",
-  28: "Product Categories"
+  28: "Product Categories",
+  31: "Archive"
 };
 
 function getOrCreateSessionId() {
@@ -576,7 +579,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
         </button>
       )}
       {children}
-      {screen !== 12 && <BottomNav active={[4, 5, 9, 10, 17, 18, 19, 24].includes(screen) ? "My Scores" : [25, 27].includes(screen) ? "Help?" : "Menu"} setScreen={setScreen} />}
+      {screen !== 12 && <BottomNav active={[4, 5, 9, 10, 17, 18, 19, 24, 31].includes(screen) ? "My Scores" : [25, 27].includes(screen) ? "Help?" : "Menu"} setScreen={setScreen} />}
     </div>
   );
 }
@@ -932,12 +935,17 @@ function rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, atto
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress, onResume, onPermitLookup }) {
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress, onResume, onPermitLookup, lookupGeneration }) {
   const [address, setAddress] = useState(initialAddress || presentationAddress);
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
   const [savedLookup, setSavedLookup] = useState(null);
   const savedMatch = savedMatchForAddress(savedLookup, address);
+  const lookupMounted = useRef(true);
+  useEffect(() => {
+    lookupMounted.current = true;
+    return () => { lookupMounted.current = false; lookupGeneration.current++; };
+  }, [lookupGeneration]);
 
   useEffect(() => {
     let current = true;
@@ -957,6 +965,8 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
 
   const applySavedAutofill = () => {
     if (!savedMatch) return;
+    lookupGeneration.current++;
+    setIsScanningAddress(false);
     onPermitLookup(null);
     const savedHome = savedPropertyToHome(savedMatch);
     setAddress(formatSavedAddress(savedMatch));
@@ -967,6 +977,8 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   const startExistingHomeScan = async (level) => {
     if (isScanningAddress) return;
     if (address.trim().length < 5) { setScanNote("Enter a property address first."); return; }
+    const generation = ++lookupGeneration.current;
+    const isCurrent = () => lookupMounted.current && lookupGeneration.current === generation;
     onPermitLookup(null);
 
     if (isPresentationAddress(address)) {
@@ -974,16 +986,18 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       setScanNote("");
       try {
         const {home: profile} = await getHardieDemo();
+        if (!isCurrent()) return;
         const prepared = prepareAnalysisHome(profile, level);
         setHome(prepared);
         setSelectedProperty(null);
         setResultMode("manual");
-        await onQueryStarted(prepared, "presentation");
+        await onQueryStarted(prepared, "presentation", isCurrent);
+        if (!isCurrent()) return;
         setScreen(analysisRoute(level));
       } catch {
-        setScanNote("We couldn't load the home details. Please try again.");
+        if (isCurrent()) setScanNote("We couldn't load the home details. Please try again.");
       } finally {
-        setIsScanningAddress(false);
+        if (isCurrent()) setIsScanningAddress(false);
       }
       return;
     }
@@ -996,10 +1010,12 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       const savedResult = savedMatch
         ? { found: true, property: savedMatch }
         : await findSavedProperty(parsedAddress);
+      if (!isCurrent()) return;
       if (savedResult?.found && savedResult.property) {
         let savedHome = savedPropertyToHomeForEnteredAddress(savedResult.property, address);
         try {
           const geocode = await geocodeProperty(formatSavedAddress(savedResult.property));
+          if (!isCurrent()) return;
           const risk = await enrichPropertyRisk({
             state: geocode.state,
             zip: geocode.zip,
@@ -1013,29 +1029,35 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
             wildfire: risk.wildfire ?? savedHome.wildfire
           };
         } catch (error) {
+          if (!isCurrent()) return;
           console.warn("Saved location risk lookup unavailable.", error);
         }
+        if (!isCurrent()) return;
         savedHome.provenance = {...savedHome.provenance};
         for (const key of ['address','city','state','zip']) if (savedHome[key] && savedHome[key] !== 'Unknown') savedHome.provenance[key] = {origin:'imported',source:'Address lookup'};
         savedHome = prepareAnalysisHome(savedHome, level);
         setHome(savedHome);
         onPermitLookup(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
-        await onQueryStarted(savedHome, "saved_archive");
+        await onQueryStarted(savedHome, "saved_archive", isCurrent);
+        if (!isCurrent()) return;
         setResultMode("manual");
         setScreen(analysisRoute(level));
         return;
       }
 
       const geocode = await geocodeProperty(address);
+      if (!isCurrent()) return;
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;
       let riskEnrichment = null;
       try {
         rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
       } catch (rentcastError) {
+        if (!isCurrent()) return;
         console.warn("RentCast enrichment unavailable.", rentcastError);
       }
+      if (!isCurrent()) return;
       try {
         riskEnrichment = await enrichPropertyRisk({
           latitude: geocode.latitude,
@@ -1045,24 +1067,29 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
           county: geocode.county,
         });
       } catch (riskError) {
+        if (!isCurrent()) return;
         console.warn("Risk enrichment unavailable.", riskError);
       }
+      if (!isCurrent()) return;
       const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, null, riskEnrichment);
       const prepared = prepareAnalysisHome(importedHome(scannedHome), level);
       setHome(prepared);
       onPermitLookup(prepared);
       setScanNote(`${rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}`);
-      await onQueryStarted(prepared, rentcastProperty ? "rentcast" : "mapbox");
+      await onQueryStarted(prepared, rentcastProperty ? "rentcast" : "mapbox", isCurrent);
     } catch (error) {
+      if (!isCurrent()) return;
       const fallbackHome = prepareAnalysisHome(homeFromExistingScan(address), level);
       setHome(fallbackHome);
       onPermitLookup(fallbackHome);
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");
-      await onQueryStarted(fallbackHome, "manual_fallback");
+      await onQueryStarted(fallbackHome, "manual_fallback", isCurrent);
     } finally {
-      setResultMode("manual");
-      setIsScanningAddress(false);
-      setScreen(analysisRoute(level));
+      if (isCurrent()) {
+        setResultMode("manual");
+        setIsScanningAddress(false);
+        setScreen(analysisRoute(level));
+      }
     }
   };
 
@@ -1078,7 +1105,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
           <input
             value={address}
             disabled={isScanningAddress}
-            onChange={(event) => { onPermitLookup(null); setAddress(event.target.value); }}
+            onChange={(event) => { lookupGeneration.current++; setIsScanningAddress(false); onPermitLookup(null); setAddress(event.target.value); }}
             aria-label="Property address"
             placeholder="Enter home address"
           />
@@ -2924,10 +2951,12 @@ const ECO_TIP_IMAGES = {
   "cool-roof": certainteedSolarisThumb
 };
 
-function MyScoresScreen({ onNavigate, setScreen }) {
+function MyScoresScreen({ onNavigate, setScreen, archiveError }) {
   return (
     <div className="screen myScoresScreen withNav">
       <header className="screenTop"><h2>My Scores</h2><ClipboardList size={18} /></header>
+      <button className="secondaryButton" onClick={() => setScreen(31)}>ARCHIVE</button>
+      {archiveError && <p role="alert">{archiveError}</p>}
       <div className="scoreLinks" aria-label="Results">
         {getResultsMenuItems().map((item) => (
           <button type="button" key={item.id} onClick={() => onNavigate(item.target.screen)}>
@@ -3294,8 +3323,11 @@ export default function App() {
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
   const [scoreError, setScoreError] = useState("");
+  const [archiveError, setArchiveError] = useState("");
   const [scoreRequests] = useState(createScoreRequestSession);
+  const lookupGeneration = useRef(0);
   const setScreen = useCallback(target => {
+    if (target !== 0) lookupGeneration.current++;
     if (target !== 12 && scoreRequests.pending()) {
       scoreRequests.invalidate();
       setIsScoring(false);
@@ -3391,7 +3423,8 @@ export default function App() {
     queryIdRef.current = queryId;
   }, [queryId]);
 
-  const handleQueryStarted = async (property, source) => {
+  const handleQueryStarted = async (property, source, isCurrent = () => true) => {
+    if (!isCurrent()) return;
     if (property.demoScenario) {
       setQueryId(null);
       queryIdRef.current = null;
@@ -3411,6 +3444,7 @@ export default function App() {
       source,
       snapshot: property
     });
+    if (!isCurrent()) return;
     if (record?.id) {
       setQueryId(record.id);
       queryIdRef.current = record.id;
@@ -3433,6 +3467,8 @@ export default function App() {
       minimumDelay:3200,
       onSuccess:(score, snapshot) => {
         setApiResult(score);
+        try { saveEvaluation(snapshot, score); setArchiveError(""); }
+        catch (error) { setArchiveError(`Score generated, but the browser archive could not be saved: ${error.message}`); }
         if (queryId) trackProgress({
           sessionId, queryId, screen:4, screenLabel:SCREEN_LABELS[4], snapshot,
           vpsfScore:score.total, scoreLabel:score.label, scoreRunId:score.scoreRunId
@@ -3546,6 +3582,7 @@ export default function App() {
   }, []);
 
   const handleBack = () => {
+    if (screen === 31) {setScreen(24); return;}
     if (screen === 26 && pillarAboutReturnRef.current !== null) {setScreen(pillarAboutReturnRef.current);pillarAboutReturnRef.current=null;return;}
     if (screen === 30) { setScreen(1); return; }
     if (screen === 14) { setScreen(2); return; }
@@ -3673,6 +3710,21 @@ export default function App() {
     setScreen(27);
   };
 
+  const openArchivedEvaluation = (entry, edit) => {
+    permitCancelRef.current?.();
+    setHome(entry.home);
+    previousArchivedHomeRef.current = entry.home;
+    setQueryId(null); queryIdRef.current = null;
+    setSelectedProperty(null);
+    setResultMode("manual");
+    setApiResult(edit ? null : entry.result);
+    setHasAssessedHome(!edit);
+    setScoreError("");
+    setActivePillar(null); setActiveCategory(null);
+    scoresDestinationScreenRef.current = edit ? 1 : 4;
+    setScreen(edit ? 1 : 4);
+  };
+
   const exitFullGuide = () => {
     guideDestinationScreenRef.current = null;
     setScreen(25);
@@ -3686,8 +3738,9 @@ export default function App() {
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
+        {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
         {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
-        {screen === 0 && <StartScreen onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
+        {screen === 0 && <StartScreen lookupGeneration={lookupGeneration} onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={presentationAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}
@@ -3725,7 +3778,8 @@ export default function App() {
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}
         {screen === 22 && <KnowHowArchiveScreen key={selectedKnowHowPillar} pillarKey={selectedKnowHowPillar} setScreen={navigateFromUI} returnScreen={knowHowReturnScreen} />}
         {screen === 23 && <MenuScreen key={menuVisit} onNavigate={handleMenuNavigate} setScreen={navigateFromUI} tip={ecoTip} />}
-        {screen === 24 && <MyScoresScreen onNavigate={handleScoresNavigate} setScreen={navigateFromUI} />}
+        {screen === 31 && <EvaluationArchive onOpen={openArchivedEvaluation} onBack={()=>setScreen(24)} />}
+        {screen === 24 && <MyScoresScreen archiveError={archiveError} onNavigate={handleScoresNavigate} setScreen={navigateFromUI} />}
         {screen === 25 && <HelpScreen onNavigate={handleHelpNavigate} onOpenGuide={openFullGuide} setScreen={navigateFromUI} />}
         {screen === 26 && <PillarDefinitionScreen selectedPillar={selectedPillar} setScreen={navigateFromUI} onOpenArchive={openPillarArchive} />}
         {screen === 27 && <FullGuideScreen guide={manualGuide} chapterIndex={manualChapterIndex} setChapterIndex={setManualChapterIndex} onExit={exitFullGuide} onNavigate={handleGuideNavigate} setScreen={navigateFromUI} />}

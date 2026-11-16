@@ -144,19 +144,23 @@
     "id": "address-and-records",
     "title": "Address and public records",
     "category": "Property Data",
-    "body": "The address connects a home to saved facts, available public records, and regional risk context.",
+    "body": "The address connects available property records and regional context.",
     "sections": [
       {
-        "heading": "Check the match",
-        "text": "Confirm the address, unit, ZIP, and property details before scoring."
+        "heading": "Check",
+        "text": "Confirm address, unit, ZIP, and property details before scoring."
       },
       {
         "heading": "PermitStack",
         "text": "Permit history is not a complete-record guarantee. A permit does not prove completed work, installed equipment, or equipment age."
       },
       {
-        "heading": "Missing records",
-        "text": "No permit found does not mean no work occurred. Confirm current systems with labels, invoices, or inspections."
+        "heading": "Gaps",
+        "text": "Missing permits do not prove no work occurred; verify current systems."
+      },
+      {
+        "heading": "Default address",
+        "text": "Opening or Restart uses the California demo address. Archived homes load only when you explicitly reopen them."
       }
     ],
     "keywords": [
@@ -170,7 +174,12 @@
       "PermitStack",
       "public records",
       "permit history",
-      "complete"
+      "complete",
+      "opening",
+      "Restart",
+      "default address",
+      "California demo",
+      "reopen"
     ],
     "screen": 0
   },
@@ -809,21 +818,33 @@
   },
   {
     "id": "historical-reports",
-    "title": "Historical reports and reassessment",
+    "title": "Archive: saved evaluations and historical reports",
     "category": "Results",
-    "body": "Saved historical reports remain unchanged when details or certification rules change.",
+    "body": "My Scores → ARCHIVE automatically saves the last 50 completed evaluations in this browser.",
     "sections": [
       {
-        "heading": "Saved snapshot",
-        "text": "A saved score run retains the inputs and scoring version used for that assessment."
+        "heading": "View",
+        "text": "Original raw inputs, pillar scores, total, and model version stay unchanged."
       },
       {
-        "heading": "New assessment",
-        "text": "Correct details or certificate evidence, then generate a new score. Certification-based runs retain their library version and effective features."
+        "heading": "Edit",
+        "text": "Edit details; generate a new score."
       },
       {
-        "heading": "Compare carefully",
-        "text": "Differences may reflect corrected evidence or model changes, not physical improvements. Keep the earlier report for context."
+        "heading": "Remove",
+        "text": "Remove individual evaluations; clearing browser data clears Archive."
+      },
+      {
+        "heading": "Keep/share",
+        "text": "Download PDF to keep/share records."
+      },
+      {
+        "heading": "Products",
+        "text": "Product recommendations refresh from the current catalog."
+      },
+      {
+        "heading": "Earlier searches",
+        "text": "Cannot recover searches unsaved before this feature."
       }
     ],
     "keywords": [
@@ -832,9 +853,18 @@
       "unchanged",
       "reassessment",
       "model version",
-      "library version"
+      "ARCHIVE",
+      "My Scores",
+      "saved evaluations",
+      "browser local",
+      "unsaved searches",
+      "remove",
+      "edit",
+      "download PDF",
+      "product recommendations",
+      "current catalog"
     ],
-    "screen": 24
+    "screen": 31
   },
   {
     "id": "manufacturer-inquiries",

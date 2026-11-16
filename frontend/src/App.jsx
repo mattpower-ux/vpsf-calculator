@@ -1062,7 +1062,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   return (
     <div className="screen startScreen">
       <h1>Analyze an existing home</h1>
-      <p className="centerCopy">Enter any address and the calculator will score the home's current and potential “value.”</p>
+      <p className="centerCopy">Enter any address and the calculator will score the home's performance strengths and weaknesses.</p>
 
       <ResumeAnalysisDraft onResume={onResume}/>
       <section className="existingHomeCard">

@@ -1,0 +1,384 @@
+[
+  {
+    "name": "phone",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "checks": [
+      "Basic demo score saved with exact raw/result snapshots",
+      "My Scores ARCHIVE displays completed evaluation",
+      "Restart defaults to California demo address",
+      "Archive survives reload unchanged",
+      "View restores exact total/ranking/pillars with zero scoring requests",
+      "Edit restores saved property inputs without scoring",
+      "Removal and empty archive persist after reload"
+    ],
+    "errors": [],
+    "failedResponses": [],
+    "blockedExternal": [],
+    "scoreRequests": [
+      {
+        "url": "https://vpsf-api.onrender.com/api/demos/hardie-wildfire/score",
+        "input": {
+          "analysisLevel": "broad",
+          "demoScenario": "hardie-wildfire",
+          "provenance": {
+            "address": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "city": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "state": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "zip": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "squareFeet": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "yearBuilt": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "bedrooms": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "bathrooms": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "lotSize": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "roof": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "roofAge": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "siding": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "solar": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "fortified": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "wildfireMitigation": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "backup": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            }
+          },
+          "address": "53017 Double View Lane",
+          "city": "Idyllwild",
+          "state": "CA",
+          "zip": "92549",
+          "squareFeet": "2593",
+          "yearBuilt": "1982",
+          "homeType": "",
+          "stories": "",
+          "bedrooms": "3",
+          "bathrooms": "2",
+          "garage": "",
+          "lotSize": "0.52 acres",
+          "climateZone": "",
+          "occupancy": "",
+          "hvac": "",
+          "hvacAge": "",
+          "heatingDistribution": "",
+          "heatingControls": "",
+          "hydronicSource": "",
+          "waterHeater": "",
+          "waterHeaterAge": "",
+          "roof": "Asphalt shingles",
+          "roofAge": "20 years",
+          "roofFireRating": "Unknown",
+          "siding": "Wood clapboard",
+          "windows": "",
+          "insulation": "",
+          "solar": "Solar PV",
+          "hers": "",
+          "evReady": "",
+          "fortified": "None",
+          "flood": "",
+          "wildfireMitigation": "None",
+          "temperatureProtection": "",
+          "windProtection": "",
+          "moisture": "",
+          "backup": "None",
+          "healthCert": "",
+          "ventilation": "",
+          "materials": "",
+          "iaq": "",
+          "daylighting": "",
+          "carbonStrategy": "",
+          "carbonConcrete": "",
+          "structure": "",
+          "waterStandard": "",
+          "toilets": "Unknown",
+          "bathroomFaucets": "Unknown",
+          "showerheads": "Unknown",
+          "leak": "",
+          "reuse": "",
+          "irrigation": "",
+          "landscape": "",
+          "pietim": "",
+          "insurance": "",
+          "warranty": "",
+          "maintenance": "",
+          "walkscore": "",
+          "transit": "",
+          "greenspace": "",
+          "amenities": "",
+          "bike": "",
+          "latitude": 33.729507,
+          "longitude": -116.736539,
+          "wildfire": {
+            "source": "USFS Wildfire Risk to Communities",
+            "sourceUrl": "https://wildfirerisk.org/",
+            "datasetVersion": "wrc-2024",
+            "status": "available",
+            "level": "Very High",
+            "nationalPercentile": 99.9,
+            "areaName": "Idyllwild-Pine Cove CDP, CA",
+            "areaId": "0636203",
+            "areaType": "community",
+            "boundaryVintage": "2023",
+            "latitude": 33.729507,
+            "longitude": -116.736539,
+            "retrievedAt": "2026-11-13T17:59:14+00:00"
+          },
+          "epaWalkability": null
+        }
+      }
+    ],
+    "passed": true
+  },
+  {
+    "name": "laptop",
+    "viewport": {
+      "width": 1366,
+      "height": 900
+    },
+    "checks": [
+      "Basic demo score saved with exact raw/result snapshots",
+      "My Scores ARCHIVE displays completed evaluation",
+      "Restart defaults to California demo address",
+      "Archive survives reload unchanged",
+      "View restores exact total/ranking/pillars with zero scoring requests",
+      "Edit restores saved property inputs without scoring",
+      "Removal and empty archive persist after reload"
+    ],
+    "errors": [],
+    "failedResponses": [],
+    "blockedExternal": [],
+    "scoreRequests": [
+      {
+        "url": "https://vpsf-api.onrender.com/api/demos/hardie-wildfire/score",
+        "input": {
+          "analysisLevel": "broad",
+          "demoScenario": "hardie-wildfire",
+          "provenance": {
+            "address": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "city": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "state": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "zip": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "squareFeet": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "yearBuilt": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "bedrooms": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "bathrooms": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "lotSize": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "roof": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "roofAge": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "siding": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "solar": {
+              "origin": "demo-assumption",
+              "source": "Fictional VPSF demonstration home in the Idyllwild neighborhood",
+              "date": "2026-11-13"
+            },
+            "fortified": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "wildfireMitigation": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            },
+            "backup": {
+              "origin": "demo-assumption",
+              "source": "Presentation scenario supplied by VPSF; not an inspection",
+              "date": "2026-11-13"
+            }
+          },
+          "address": "53017 Double View Lane",
+          "city": "Idyllwild",
+          "state": "CA",
+          "zip": "92549",
+          "squareFeet": "2593",
+          "yearBuilt": "1982",
+          "homeType": "",
+          "stories": "",
+          "bedrooms": "3",
+          "bathrooms": "2",
+          "garage": "",
+          "lotSize": "0.52 acres",
+          "climateZone": "",
+          "occupancy": "",
+          "hvac": "",
+          "hvacAge": "",
+          "heatingDistribution": "",
+          "heatingControls": "",
+          "hydronicSource": "",
+          "waterHeater": "",
+          "waterHeaterAge": "",
+          "roof": "Asphalt shingles",
+          "roofAge": "20 years",
+          "roofFireRating": "Unknown",
+          "siding": "Wood clapboard",
+          "windows": "",
+          "insulation": "",
+          "solar": "Solar PV",
+          "hers": "",
+          "evReady": "",
+          "fortified": "None",
+          "flood": "",
+          "wildfireMitigation": "None",
+          "temperatureProtection": "",
+          "windProtection": "",
+          "moisture": "",
+          "backup": "None",
+          "healthCert": "",
+          "ventilation": "",
+          "materials": "",
+          "iaq": "",
+          "daylighting": "",
+          "carbonStrategy": "",
+          "carbonConcrete": "",
+          "structure": "",
+          "waterStandard": "",
+          "toilets": "Unknown",
+          "bathroomFaucets": "Unknown",
+          "showerheads": "Unknown",
+          "leak": "",
+          "reuse": "",
+          "irrigation": "",
+          "landscape": "",
+          "pietim": "",
+          "insurance": "",
+          "warranty": "",
+          "maintenance": "",
+          "walkscore": "",
+          "transit": "",
+          "greenspace": "",
+          "amenities": "",
+          "bike": "",
+          "latitude": 33.729507,
+          "longitude": -116.736539,
+          "wildfire": {
+            "source": "USFS Wildfire Risk to Communities",
+            "sourceUrl": "https://wildfirerisk.org/",
+            "datasetVersion": "wrc-2024",
+            "status": "available",
+            "level": "Very High",
+            "nationalPercentile": 99.9,
+            "areaName": "Idyllwild-Pine Cove CDP, CA",
+            "areaId": "0636203",
+            "areaType": "community",
+            "boundaryVintage": "2023",
+            "latitude": 33.729507,
+            "longitude": -116.736539,
+            "retrievedAt": "2026-11-13T17:59:14+00:00"
+          },
+          "epaWalkability": null
+        }
+      }
+    ],
+    "passed": true
+  }
+]

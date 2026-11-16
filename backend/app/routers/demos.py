@@ -8,6 +8,7 @@ from app.scoring.catalog import evaluate_model
 from app.scoring import classify_score, explain_score, confidence_for_input
 from app.scoring.improvements import improvement_plan
 from app.routers.scoring import validate_extra_inputs, prepare_scoring_evidence
+from app.certification_resolution import resolve_home
 
 router=APIRouter(prefix="/api/demos",tags=["demonstrations"])
 
@@ -23,6 +24,7 @@ async def hardie_score(home:PropertyInput,db:Session=Depends(get_db)):
     try: validate_extra_inputs(home.extraInputs,model)
     except ValueError as e: raise HTTPException(422,str(e)) from e
     await prepare_scoring_evidence(home, model, db)
+    home, evidence = resolve_home(home, model, db)
     scores=evaluate_model(home,model)
     total=sum(scores.values())
-    return ScoreResponse(analysisLevel=home.analysisLevel,walkability=home.epaWalkability,scores=scores,total=total,modelVersion=model.version,explanations=explain_score(home,scores),confidence=confidence_for_input(home),improvements=improvement_plan(home,model),**classify_score(total))
+    return ScoreResponse(certificationEvidence=evidence,effectiveInput=home.model_dump(mode='json'),analysisLevel=home.analysisLevel,walkability=home.epaWalkability,scores=scores,total=total,modelVersion=model.version,explanations=explain_score(home,scores),confidence=confidence_for_input(home),improvements=improvement_plan(home,model),**classify_score(total))

@@ -4,6 +4,7 @@ import { getAdminProductClicks, getAdminProducts, getAdminPropertyQueries, login
 import cognitionIcon from "../assets/cognition-icon.png";
 import ScoresAndWeighting from "./ScoresAndWeighting";
 import EcoTips from "./EcoTips";
+import CertificationLibrary from "./CertificationLibrary";
 import ProductMetadataEditor from "./ProductMetadataEditor";
 import {
   BarChart3,
@@ -254,6 +255,7 @@ function Sidebar({ active, setActive }) {
     ["Scores and Weighting", Layers],
     ["Products", Package],
     ["Eco-Tips", BookOpen],
+    ["Certifications", Shield],
     ["Brand Weighting", Layers],
     ["Users", Users],
     ["Reports", BarChart3],
@@ -308,7 +310,7 @@ function Header({ active }) {
             : active === "Reports" ? "Review inquiries and build reports from saved product requests." : "VPSF administration"}
         </p>
       </div>
-      {!["Scores and Weighting", "Reports"].includes(active) && <div className="headerActions">
+      {!["Scores and Weighting", "Reports", "Certifications"].includes(active) && <div className="headerActions">
         <button><Download size={17} /> Export</button>
         <button className="primary">Save Changes</button>
       </div>}
@@ -721,6 +723,7 @@ export default function AdminDemo() {
   const isUnlocked = Boolean(adminToken);
   const [passcodeError, setPasscodeError] = useState("");
   const [active, setActive] = useState("Properties");
+  const [certificationsDirty, setCertificationsDirty] = useState(false);
   const [products, setProducts] = useState(initialProducts);
   const [queries, setQueries] = useState([]);
   const [productClicks, setProductClicks] = useState([]);
@@ -784,6 +787,7 @@ export default function AdminDemo() {
     "Scores and Weighting": <ScoresAndWeighting token={adminToken} />,
     Products: <><BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} /><ProductMetadataEditor products={products} setProducts={setProducts} token={adminToken}/></>,
     "Eco-Tips": <EcoTips token={adminToken}/>,
+    Certifications: <CertificationLibrary token={adminToken} onDirtyChange={setCertificationsDirty}/>,
     "Brand Weighting": <BrandWeighting products={products} setProducts={setProducts} passcode={adminToken} />,
     Users: <UsersPage />,
     Reports: <LeadReports products={products} token={adminToken} />,
@@ -825,7 +829,11 @@ export default function AdminDemo() {
 
   return (
     <div className="adminApp">
-      <Sidebar active={active} setActive={setActive} />
+      <Sidebar active={active} setActive={next => {
+        if (next !== active && active === 'Certifications' && certificationsDirty &&
+          !window.confirm('Leave certifications? Unsaved edits will be lost; a pending request may still complete.')) return;
+        setActive(next);
+      }} />
       <main className="adminMain">
         <Header active={active} />
         <div className="adminContent">{content}</div>

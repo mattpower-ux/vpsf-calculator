@@ -1,0 +1,28 @@
+[
+  {
+    "name": "laptop",
+    "unauthorized": 401,
+    "stale": 409,
+    "libraryVersion": "certifications-8e11c4f1a2b44277",
+    "preservedWeights": true,
+    "preview": 200,
+    "overflow": {
+      "viewport": 1440,
+      "width": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "phone",
+    "unauthorized": 401,
+    "stale": 409,
+    "libraryVersion": "certifications-9d9175f834274360",
+    "preservedWeights": true,
+    "preview": 200,
+    "overflow": {
+      "viewport": 390,
+      "width": 390
+    },
+    "errors": []
+  }
+]

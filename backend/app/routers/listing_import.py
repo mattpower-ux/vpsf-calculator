@@ -10,7 +10,7 @@ import http.client
 import json
 import re
 import socket
-from threading import BoundedSemaphore, Timer
+from threading import BoundedSemaphore, Timer, Event
 import time
 from typing import Literal
 from urllib.parse import urljoin, urlsplit
@@ -72,6 +72,10 @@ def close_socket(sock):
 
 def download_listing(source, url):
     deadline = time.monotonic() + DEADLINE
+    expired = Event()
+    def expire(sock):
+        expired.set()
+        close_socket(sock)
     try:
         for _ in range(4):
             validate_source_url(source, url)
@@ -87,11 +91,13 @@ def download_listing(source, url):
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise unavailable()
-                timer = Timer(remaining, close_socket, args=(sock,))
+                timer = Timer(remaining, expire, args=(sock,))
                 timer.daemon = True
                 timer.start()
                 connection.request('GET', path, headers={'Accept': 'text/html', 'Accept-Encoding': 'identity', 'User-Agent': 'VPSF-Listing-Reader/1.0'})
                 response = connection.getresponse()
+                if expired.is_set():
+                    raise unavailable()
                 if response.status in (301, 302, 303, 307, 308):
                     location = response.getheader('Location')
                     if not location:
@@ -111,7 +117,7 @@ def download_listing(source, url):
                 data = bytearray()
                 while True:
                     remaining = deadline - time.monotonic()
-                    if remaining <= 0:
+                    if expired.is_set() or remaining <= 0:
                         raise unavailable()
                     sock.settimeout(min(8, remaining))
                     chunk = response.read1(min(65536, MAX_BYTES + 1 - len(data)))
@@ -120,7 +126,7 @@ def download_listing(source, url):
                     data.extend(chunk)
                     if len(data) > MAX_BYTES:
                         raise unavailable()
-                if time.monotonic() >= deadline:
+                if expired.is_set() or time.monotonic() >= deadline:
                     raise unavailable()
                 html = data.decode('utf-8', errors='replace')
                 visible = BeautifulSoup(html, 'html.parser').get_text(' ', strip=True).lower()

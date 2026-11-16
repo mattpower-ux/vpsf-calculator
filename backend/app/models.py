@@ -38,6 +38,20 @@ class ScoringModelRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class CertificationLibraryRecord(Base):
+    __tablename__ = "certification_libraries"
+    version: Mapped[str] = mapped_column(String(80), primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class CertificationDraftRecord(Base):
+    __tablename__ = "certification_drafts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    payload: Mapped[dict] = mapped_column(JSON)
+
+
 class ScoringDraftRecord(Base):
     __tablename__ = "scoring_drafts"
 

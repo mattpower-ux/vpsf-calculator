@@ -12,6 +12,7 @@ from app.scoring.catalog import ScoreModel, evaluate_model
 from app.scoring.improvements import improvement_plan
 from app.scoring.store import ModelUnavailableError, load_published
 from app.integrations.epa_walkability import cached_walkability
+from app.certification_resolution import resolve_home
 
 router = APIRouter(prefix="/api", tags=["scoring"])
 
@@ -63,11 +64,12 @@ async def score_property(property_input: PropertyInput, db: Session = Depends(ge
         raise HTTPException(status_code=422, detail=str(error)) from error
     await prepare_scoring_evidence(property_input, model, db)
     property_record = create_property(db, property_input, source="score_request")
-    scores = evaluate_model(property_input, model)
+    effective, certification_evidence = resolve_home(property_input, model, db)
+    scores = evaluate_model(effective, model)
     total = sum(scores.values())
     classification = classify_score(total)
-    explanations = explain_score(property_input, scores)
-    confidence = confidence_for_input(property_input)
+    explanations = explain_score(effective, scores)
+    confidence = confidence_for_input(effective)
     score_run = create_score_run(
         db,
         property_input,
@@ -77,9 +79,13 @@ async def score_property(property_input: PropertyInput, db: Session = Depends(ge
         explanations=explanations,
         confidence=confidence,
         property_id=property_record.id,
+        certification_evidence=certification_evidence,
+        effective_input=effective.model_dump(mode='json'),
         **classification,
     )
     return ScoreResponse(
+        certificationEvidence=certification_evidence,
+        effectiveInput=effective.model_dump(mode='json'),
         analysisLevel=property_input.analysisLevel,
         scores=scores,
         total=total,
@@ -89,6 +95,6 @@ async def score_property(property_input: PropertyInput, db: Session = Depends(ge
         propertyId=property_record.id,
         scoreRunId=score_run.id,
         walkability=property_input.epaWalkability,
-        improvements=improvement_plan(property_input, model),
+        improvements=improvement_plan(effective, model),
         **classification,
     )

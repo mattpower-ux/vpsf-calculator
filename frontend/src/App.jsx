@@ -1,4 +1,7 @@
 import { pillarActionSummary } from './pillarActionSummary.js';
+import Certifications, { CertificationFindings } from './Certifications.jsx';
+import { fixtureFields, fixtureOptions, presentationInput } from './certifications.js';
+import { useCertificationCatalog, useCertificationPreview } from './useCertificationPreview.js';
 import PermitHistory from './PermitHistory.jsx';
 import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome } from './permitEvidence.js';
 import { lookupPermitHistory } from './api/client.js';
@@ -9,7 +12,7 @@ import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLev
 import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
 import ProductRequestForm from "./ProductRequestForm.jsx";
 import { companyWebsite, leadForHome, inquiryHomeFor } from "./productInquiry";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import DocumentUpload from "./DocumentUpload.jsx";
 import ListingImport, { LISTING_SOURCES, ListingLogo } from "./ListingImport.jsx";
@@ -41,7 +44,7 @@ import "./advice.css";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { manualChapters, manualChapterAt } from "./guideManual";
 import { themeFromSearch } from "./theme";
-import { resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
+import { createScoreRequestSession, resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import { recordedPillarFeatures } from "./recordedFeatures";
 import { heatingResilienceDefaults, heatingResilienceOptions, assessmentImprovements, heatingSelectionPatch } from "./heatingResilience";
@@ -364,7 +367,7 @@ const selectOptions = {
   materials: ["Low / No-VOC", "Standard Materials", "Unknown"],
   iaq: ["IAQ Monitoring", "CO2 Monitoring Only", "None"],
   daylighting: ["Daylighting + Acoustic Comfort", "Daylighting Only", "Standard"],
-  carbonStrategy: ["Zero Carbon Certified", "Documented EPDs + CLF Benchmark", "Partial Material Disclosure", "No Accounting"],
+  carbonStrategy: ["Documented EPDs + CLF Benchmark", "Partial Material Disclosure", "No Accounting"],
   carbonConcrete: ["Low-Carbon Concrete", "Standard Concrete", "Unknown"],
   structure: ["Wood-Heavy Structure", "Mixed Structure", "Steel / Concrete Heavy", "Unknown"],
   waterStandard: ["WaterSense Home v2", "HERS H2O", "WERS Rated", "Code-Minimum"],
@@ -382,6 +385,8 @@ const selectOptions = {
   bike: ["Bike Infrastructure", "Bikeable Streets", "None / Unknown"]
 };
 const depthOptions = {...selectOptions,...heatingResilienceOptions,
+  toilets:fixtureOptions, bathroomFaucets:fixtureOptions, showerheads:fixtureOptions,
+  roofFireRating:['Unknown','Class A'],
   siding:["Wood clapboard","Wood siding","Cedar shingles","Engineered wood","Vinyl","Fiber cement","Brick","Stucco","Metal","Other"],
   roof:["Asphalt shingles","Architectural Shingle","Metal","Clay tile","Concrete tile","Other"],
   irrigation:["No irrigation","Conventional Irrigation","Smart Irrigation","Drip Irrigation","Xeriscaping"]};
@@ -494,7 +499,9 @@ function resultFromDemoProperty(property) {
   };
 }
 
-function Field({ label, value, onChange, options, wide = false, emptyLabel = "Select if known" }) {
+function Field({ label, value, onChange, options, wide = false, emptyLabel = "Select if known", maxLength }) {
+  // Legacy certificate claims remain in the raw archive, not carbon choices.
+  if (options === selectOptions.carbonStrategy && value === 'Zero Carbon Certified') value = '';
   return (
     <label className={wide ? "field fieldWide" : "field"}>
       <span>{label}</span>
@@ -507,7 +514,7 @@ function Field({ label, value, onChange, options, wide = false, emptyLabel = "Se
           ))}
         </select>
       ) : (
-        <input value={value ?? ""} placeholder="Not provided" onChange={(e) => onChange(e.target.value)} />
+        <input value={value ?? ""} maxLength={maxLength} placeholder="Not provided" onChange={(e) => onChange(e.target.value)} />
       )}
     </label>
   );
@@ -1224,7 +1231,7 @@ function DemoAnalyzingScreen({ setScreen, autoAdvance = true }) {
   );
 }
 
-function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect }) {
+function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect, certificationPreview, certificationCatalog }) {
   return (
     <div className="screen formScreen">
       <ProgressDots step={1} />
@@ -1276,6 +1283,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect 
 
 
 
+      {home.analysisLevel !== "broad" && <Certifications catalogState={certificationCatalog} home={home} update={update} preview={certificationPreview} Field={Field} options={depthOptions}/>}
       {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
 
       <button className="primaryButton stickyButton" onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>
@@ -1309,7 +1317,6 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
 
       <section className="formSection compactSpecsSection">
         <h3>Resilience + Health</h3>
-        <Field label="Resilience Certification" value={home.fortified} onChange={(v) => update("fortified", v)} options={selectOptions.fortified} />
         <Field label="Flood Design" value={home.flood} onChange={(v) => update("flood", v)} options={selectOptions.flood} />
         <Field wide label="Wildfire Mitigation" value={home.wildfireMitigation ?? ""} onChange={(v) => update("wildfireMitigation", v)} options={heatingResilienceOptions.wildfireMitigation} />
         <Field wide label="Extreme-Temperature Protection" value={home.temperatureProtection ?? ""} onChange={(v) => update("temperatureProtection", v)} options={heatingResilienceOptions.temperatureProtection} />
@@ -1318,8 +1325,8 @@ function HomeSpecs({ home, update, setScreen, customFields, updateExtra }) {
         <Field wide label="Siding material" value={home.siding ?? ""} onChange={v=>update("siding",v)} options={["Unknown","Wood clapboard","Wood siding","Cedar shingles","Engineered wood","Vinyl","Fiber cement","Brick","Stucco","Metal","Other"]} />
         <Field label="Roof type" value={home.roof} onChange={v=>update("roof",v)} options={["Unknown","Asphalt shingles","Architectural Shingle","Metal","Clay tile","Concrete tile","Other"]} />
         <Field label="Roof Age" value={home.roofAge} onChange={(v) => update("roofAge", v)} />
+        <Field label="Roof fire rating" value={home.roofFireRating || 'Unknown'} onChange={value => update('roofFireRating',value)} options={depthOptions.roofFireRating}/>
         <Field label="Ventilation" value={home.ventilation} onChange={(v) => update("ventilation", v)} options={selectOptions.ventilation} />
-        <Field label="Health Standard" value={home.healthCert} onChange={(v) => update("healthCert", v)} options={selectOptions.healthCert} />
       </section>
 
       <CustomScoringFields fields={customFields} home={home} updateExtra={updateExtra} pillars={["energy", "health", "resilience"]} />
@@ -1340,7 +1347,7 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
       <section className="formSection compactSpecsSection">
         <h3>Carbon, Water + Financial</h3>
         <Field label="Carbon Strategy" value={home.carbonStrategy} onChange={(v) => update("carbonStrategy", v)} options={selectOptions.carbonStrategy} />
-        <Field label="Water Standard" value={home.waterStandard} onChange={(v) => update("waterStandard", v)} options={selectOptions.waterStandard} />
+        {fixtureFields.map(([key,label]) => <Field key={key} label={label} value={home[key] || 'Unknown'} onChange={value => update(key,value)} options={fixtureOptions}/>)}
         <Field label="Irrigation system" value={home.irrigation ?? ""} onChange={(v) => update("irrigation", v)} options={["Unknown", "No irrigation", "Conventional Irrigation", "Smart Irrigation", "Drip Irrigation", "Xeriscaping"]} />
         <Field label="Leak Protection" value={home.leak} onChange={(v) => update("leak", v)} options={selectOptions.leak} />
         <details className="field fieldWide"><summary>What is PIETIM?</summary><p>Principal, interest, energy, taxes, insurance, and maintenance: the monthly cost of owning the home. Choose the range for these costs as a percentage of gross monthly household income. This is an ownership-cost estimate, not lender qualification.</p></details>
@@ -1364,7 +1371,7 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
   );
 }
 
-function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError }) {
+function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError, certificationPreview, certificationCatalog }) {
   const propertyRows = [
     [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
     [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
@@ -1415,6 +1422,8 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError 
       </section>
 
       <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>
+      <CertificationFindings data={certificationPreview?.data} catalog={certificationCatalog?.data}/>
+      {certificationPreview?.error && <p role="status">{certificationPreview.error} You can return to property details to retry.</p>}
       {home.analysisLevel === "inclusive" && <AnalysisDraft home={home}/>}
       <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>
         {isScoring ? "Generating VPSF Score..." : "Generate VPSF Score"} <ArrowRight size={18} />
@@ -1439,7 +1448,7 @@ function ResultStreetAddress({ streetAddress }) {
   return streetAddress ? <p className="resultStreetAddress">{streetAddress}</p> : null;
 }
 
-function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home }) {
+function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home, certificationCatalog }) {
   const scoreInfo = classification(result.total);
   const pct = Math.min(100, Math.round((result.total / 1000) * 100));
   return (
@@ -1467,6 +1476,7 @@ function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home }
       </section>
 
       {home?.analysisLevel && home.analysisLevel !== "broad" && <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>}
+      <CertificationFindings data={result.certificationEvidence} catalog={certificationCatalog?.data}/>
       <button className="primaryButton diveButton" onClick={() => setScreen(5)}>
         Next — Learn More <ArrowRight size={18} />
       </button>
@@ -3156,7 +3166,7 @@ function MenuScreen({ onNavigate, setScreen, tip }) {
   );
 }
 
-function LabelScreen({ result, property, products, setScreen, streetAddress }) {
+function LabelScreen({ result, property, products, setScreen, streetAddress, certificationCatalog }) {
   const info = classification(result.total);
   const [shareStatus, setShareStatus] = useState("");
   const downloadReport = async () => {
@@ -3218,6 +3228,7 @@ function LabelScreen({ result, property, products, setScreen, streetAddress }) {
           );
         })}
         <p className="reportLimitations">{REPORT_LIMITATIONS}</p>
+        <CertificationFindings data={result.certificationEvidence} catalog={certificationCatalog?.data}/>
         <div className="labelActions">
           <button onClick={downloadReport} title="Download printable PDF report"><Download size={15} />Download Report</button>
           <button onClick={shareReport}><Share2 size={15} />Share Report</button>
@@ -3234,7 +3245,7 @@ export default function App() {
     return <AdminDemo />;
   }
 
-  const [screen, setScreen] = useState(0);
+  const [screen, setScreenState] = useState(0);
   const [menuVisit, setMenuVisit] = useState(-1);
   const menuReturnScreenRef = useRef(4);
   const menuDestinationScreenRef = useRef(null);
@@ -3257,7 +3268,7 @@ export default function App() {
   const [knowHowReturnScreen, setKnowHowReturnScreen] = useState(5);
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
-  const [home, setHome] = useState(defaultHome);
+  const [home, setHomeState] = useState(defaultHome);
   const permitCancelRef = useRef(null);
   const [permitLookupEpoch, setPermitLookupEpoch] = useState(0);
   const permitIdentity = home.analysisLevel ? JSON.stringify(permitRequest(home)) : 'null';
@@ -3283,6 +3294,24 @@ export default function App() {
   const [apiResult, setApiResult] = useState(null);
   const [isScoring, setIsScoring] = useState(false);
   const [scoreError, setScoreError] = useState("");
+  const [scoreRequests] = useState(createScoreRequestSession);
+  const setScreen = useCallback(target => {
+    if (target !== 12 && scoreRequests.pending()) {
+      scoreRequests.invalidate();
+      setIsScoring(false);
+    }
+    setScreenState(target);
+  }, [scoreRequests]);
+  const setHome = useCallback(value => {
+    const wasScoring = scoreRequests.pending();
+    scoreRequests.invalidate();
+    if (wasScoring) {
+      setIsScoring(false);
+      setScreenState(current => current === 12 ? 3 : current);
+    }
+    setHomeState(value);
+  }, [scoreRequests]);
+  useEffect(() => () => scoreRequests.invalidate(), [scoreRequests]);
   const [products, setProducts] = useState([]);
   const sessionId = useMemo(() => getOrCreateSessionId(), []);
   const [queryId, setQueryId] = useState(null);
@@ -3290,9 +3319,12 @@ export default function App() {
   const previousArchivedHomeRef = useRef(defaultHome);
   const demoResult = useMemo(() => resultFromDemoProperty(selectedProperty), [selectedProperty]);
   const result = resultForCurrentAssessment(resultMode, demoResult, apiResult);
+  const certificationPreview = useCertificationPreview(home);
+  const certificationCatalog = useCertificationCatalog();
+  const effectiveHome = useMemo(() => presentationInput(home, apiResult), [home, apiResult]);
   const propertyAddress = assessedHomeAddress({ resultMode, selectedProperty, home, hasAssessedHome });
   const streetAddress = assessedHomeStreetAddress({ resultMode, selectedProperty, home, hasAssessedHome });
-  const adviceHome = resultMode === "demo" ? demoAdviceHome(selectedProperty) : home;
+  const adviceHome = resultMode === "demo" ? demoAdviceHome(selectedProperty) : effectiveHome;
   const advice = useHomeAdvice(adviceHome, resultMode === "demo" ? undefined : result?.modelVersion, Boolean(result));
   const recommendedProducts = joinAdviceProducts(products, advice.data);
   const ecoTip = useEcoTip(menuVisit, home.climateZone);
@@ -3395,35 +3427,23 @@ export default function App() {
     setIsScoring(true);
     setApiResult(null);
     setScoreError("");
-    const startedAt = Date.now();
-    let finalScore = null;
-    try {
-      const score = await scoreProperty(home);
-      finalScore = score;
-      setApiResult(score);
-    } catch (error) {
-      setScoreError("We couldn't generate a score right now. Please try again; your home details are still here.");
-    } finally {
-      if (queryId && finalScore) {
-        trackProgress({
-          sessionId,
-          queryId,
-          screen: 4,
-          screenLabel: SCREEN_LABELS[4],
-          snapshot: home,
-          vpsfScore: finalScore.total,
-          scoreLabel: finalScore.label,
-          scoreRunId: finalScore.scoreRunId
-        }).catch((error) => console.warn("Score progress tracking unavailable.", error));
+    await scoreRequests.run({
+      input:home,
+      request:scoreProperty,
+      minimumDelay:3200,
+      onSuccess:(score, snapshot) => {
+        setApiResult(score);
+        if (queryId) trackProgress({
+          sessionId, queryId, screen:4, screenLabel:SCREEN_LABELS[4], snapshot,
+          vpsfScore:score.total, scoreLabel:score.label, scoreRunId:score.scoreRunId
+        }).catch(error => console.warn("Score progress tracking unavailable.", error));
+      },
+      onError:() => setScoreError("We couldn't generate a score right now. Please try again; your home details are still here."),
+      onFinish:succeeded => {
+        setIsScoring(false);
+        setScreen(succeeded ? 4 : 3);
       }
-      const minimumDelay = 3200;
-      const elapsed = Date.now() - startedAt;
-      if (elapsed < minimumDelay) {
-        await new Promise((resolve) => window.setTimeout(resolve, minimumDelay - elapsed));
-      }
-      setIsScoring(false);
-      setScreen(finalScore ? 4 : 3);
-    }
+    });
   };
 
   const inquiryHome = inquiryHomeFor({resultMode, selectedProperty, hasAssessedHome, home});
@@ -3668,13 +3688,15 @@ export default function App() {
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
         {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
         {screen === 0 && <StartScreen onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
-        {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
+        {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}
         {screen === 30 && <ModerateReview home={home} update={update} Field={Field} options={depthOptions} onReview={()=>setScreen(3)} onInclusive={()=>{setHome(current=>({...current,analysisLevel:"inclusive"}));setScreen(29);}}/>}
         {screen === 3 && home.analysisLevel === "broad" && <BroadReview home={home} onSubmit={handleGenerateScore} onBack={()=>setScreen(0)} busy={isScoring} error={scoreError}/>}
         {screen === 3 && home.analysisLevel !== "broad" && (
           <ReviewScreen
+            certificationCatalog={certificationCatalog}
+            certificationPreview={certificationPreview}
             home={home}
             setScreen={navigateFromUI}
             onGenerateScore={resultMode === "demo" ? () => setScreen(12) : handleGenerateScore}
@@ -3683,13 +3705,13 @@ export default function App() {
           />
         )}
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
-        {screen === 4 && result && <Dashboard home={home} result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
+        {screen === 4 && result && <Dashboard certificationCatalog={certificationCatalog} home={effectiveHome} result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
         {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); navigateFromUI(7); setActiveCategory(recommendationCategory(rec));}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
         {screen === 7 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
-        {screen === 9 && result && <LabelScreen result={result} property={result.property || home} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={home} resultMode={resultMode} />}
+        {screen === 9 && result && <LabelScreen certificationCatalog={certificationCatalog} result={result} property={resultMode === "demo" ? result.property : effectiveHome} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 10 && result && <PillarDetailScreen result={result} selectedPillar={selectedPillar} setScreen={navigateFromUI} setActivePillar={setActivePillar} home={effectiveHome} resultMode={resultMode} />}
         {screen === 11 && <ListingImport key={listingSource} source={listingSource} onApply={facts=>{const parsed = parseAddressParts(facts.address || ""); handleCaptureApply({...parsed,...facts,address:parsed.address || facts.address}, undefined, true); setSelectedProperty(null); setResultMode("manual"); navigateFromUI(listingReturnRef.current);}} />}
         {screen === 12 && <DemoAnalyzingScreen setScreen={navigateFromUI} autoAdvance={resultMode === "demo"} />}
         {screen === 13 && <ProductDetail isDemo={!!home.demoScenario} home={inquiryHome} product={selectedProduct} setScreen={navigateFromUI} onSubmitLead={handleSubmitLead} />}
@@ -3697,7 +3719,7 @@ export default function App() {
         {screen === 15 && <RecommendationDetail recommendation={selectedRecommendation} setScreen={navigateFromUI} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} />}
         {screen === 16 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={streetAddress} />}
         {screen === 17 && result && <PathTo700Screen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
-        {screen === 18 && result && <FutureCostExposureScreen home={resultMode === "demo" ? selectedProperty : home} setScreen={navigateFromUI} streetAddress={streetAddress} />}
+        {screen === 18 && result && <FutureCostExposureScreen home={resultMode === "demo" ? selectedProperty : effectiveHome} setScreen={navigateFromUI} streetAddress={streetAddress} />}
         {screen === 19 && result && <CompetingHomeComparisonScreen result={result} setScreen={navigateFromUI} streetAddress={streetAddress} />}
 
         {screen === 21 && <EducationDetail education={selectedEducation} setScreen={navigateFromUI} returnScreen={educationReturnScreen} />}

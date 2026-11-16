@@ -13,15 +13,15 @@ export const evidenceGroups = Object.freeze([
     ['solar','Solar and battery systems'], ['evReady','EV readiness']
   ]),
   group('water', 'Water', 'Water certifications, plumbing invoices, irrigation plans, and reuse-system records help document water conservation and leak protection.', [
-    ['waterStandard','Water certification or standard'], ['leak','Leak protection'], ['reuse','Water reuse'],
+    ['toilets','Toilets'], ['bathroomFaucets','Bathroom faucets'], ['showerheads','Showerheads'], ['leak','Leak protection'], ['reuse','Water reuse'],
     ['irrigation','Irrigation'], ['landscape','Landscaping']
   ]),
   group('health', 'Health', 'Indoor-environment certificates, ventilation specifications, material declarations, and monitoring records help document health-related features.', [
-    ['healthCert','Health certification'], ['ventilation','Ventilation'], ['materials','Interior material specifications'],
+    ['ventilation','Ventilation'], ['materials','Interior material specifications'],
     ['iaq','Air quality monitoring'], ['daylighting','Daylighting and comfort features']
   ]),
   group('resilience', 'Resilience', 'Inspection reports, roof and siding specifications, installation records, resilience certificates, and official hazard data help document protection and exposure separately.', [
-    ['fortified','Resilience certification'], ['roof','Roof covering'], ['roofAge','Roof age'], ['siding','Siding'],
+    ['roof','Roof covering'], ['roofAge','Roof age'], ['roofFireRating','Roof fire rating'], ['siding','Siding'],
     ['flood','Flood design'], ['wildfireMitigation','Wildfire mitigation'], ['temperatureProtection','Extreme-temperature protection'],
     ['windProtection','Wind protection'], ['moisture','Moisture protection'], ['backup','Backup power'], ['wildfire','Regional wildfire evidence']
   ]),

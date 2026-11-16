@@ -23,7 +23,7 @@ test('UI contract exposes labels, descriptions and numeric completeness counts',
 
 test('advanced Health, Carbon and Community fields remain in their checklists', () => {
   const expected = {
-    health:['healthCert','ventilation','materials','iaq','daylighting'],
+    health:['ventilation','materials','iaq','daylighting'],
     carbon:['carbonStrategy','carbonConcrete','structure'],
     community:['epaWalkability','walkscore','transit','greenspace','amenities','bike']
   };

@@ -25,6 +25,15 @@ const products = [
   { id: "renewaire-erv", name: "RenewAire Energy Recovery Ventilator", category: "Health" }
 ];
 
+test('report uses the effective snapshot and labels certification support without private identifiers', () => {
+  const model = buildReportModel({...result,effectiveInput:{address:'Effective address',yearBuilt:'2001'},
+    certificationEvidence:{derivedFeatures:[{target:'toilets',value:'WaterSense',certificateId:'PRIVATE'}]}},
+    {address:'Raw address'},pillars,[]);
+  assert.equal(model.address,'Effective address');
+  assert.match(model.facts,/1 feature filled from certification/);
+  assert.ok(!JSON.stringify(model).includes('PRIVATE'));
+});
+
 test("report summarizes only the assessed scores and ranks product options by score gaps", () => {
   const model = buildReportModel(result, { address: "1313 Cognition Drive", city: "Orlando", state: "FL", zip: "32825" }, pillars, products);
   assert.equal(model.address, "1313 Cognition Drive, Orlando, FL 32825");

@@ -184,7 +184,7 @@ def resilience_explanation(home: PropertyInput) -> str:
     sentences = ["The home has " + readable_list(features) + "."] if features else []
     recorded = []
     for key, label in [
-        ("fortified", "resilience certification"), ("wildfireMitigation", "wildfire protection"),
+        ("roofFireRating", "roof fire rating"), ("wildfireMitigation", "wildfire protection"),
         ("backup", "backup power"), ("flood", "flood protection"), ("moisture", "moisture control"),
         ("temperatureProtection", "extreme-temperature protection"), ("windProtection", "wind protection")
     ]:
@@ -199,8 +199,8 @@ def resilience_explanation(home: PropertyInput) -> str:
 def explain_score(home: PropertyInput, scores: dict[str, int]) -> dict[str, str]:
     return {
         "energy": f"Energy reflects HERS '{home.hers}', HVAC '{home.hvac}', distribution '{home.heatingDistribution}', controls '{home.heatingControls}', solar '{home.solar}', and EV readiness '{home.evReady}'. Radiant distribution and combination water heating alone do not earn an efficiency bonus.",
-        "water": f"Water reflects '{home.waterStandard}', leak protection '{home.leak}', reuse '{home.reuse}', and landscape '{home.landscape}'.",
-        "health": f"Health reflects certification '{home.healthCert}', ventilation '{home.ventilation}', materials '{home.materials}', and IAQ '{home.iaq}'.",
+        "water": f"Water reflects toilets '{home.toilets}', bathroom faucets '{home.bathroomFaucets}', showerheads '{home.showerheads}', leak protection '{home.leak}', reuse '{home.reuse}', and landscape '{home.landscape}'.",
+        "health": f"Health reflects ventilation '{home.ventilation}', materials '{home.materials}', and IAQ '{home.iaq}'.",
         "resilience": resilience_explanation(home),
         "carbon": f"Carbon reflects strategy '{home.carbonStrategy}', concrete '{home.carbonConcrete}', structure '{home.structure}', electrification, and hydronic heat source '{home.hydronicSource}'. Fuel rankings are model weights, not measured emissions reductions.",
         "financial": f"Financial risk reflects PIETIM '{home.pietim}', insurance '{home.insurance}', warranty '{home.warranty}', and maintenance documentation.",
@@ -220,9 +220,9 @@ def confidence_for_input(home: PropertyInput) -> int:
         home.waterHeater,
         home.roof,
         home.hers,
-        home.fortified,
-        home.waterStandard,
-        home.healthCert,
+        home.toilets,
+        home.bathroomFaucets,
+        home.showerheads,
     ]
     known = sum(1 for value in fields if value and value not in {"Unknown", "None", "None / Unknown", "Code-Minimum"})
     return min(95, 45 + known * 5)

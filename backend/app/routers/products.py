@@ -49,8 +49,10 @@ async def home_advice(payload: AdviceRequest, db: Session = Depends(get_db)):
         model = ScoreModel.model_validate(record.payload)
     else:
         model = load_published(db)
-    scores = evaluate_model(payload.home, model)
-    context = build_home_context(payload.home, {}, scores, model.pillars)
+    from app.certification_resolution import resolve_home
+    home, _ = resolve_home(payload.home, model, db)
+    scores = evaluate_model(home, model)
+    context = build_home_context(home, {}, scores, model.pillars)
     return {"ruleVersion": "advice-1", "modelVersion": model.version,
             "advisoryRecommendations": [],
             "takeaways": build_takeaways(context), "matches": match_products(context, list_products(db))}

@@ -50,6 +50,8 @@ app.include_router(tracking.router)
 app.include_router(articles.router)
 app.include_router(help.router)
 app.include_router(eco_tips.router)
+from app.routers.certifications import router as certifications_router
+app.include_router(certifications_router)
 
 
 @app.get("/api/health")

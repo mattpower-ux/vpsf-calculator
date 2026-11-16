@@ -1,0 +1,11 @@
+.certificationLibrary .editorColumns > div { min-width: 0; }
+.certificationLibrary .certificationField { display: grid; grid-template-columns: minmax(100px, 150px) minmax(0, 1fr); gap: 12px; margin: 10px 0; font-size: 14px; }
+.certificationLibrary .certificationField strong, .certificationLibrary summary { text-transform: capitalize; }
+.certificationLibrary .certificationField span, .certificationLibrary legend { overflow-wrap: anywhere; }
+.certificationLibrary a { color: #285744; }
+.certificationLibrary details { margin: 14px 0; }
+.certificationLibrary summary { cursor: pointer; font-weight: 650; }
+.certificationLibrary pre { overflow: auto; max-height: 420px; padding: 12px; background: #f0f5ef; font-size: 12px; }
+.certificationLibrary [role=alert] { border-left: 3px solid #a13232; padding: 10px; color: #852424; overflow-wrap: anywhere; }
+.certificationLibrary .certificationHistory { border-top: 1px solid #d6dfd8; padding-top: 16px; }
+@media (max-width: 700px) { .certificationLibrary .certificationField { grid-template-columns: minmax(0, 1fr); gap: 3px; } }

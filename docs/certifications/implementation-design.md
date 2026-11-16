@@ -1,7 +1,7 @@
 # Certification-derived feature discovery
 
 Date: 2026-11-15
-Status: researched design for review. This supersedes the recognition-only proposal. The reference documents do not yet change the live calculator.
+Status: approved implementation, November 15, 2026. See integration-progress.md for verification and deployment. The runtime supports all eight families with conservative exact-edition mappings; unsupported and conditional requirements remain recognition/report-only.
 
 ## Outcome
 
@@ -62,6 +62,6 @@ Use paired fixtures for each program: valid edition/level, unknown edition, opti
 
 Test migration idempotence, historical reproducibility, custom admin draft preservation, immutable library publications, revision conflicts, authorization, malformed claims, bounded payloads and safe evidence access. Exercise Basic/Informed/Superior, upload/restore/report and phone/laptop correction flows. Build frontend and run backend/frontend regression suites. Deploy only after the model transition and UI paths have been verified together.
 
-## Review boundary
+## Approval and release boundary
 
-The user approved researching and creating the library across all eight families. This document makes the runtime design concrete. Review this written design before implementation planning under the brainstorming workflow. No live scoring rules or service deployment are changed by publishing the research documents to GitHub.
+The user approved the eight-family library and requested calculator integration on November 15, 2026. Implementation follows that scope and the existing GitHub/Render deployment workflow. Runtime publications are versioned separately from this research index; new evidence does not rewrite historical score runs. See integration-progress.md for completed verification and live deployment identifiers.

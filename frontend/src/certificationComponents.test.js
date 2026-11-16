@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
+
+test('certification panel is optional and collapsed; backend target fields have correction controls', async t => {
+  const server = await createServer({root:fileURLToPath(new URL('..',import.meta.url)),server:{middlewareMode:true},logLevel:'error'});
+  t.after(() => server.close());
+  const {default:Certifications,CertificationFindings} = await server.ssrLoadModule('/src/Certifications.jsx');
+  const Field = ({label}) => React.createElement('label',null,label);
+  const data = {derivedFeatures:[{target:'toilets',value:'WaterSense',certificateId:'PRIVATE-123'}],recognitions:[],conflicts:[{target:'ventilation',reason:'specific-input-wins'}]};
+  const html = renderToStaticMarkup(React.createElement(CertificationFindings,{data,update:()=>{},Field}));
+  assert.match(html,/Toilets/);
+  assert.match(html,/WaterSense/);
+  assert.match(html,/Edit toilets/);
+  assert.match(html,/Edit ventilation/);
+  assert.match(html,/Use my answer/);
+  assert.match(html,/Mark unknown/);
+  assert.ok(!html.includes('PRIVATE-123'));
+  const panel = renderToStaticMarkup(React.createElement(Certifications,{home:{address:'12 Main St',certifications:[]},Field,update:()=>{}}));
+  assert.match(panel,/<details class="certificationsPanel formSection">/);
+  assert.match(panel,/Optional/);
+  assert.match(panel,/Add certification/);
+  assert.ok(!panel.includes('required=""'));
+  const names = ['WaterSense labeled homes','ENERGY STAR homes','Indoor AirPlus','LEED residential','NGBS Green','Phius','Passive House Institute','FORTIFIED','Wildfire Prepared Home'];
+  const catalog = {version:'test',programs:names.map((name,index) => ({id:`program-${index}`,name,editions:[]}))};
+  const catalogPanel = renderToStaticMarkup(React.createElement(Certifications,{home:{address:'12 Main St',certifications:[]},catalogState:{data:catalog},Field,update:()=>{}}));
+  for (const name of names) assert.ok(catalogPanel.includes(name),name);
+  const recognition = renderToStaticMarkup(React.createElement(CertificationFindings,{catalog,data:{recognitions:[{programId:'program-0'}],derivedFeatures:[],conflicts:[]}}));
+  assert.match(recognition,/WaterSense labeled homes/);
+  assert.match(recognition,/No additional feature assumptions/);
+  assert.ok(!recognition.includes('Filled from certification'));
+});

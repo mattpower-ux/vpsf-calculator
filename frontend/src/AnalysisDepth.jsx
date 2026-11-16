@@ -6,7 +6,7 @@ import { assessmentCompleteness, evidenceGroups } from './analysisCompleteness.j
 
 const factText = value => value && typeof value === 'object' ? (value.level || (value.value != null ? `${value.value} / 20` : 'Not available')) : value;
 const isRegional = key => ['wildfire','epaWalkability'].includes(key);
-const quickFields = [['hvac','Heating and cooling'],['waterHeater','Water heating'],['roof','Roof material'],['roofAge','Roof age'],['siding','Siding material'],['insulation','Attic insulation'],['windows','Windows'],['solar','Solar / battery'],['waterStandard','Water efficiency standard'],['irrigation','Irrigation'],['ventilation','Ventilation'],['wildfireMitigation','Wildfire protection'],['backup','Backup power']];
+const quickFields = [['hvac','Heating and cooling'],['waterHeater','Water heating'],['roof','Roof material'],['roofAge','Roof age'],['siding','Siding material'],['insulation','Attic insulation'],['windows','Windows'],['solar','Solar / battery'],['toilets','Toilets'],['bathroomFaucets','Bathroom faucets'],['showerheads','Showerheads'],['irrigation','Irrigation'],['ventilation','Ventilation'],['wildfireMitigation','Wildfire protection'],['backup','Backup power']];
 export function ModerateReview({home,update,Field,options,onReview,onInclusive}) {
   return <div className="screen formScreen depthReview"><h2>Confirm Key Features</h2>
     <p className="subhead">A quick homeowner review. Confirm what you know; leave anything uncertain unanswered.</p>

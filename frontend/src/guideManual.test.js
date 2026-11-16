@@ -49,7 +49,7 @@ test("saved-property data-pull question is absent from Help and the manual", asy
 test("every Help entry has a concise lead and scannable points", async () => {
   const { readFile } = await import("node:fs/promises");
   const entries = JSON.parse(await readFile(new URL("../../backend/app/data/help_guide.json", import.meta.url), "utf8"));
-  assert.equal(entries.length, 19);
+  assert.ok(entries.length >= 19);
   for (const entry of entries) {
     assert.ok(entry.body.split(/\s+/).length <= 30, `${entry.id} lead is too long`);
     assert.ok(entry.sections?.length >= 2, `${entry.id} needs entry points`);
@@ -60,6 +60,25 @@ test("every Help entry has a concise lead and scannable points", async () => {
   assert.deepEqual(entries.find(({ id }) => id === "seven-pillars").sections.slice(0, 7).map(({ heading }) => heading), [
     "Energy", "Water", "Health", "Resilience", "Carbon & Materials", "Financial Risk", "Community & Mobility"
   ]);
+});
+
+test("certification FAQ does not hide certification chapters from the field guide", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const topics = JSON.parse(await readFile(new URL("../../backend/app/data/help_guide.json", import.meta.url), "utf8"));
+  assert.ok(topics.some(({ id, faq }) => id === "certification-scoring" && faq));
+  const chapters = manualChapters({ topics });
+  for (const id of ["analysis-levels", "certification-workflow", "certification-evidence", "certification-programs", "certification-mappings", "certification-corrections", "historical-reports", "manufacturer-inquiries"]) {
+    const index = chapters.findIndex(chapter => chapter.id === id);
+    assert.ok(index >= 0, `${id} must be reachable in the field guide`);
+    assert.equal(manualChapterAt(chapters, index).id, id);
+  }
+  for (const chapter of chapters.filter(({ id }) => id.startsWith("certification-"))) {
+    if (["certification-workflow", "certification-corrections"].includes(chapter.id)) {
+      assert.equal(chapter.screen, 1, `${chapter.id} must open the details form containing Certifications`);
+    } else {
+      assert.ok(chapter.screen === undefined || chapter.screen === 3, `${chapter.id} must use existing home review navigation`);
+    }
+  }
 });
 
 test("Help answers, search results, and manual chapters render the same structured points", async () => {

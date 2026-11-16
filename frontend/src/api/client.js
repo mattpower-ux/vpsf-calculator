@@ -82,6 +82,11 @@ export async function getScoringFormFields() {
   return request("/api/scoring/form-fields");
 }
 
+export const getCertificationCatalog = signal => request('/api/certifications/catalog', {signal});
+export const previewCertifications = (home, signal) => request('/api/certifications/preview', {
+  method:'POST', body:JSON.stringify(home), signal
+});
+
 export async function geocodeProperty(address) {
   return request("/api/properties/geocode", {
     method: "POST",
@@ -223,6 +228,7 @@ export const saveScoringDraft = (token, payload) => request("/api/admin/scoring/
 export const validateScoringDraft = (token, model) => request("/api/admin/scoring/validate", adminOptions(token, { method: "POST", body: JSON.stringify(model) }));
 export const previewScoringDraft = (token, propertyId) => request("/api/admin/scoring/preview", adminOptions(token, { method: "POST", body: JSON.stringify({ propertyId }) }));
 export const publishScoringDraft = (token, revision) => request("/api/admin/scoring/publish", adminOptions(token, { method: "POST", body: JSON.stringify({ revision }) }));
+export const rebaseScoringDraft = (token, revision) => request("/api/admin/scoring/rebase", adminOptions(token, { method: "POST", body: JSON.stringify({ revision }) }));
 
 
 export const getHomeAdvice=(home,modelVersion,signal)=>request('/api/products/advice',{method:'POST',body:JSON.stringify({home,modelVersion}),signal});

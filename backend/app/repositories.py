@@ -23,7 +23,7 @@ def create_property(
         zip=property_input.zip,
         source=source,
         source_identifier=source_identifier,
-        input_snapshot=property_input.model_dump(),
+        input_snapshot=property_input.model_dump(mode='json'),
     )
     db.add(record)
     db.commit()
@@ -44,6 +44,8 @@ def create_score_run(
     explanations: dict[str, str],
     confidence: int,
     property_id: int | None = None,
+    certification_evidence: dict | None = None,
+    effective_input: dict | None = None,
 ) -> ScoreRunRecord:
     record = ScoreRunRecord(
         property_id=property_id,
@@ -55,7 +57,7 @@ def create_score_run(
         meaning=meaning,
         explanations=explanations,
         confidence=confidence,
-        input_snapshot=property_input.model_dump(),
+        input_snapshot={**property_input.model_dump(mode='json'), **({'certificationEvidence': certification_evidence, 'effectiveInput': effective_input} if certification_evidence is not None else {})},
     )
     db.add(record)
     db.commit()

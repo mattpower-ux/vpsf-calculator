@@ -14,3 +14,10 @@ test('recorded equipment remains visible and unknown homes have an honest empty 
 test('roof material alone is not presented as a verified resilience strength', () => {
   assert.deepEqual(recordedPillarFeatures({roof:'Asphalt shingles',roofAge:'20 years'},'resilience'), ['No qualifying features recorded yet.']);
 });
+
+test('fixture categories remain distinct and certificate packages are not physical features', () => {
+  assert.deepEqual(recordedPillarFeatures({toilets:'WaterSense',bathroomFaucets:'WaterSense',waterStandard:'WaterSense Home v2'},'water'),[
+    'Recorded: Toilets — WaterSense', 'Recorded: Bathroom faucets — WaterSense'
+  ]);
+  assert.deepEqual(recordedPillarFeatures({healthCert:'EPA Indoor airPLUS'},'health'),['No qualifying features recorded yet.']);
+});

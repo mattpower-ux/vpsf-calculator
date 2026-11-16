@@ -3,6 +3,7 @@ from app.permitstack_schemas import PermitStackResponse
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
+from app.certifications.schema import CertificateClaim
 
 
 class WildfireRisk(BaseModel):
@@ -39,6 +40,11 @@ class FieldProvenance(BaseModel):
 
 
 class PropertyInput(BaseModel):
+    certifications: list[CertificateClaim] = Field(default_factory=list, max_length=20)
+    toilets: Literal["Unknown", "Standard", "Low-flow", "WaterSense"] = "Unknown"
+    bathroomFaucets: Literal["Unknown", "Standard", "Low-flow", "WaterSense"] = "Unknown"
+    showerheads: Literal["Unknown", "Standard", "Low-flow", "WaterSense"] = "Unknown"
+    roofFireRating: Literal["Unknown", "Class A"] = "Unknown"
     # Permit history is retained for review/archive only, never scoring input.
     permitEvidence: PermitStackResponse | None = None
     # Capture depth only: never a feature claim or scoring multiplier.
@@ -165,6 +171,8 @@ class RiskEnrichmentResponse(BaseModel):
 
 
 class ScoreResponse(BaseModel):
+    certificationEvidence: dict = Field(default_factory=dict)
+    effectiveInput: dict = Field(default_factory=dict)
     analysisLevel: Literal["broad", "moderate", "inclusive"] = "moderate"
     scores: dict[str, int]
     total: int

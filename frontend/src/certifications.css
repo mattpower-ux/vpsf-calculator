@@ -1,0 +1,18 @@
+.certificationsPanel.formSection { display:block; }
+.certificationsPanel > summary { cursor:pointer; font-weight:700; }
+.certificationsPanel > summary span { color:var(--muted); font-size:12px; font-weight:400; margin-left:8px; }
+.certificationsBody { margin-top:12px; }
+.certificationsBody p, .certificationFindings p { font-size:13px; line-height:1.5; }
+.certificationAddress { overflow-wrap:anywhere; }
+.certificationClaim { min-width:0; margin:14px 0; padding:12px; border:1px solid var(--line); border-radius:10px; }
+.certificationClaim legend { font-weight:700; font-size:13px; padding:0 4px; }
+.certificationGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.certificationGrid .field { min-width:0; }
+.certificationMetadata { margin:12px 0; }
+.certificationMetadata summary, .certificationFeature summary { cursor:pointer; font-size:13px; }
+.certificationMetadata .certificationGrid { margin-top:10px; }
+.certificationFindings { margin-top:12px; }
+.certificationFeature { padding:8px 0; border-bottom:1px solid var(--line); }
+.certificationFeature p { margin:0 0 6px; }
+.certificationFeature small { display:block; margin-top:6px; }
+@media (max-width:540px) { .certificationGrid { grid-template-columns:minmax(0,1fr); } }

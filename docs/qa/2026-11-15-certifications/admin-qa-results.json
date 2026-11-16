@@ -1,0 +1,24 @@
+[
+  {
+    "name": "laptop",
+    "coverage": "WaterSense labeled homes\n1 editions · 2 enabled rules · 3 mandatory rules · 0 conditional rules · 1 report-only facts",
+    "published": "certifications-2ffb99bfdc864c12",
+    "overflow": {
+      "viewport": 1440,
+      "width": 1440,
+      "offenders": []
+    },
+    "errors": []
+  },
+  {
+    "name": "phone",
+    "coverage": "WaterSense labeled homes\n1 editions · 3 enabled rules · 3 mandatory rules · 0 conditional rules · 1 report-only facts",
+    "published": "certifications-eda5f5e825734aa8",
+    "overflow": {
+      "viewport": 390,
+      "width": 390,
+      "offenders": []
+    },
+    "errors": []
+  }
+]

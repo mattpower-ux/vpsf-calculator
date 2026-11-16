@@ -1,6 +1,13 @@
+import { boundedCertificationFields } from './certifications.js';
+
 export function confirmedEdit(home, key, value) {
+  if (boundedCertificationFields.includes(key) && !value) value = 'Unknown';
   const locationChanged = ['address','city','state','zip'].includes(key) && home[key] !== value;
-  return {...home,[key]:value,...(locationChanged ? {permitEvidence:null} : {}),provenance:{...home.provenance,[key]:{origin:'user-confirmed',source:'Home details',date:new Date().toISOString()}}};
+  const certificationPatch = Array.isArray(home.certifications) && key !== 'certifications'
+    ? {certifications: locationChanged ? [] : home.certifications.map(claim => ({...claim,
+      replacedFields: typeof value === 'string' || typeof value === 'number'
+        ? [...new Set([...(claim.replacedFields || []),key])].slice(-64) : claim.replacedFields || []}))} : {};
+  return {...home,[key]:value,...certificationPatch,...(locationChanged ? {permitEvidence:null} : {}),provenance:{...home.provenance,[key]:{origin:'user-confirmed',source:'Home details',date:new Date().toISOString()}}};
 }
 export function importedHome(home) {
   const provenance={...home.provenance};

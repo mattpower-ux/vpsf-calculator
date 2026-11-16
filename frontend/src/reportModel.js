@@ -1,4 +1,5 @@
 import { classification, gradeFor, reportAddress } from "./scorePresentation.js";
+import { presentationInput } from './certifications.js';
 
 const productSources = {
   "rheem-proterra": { company: "Rheem", pillar: "energy", url: "https://www.rheem.com/heatpumpwaterheaters/" },
@@ -15,6 +16,7 @@ const productSources = {
 };
 
 export function buildReportModel(result, property, pillars, availableProducts) {
+  property = presentationInput(property, result);
   const scores = pillars.map((pillar) => {
     const value = Number(result.scores?.[pillar.key]) || 0;
     return {
@@ -54,6 +56,8 @@ export function buildReportModel(result, property, pillars, availableProducts) {
     property?.yearBuilt ? `Built ${property.yearBuilt}` : null,
     property?.squareFeet ? `${Number(property.squareFeet).toLocaleString("en-US")} sq ft` : null
   ].filter(Boolean);
+  const filled = result.certificationEvidence?.derivedFeatures?.length || 0;
+  if (filled) facts.push(`${filled} feature${filled === 1 ? '' : 's'} filled from certification`);
 
   return {
     address: reportAddress(property),

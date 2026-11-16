@@ -1,10 +1,11 @@
 import {resilienceActionSummary} from './resilienceFeatures.js';
+import {fixtureFields} from './certifications.js';
 
 const known = value => typeof value === 'string' && value.trim() && !/^(unknown|none \/ unknown|not available)$/i.test(value.trim());
 const contains = (home,key,pattern) => known(home[key]) && pattern.test(home[key]);
 const needs = {
  energy:[['hvac','heating and cooling type'],['hvacAge','equipment age'],['insulation','attic insulation level']],
- water:[['waterStandard','fixture efficiency'],['irrigation','irrigation type'],['leak','leak protection']],
+ water:[['toilets','toilet efficiency'],['bathroomFaucets','bathroom faucet efficiency'],['showerheads','showerhead efficiency'],['irrigation','irrigation type'],['leak','leak protection']],
  health:[['ventilation','ventilation type'],['materials','interior material finishes'],['iaq','air-quality monitoring']],
  carbon:[['carbonStrategy','material carbon documentation'],['hvac','heating fuel'],['waterHeater','water-heating type']],
  financial:[['pietim','monthly ownership costs relative to income'],['insurance','insurance coverage and discounts'],['maintenance','maintenance plan']],
@@ -24,7 +25,8 @@ export function pillarActionSummary(pillar,home={}) {
   add('insulation',/^none$|uninsulated|poor/i,'Add insulation and air sealing where the home lacks thermal protection.');
   break;
  case 'water':
-  add('waterStandard',/code.minimum|standard/i,'Upgrade the code-minimum fixtures to WaterSense-labeled toilets, faucets, and showerheads.');
+  { const standard = fixtureFields.filter(([key]) => contains(home,key,/^standard$/i)).map(([,label]) => label.toLowerCase());
+    if (standard.length) actions.push(`Consider WaterSense-labeled ${standard.join(', ')} when replacing the current standard fixtures.`); }
   add('irrigation',/standard|conventional/i,'Replace conventional irrigation controls with weather-responsive scheduling and reduce unnecessary watering.');
   add('leak',/^none$/i,'Add leak detection and automatic shutoff to limit water loss.');
   break;

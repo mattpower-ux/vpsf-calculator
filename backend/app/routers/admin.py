@@ -11,7 +11,7 @@ from app.schemas import AdminSummary, EducationalContent, EducationalContentUpse
 from app.schemas import PropertyInput
 from app.scoring.catalog import ScoreModel, evaluate_model
 from app.scoring.candidates import CANDIDATES
-from app.scoring.store import ConflictError, ModelUnavailableError, load_or_create_draft, load_published, model_history, publish_draft, save_draft
+from app.scoring.store import ConflictError, ModelUnavailableError, load_or_create_draft, load_published, model_history, publish_draft, save_draft, rebase_draft
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -65,13 +65,28 @@ def preview_scoring_draft(payload: PreviewRequest, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Property not found")
     home = PropertyInput.model_validate(record.input_snapshot)
     draft, revision = load_or_create_draft(db)
-    return {"propertyId": record.id, "revision": revision, "published": evaluate_model(home, load_published(db)), "draft": evaluate_model(home, draft)}
+    from app.certification_resolution import resolve_home
+    published = load_published(db)
+    current, _ = resolve_home(home, published, db)
+    proposed, _ = resolve_home(home, draft, db)
+    return {"propertyId": record.id, "revision": revision, "published": evaluate_model(current, published), "draft": evaluate_model(proposed, draft)}
 
 
 @router.post("/scoring/publish", dependencies=[Depends(require_admin_session)])
 def publish_scoring_draft(payload: PublishRequest, db: Session = Depends(get_db)) -> ScoreModel:
     try:
         return publish_draft(db, payload.revision, "admin")
+    except ConflictError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/scoring/rebase", dependencies=[Depends(require_admin_session)])
+def rebase_scoring_draft(payload: PublishRequest, db: Session = Depends(get_db)) -> dict:
+    try:
+        model, revision = rebase_draft(db, payload.revision, "admin")
+        return {"model": model, "revision": revision}
     except ConflictError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except ValueError as error:
@@ -85,7 +100,7 @@ def scoring_history(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.get("/scoring/available-fields", dependencies=[Depends(require_admin_session)])
 def scoring_available_fields() -> list[str]:
-    excluded = {"permitEvidence", "analysisLevel", "address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"}
+    excluded = {"certifications", "permitEvidence", "analysisLevel", "address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"}
     return [key for key in PropertyInput.model_fields if key not in excluded]
 
 

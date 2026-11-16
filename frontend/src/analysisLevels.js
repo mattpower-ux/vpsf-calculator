@@ -1,5 +1,6 @@
 import { wildfireAssessment } from './wildfire.js';
 import { permitEvidenceForHome } from './permitEvidence.js';
+import { boundedCertificationFields } from './certifications.js';
 
 const LEVELS = {
   broad: {label: '1. Basic', route: 3},
@@ -20,12 +21,12 @@ export const analysisRoute = routeAfterLookup;
 
 const LOCATION_FIELDS = ['address', 'city', 'state', 'zip'];
 const FACT_FIELDS = `squareFeet yearBuilt homeType stories bedrooms bathrooms garage lotSize climateZone occupancy
-  hvac hvacAge heatingDistribution heatingControls hydronicSource waterHeater waterHeaterAge roof roofAge siding
+  hvac hvacAge heatingDistribution heatingControls hydronicSource waterHeater waterHeaterAge roof roofAge roofFireRating siding
   windows insulation solar hers evReady fortified flood wildfireMitigation temperatureProtection windProtection
   moisture backup healthCert ventilation materials iaq daylighting carbonStrategy carbonConcrete structure
-  waterStandard leak reuse irrigation landscape pietim insurance warranty maintenance walkscore transit
+  waterStandard toilets bathroomFaucets showerheads leak reuse irrigation landscape pietim insurance warranty maintenance walkscore transit
   greenspace amenities bike`.split(/\s+/);
-const ADDITIONAL_FIELDS = ['extraInputs', 'photoObservations', 'photoReview', 'sourceNote'];
+const ADDITIONAL_FIELDS = ['extraInputs', 'photoObservations', 'photoReview', 'sourceNote', 'certifications'];
 const PUBLIC_SOURCES = /^(?:property record|public records?|rentcast|attom|county assessor|assessor|permit records?)(?:$|[\s:;/()-])/i;
 // Geographic evidence is field-specific: it must not qualify private equipment.
 const GEOGRAPHIC_SOURCES = /^(?:geographic risk|location risk|public geographic risk)(?:$|[\s:;/()-])/i;
@@ -90,9 +91,13 @@ export function prepareHomeForLevel(input, value) {
   }
   for (const key of FACT_FIELDS) {
     const provenance = home.provenance?.[key];
-    const keep = usable(home[key]) && allowed(provenance, level, Boolean(demoScenario), key);
-    result[key] = keep ? home[key] : '';
-    if (keep) result.provenance[key] = structuredClone(provenance);
+    // Explicit uncertainty is an answer, not an unconfirmed default. Preserve it
+    // for all fields so a restored draft cannot re-enable certificate inference.
+    const confirmedUnknown = provenance?.origin === 'user-confirmed'
+      && typeof home[key] === 'string' && /^(unknown|none \/ unknown)$/i.test(home[key].trim());
+    const keep = (usable(home[key]) || confirmedUnknown) && allowed(provenance, level, Boolean(demoScenario), key);
+    result[key] = keep ? home[key] : boundedCertificationFields.includes(key) ? 'Unknown' : '';
+    if (keep || (boundedCertificationFields.includes(key) && provenance?.origin === 'user-confirmed' && level !== 'broad')) result.provenance[key] = structuredClone(provenance);
   }
   for (const [key, max] of [['latitude', 90], ['longitude', 180]]) {
     result[key] = Number.isFinite(home[key]) && Math.abs(home[key]) <= max ? home[key] : null;

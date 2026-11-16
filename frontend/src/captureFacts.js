@@ -37,6 +37,7 @@ export function applyCapturedFacts(current, facts, fresh = false, photoReview) {
   }
   const moved = facts.address && facts.address !== current.address;
   if (moved || fresh) {
+    home.certifications = [];
     home.latitude = null; home.longitude = null; home.wildfire = null; home.epaWalkability = null;
     home.city = ''; home.state = ''; home.zip = ''; home.climateZone = '';
     home.sourceNote = 'Review the address and home details before scoring.';

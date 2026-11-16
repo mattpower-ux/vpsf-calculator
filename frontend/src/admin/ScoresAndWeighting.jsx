@@ -1,7 +1,7 @@
 import WhyWeighting from "./WhyWeighting.jsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronRight, GitBranch, Plus, RotateCcw, Save, Search, Trash2 } from "lucide-react";
-import { getAdminScoredProperties, getScoringAvailableFields, getScoringCandidates, getScoringDraft, getScoringHistory, getScoringModel, previewScoringDraft, publishScoringDraft, saveScoringDraft, validateScoringDraft } from "../api/client";
+import { getAdminScoredProperties, getScoringAvailableFields, getScoringCandidates, getScoringDraft, getScoringHistory, getScoringModel, previewScoringDraft, publishScoringDraft, rebaseScoringDraft, saveScoringDraft, validateScoringDraft } from "../api/client";
 import { addFactor, retireFactor, splitFactor, totalBudget } from "./scoringModel";
 
 const NAMES = { energy: "Energy", water: "Water", health: "Health", resilience: "Resilience", carbon: "Carbon & Materials", financial: "Financial Risk", community: "Community & Mobility" };
@@ -23,6 +23,7 @@ export default function ScoresAndWeighting({ token }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [preview, setPreview] = useState(null);
+  const [rebaseNeedsPreview, setRebaseNeedsPreview] = useState(false);
   const [confirmPublish, setConfirmPublish] = useState(false);
   const [newFactor, setNewFactor] = useState({ label: "", field: "", mode: "equals", points: 5, match: "" });
   const [newField, setNewField] = useState({ label: "", kind: "select", choices: "", minimum: 0, maximum: 100 });
@@ -40,6 +41,8 @@ export default function ScoresAndWeighting({ token }) {
     setHistory(versions);
     setCandidates(possible);
     setDirty(false);
+    setPreview(null);
+    setConfirmPublish(false);
   }, [token]);
 
   useEffect(() => { load().catch(() => setError("Scoring model unavailable. Refresh to try again.")); }, [load]);
@@ -59,6 +62,7 @@ export default function ScoresAndWeighting({ token }) {
   }
 
   async function publish() {
+    if (busy || dirty || rebaseNeedsPreview) return;
     setBusy(true); setError("");
     try {
       const checked = await validateScoringDraft(token, model);
@@ -66,15 +70,28 @@ export default function ScoresAndWeighting({ token }) {
       const live = await publishScoringDraft(token, revision);
       setPublished(live); setConfirmPublish(false); setNotice(`${live.version} is now published.`);
       await load();
-    } catch (cause) { setError(cause.message.includes("409") ? "Draft changed in another session. Reload before publishing." : "Publication failed; the previous model remains active."); }
+    } catch (cause) { setConfirmPublish(false); setError(`Publication failed: ${cause.message}. If the certification library changed or this draft predates feature inference, use Rebase certification rules, then preview before publishing. Revision conflicts require reloading the latest draft.`); }
     finally { setBusy(false); }
   }
 
   async function runPreview() {
-    if (!propertyId) return;
-    setError("");
-    try { setPreview(await previewScoringDraft(token, Number(propertyId))); }
+    if (!propertyId || dirty || busy) return;
+    setError(""); setBusy(true);
+    try { setPreview(await previewScoringDraft(token, Number(propertyId))); setRebaseNeedsPreview(false); }
     catch { setError("Preview unavailable for this property. No score run was saved."); }
+    finally { setBusy(false); }
+  }
+
+  async function rebase() {
+    if (dirty || busy) return;
+    setBusy(true); setError(""); setNotice(""); setConfirmPublish(false);
+    try {
+      const result = await rebaseScoringDraft(token, revision);
+      setModel(result.model); setRevision(result.revision); setDirty(false);
+      setPreview(null); setRebaseNeedsPreview(true);
+      setNotice("Draft rebased to the current certification library. Custom weights are preserved. Preview a saved property again before publishing.");
+    } catch (cause) { setError(`Rebase failed: ${cause.message}. Your local draft is unchanged. For a revision conflict, reload the latest draft before retrying.`); }
+    finally { setBusy(false); }
   }
 
   function createFactor(event) {
@@ -104,15 +121,17 @@ export default function ScoresAndWeighting({ token }) {
     <div className="scoreEditor">
       <div className="scoreEditorTop">
         <div><strong>Published {published.version}</strong><span>Draft revision {revision}{dirty ? " · Unsaved changes" : " · Saved"}</span></div>
-        <div className="scoreEditorActions"><button onClick={() => load().catch(() => setError("Reload failed."))} disabled={busy}><RotateCcw size={16} /> Reload</button><button onClick={save} disabled={!dirty || busy}><Save size={16} /> Save draft</button><button className="primary" onClick={() => setConfirmPublish(true)} disabled={dirty || busy || total !== 1000}><Check size={16} /> Publish</button></div>
+        <div className="scoreEditorActions"><button onClick={() => load().catch(() => setError("Reload failed."))} disabled={busy}><RotateCcw size={16} /> Reload</button><button onClick={save} disabled={!dirty || busy}><Save size={16} /> Save draft</button><button onClick={rebase} disabled={dirty || busy}>Rebase certification rules</button><button className="primary" onClick={() => setConfirmPublish(true)} disabled={dirty || busy || rebaseNeedsPreview || total !== 1000}><Check size={16} /> Publish</button></div>
       </div>
+      <p className="scoreEditorMessage">Rebase updates the saved draft to the current certification library while preserving custom weights. Save local edits first, then rebase and preview a saved property before publishing.</p>
+      {rebaseNeedsPreview && <p role="status">Preview required after rebase.{!properties.length ? " No scored properties are available; score a property before publishing." : ""}</p>}
       {error && <p className="scoreEditorMessage error" role="alert">{error}</p>}
       {notice && <p className="scoreEditorMessage" role="status">{notice}</p>}
       <div className="scoreBudgetHeader"><h2>Point budget</h2><strong className={total === 1000 ? "" : "invalid"}>{total} / 1,000</strong></div>
       {total !== 1000 && <div className="scoreBudgetWarning" role="alert"><AlertTriangle size={18} /> {total > 1000 ? `${total - 1000} points over budget` : `${1000 - total} points unallocated`}. Adjust pillar sliders before publishing.</div>}
-      <div className="scoreBudgetGrid">{Object.entries(model.pillars).map(([id, cap]) => <label key={id}><span>{NAMES[id]}</span><input type="range" min="0" max="300" value={cap} onChange={(event) => setBudget(id, event.target.value)} /><input type="number" min="0" max="1000" value={cap} onChange={(event) => setBudget(id, event.target.value)} /></label>)}</div>
+      <div className="scoreBudgetGrid" inert={busy}>{Object.entries(model.pillars).map(([id, cap]) => <label key={id}><span>{NAMES[id]}</span><input type="range" min="0" max="300" value={cap} onChange={(event) => setBudget(id, event.target.value)} /><input type="number" min="0" max="1000" value={cap} onChange={(event) => setBudget(id, event.target.value)} /></label>)}</div>
       <WhyWeighting model={model} published={published}/>
-      <div className="scoreEditorBody">
+      <div className="scoreEditorBody" inert={busy}>
         <nav className="scorePillars" aria-label="Scoring pillars">{Object.entries(NAMES).map(([id, label]) => <button key={id} className={pillar === id ? "active" : ""} onClick={() => setPillar(id)}>{label}<span>{model.factors.filter((factor) => factor.pillar === id && factor.active).length}</span></button>)}</nav>
         <div className="scoreFactorPanel">
           <div className="scoreFactorHead"><div><h2>{NAMES[pillar]}</h2><p>{model.pillars[pillar]}-point ceiling · {factors.length} rules shown</p></div><label><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a factor" /></label></div>
@@ -131,9 +150,9 @@ export default function ScoresAndWeighting({ token }) {
           {model.customFields.filter((field) => field.pillar === pillar).length > 0 && <div className="scoreCustomList"><h3>Homeowner inputs</h3>{model.customFields.filter((field) => field.pillar === pillar).map((field) => <div key={field.id}><span>{field.label} <small>{field.kind} · {field.active ? "Active" : "Retired"}</small></span><button onClick={() => updateModel({ ...model, customFields: model.customFields.map((item) => item.id === field.id ? { ...item, active: !item.active } : item) })}>{field.active ? "Retire" : "Restore"}</button></div>)}</div>}
         </div>
       </div>
-      <section className="scorePreview"><h2>Compare a saved property</h2><select aria-label="Saved property" value={propertyId} onChange={(event) => setPropertyId(event.target.value)}><option value="">Select a scored property</option>{properties.map((home) => <option key={home.id} value={home.id}>{home.address}, {home.city} {home.state}</option>)}</select><button onClick={runPreview} disabled={!propertyId || dirty}>Preview draft <ChevronRight size={16} /></button>{preview && <div><strong>Published: {Object.values(preview.published).reduce((a, b) => a + b, 0)}</strong><strong>Draft: {Object.values(preview.draft).reduce((a, b) => a + b, 0)}</strong><span>No score run saved.</span></div>}</section>
+      <section className="scorePreview"><h2>Compare a saved property</h2><select aria-label="Saved property" value={propertyId} disabled={busy} onChange={(event) => { setPropertyId(event.target.value); setPreview(null); }}><option value="">Select a scored property</option>{properties.map((home) => <option key={home.id} value={home.id}>{home.address}, {home.city} {home.state}</option>)}</select><button onClick={runPreview} disabled={!propertyId || dirty || busy}>Preview draft <ChevronRight size={16} /></button>{preview && <div><strong>Published: {Object.values(preview.published).reduce((a, b) => a + b, 0)}</strong><strong>Draft: {Object.values(preview.draft).reduce((a, b) => a + b, 0)}</strong><span>No score run saved.</span></div>}</section>
       <section className="scoreHistory"><h2>Published history</h2>{history.map((item) => <p key={item.version}>{item.version}{item.active ? " · Current" : ""} <time>{new Date(item.createdAt).toLocaleDateString()}</time></p>)}</section>
-      {confirmPublish && <div className="scoreModalBackdrop" role="presentation"><div className="scoreModal" role="dialog" aria-modal="true" aria-labelledby="scorePublishTitle"><h2 id="scorePublishTitle">Publish scoring model?</h2><p>This will become the scoring model for new evaluations. Existing score runs stay unchanged.</p><strong>{total} / 1,000 points</strong><div><button onClick={() => setConfirmPublish(false)}>Cancel</button><button className="primary" onClick={publish} disabled={busy || total !== 1000}>Publish new version</button></div></div></div>}
+      {confirmPublish && <div className="scoreModalBackdrop" role="presentation"><div className="scoreModal" role="dialog" aria-modal="true" aria-labelledby="scorePublishTitle"><h2 id="scorePublishTitle">Publish scoring model?</h2><p>This will become the scoring model for new evaluations. Existing score runs stay unchanged.</p><strong>{total} / 1,000 points</strong><div><button onClick={() => setConfirmPublish(false)}>Cancel</button><button className="primary" onClick={publish} disabled={busy || dirty || rebaseNeedsPreview || total !== 1000}>Publish new version</button></div></div></div>}
       <style>{`
         .scoreEditor { color:#102842; display:grid; grid-template-columns:minmax(0,1fr); gap:24px; max-width:1400px; min-width:0; }
         .scoreEditor button { display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer; border:1px solid #cbd8e4; background:#fff; color:#174770; border-radius:6px; padding:9px 12px; font-weight:700; }

@@ -42,7 +42,10 @@ def test_resilience_options_are_mutually_exclusive_and_capped():
     home.flood = "Elevated"
     home.roof = "Metal"
     home.backup = "Battery"
-    assert evaluate_model(home, model)["resilience"] == 200
+    # The designation itself no longer adds a package bonus; physical features do.
+    assert evaluate_model(home, model)["resilience"] == 100
+    model.pillars['resilience'] = 80
+    assert evaluate_model(home, model)["resilience"] == 80
 
 
 def test_upgrade_preserves_old_model_admin_weights_and_draft_edits():

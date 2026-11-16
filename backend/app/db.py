@@ -35,6 +35,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 def init_db() -> None:
     from app import models  # noqa: F401
 
+    backup_before_certification_schema()
     backup_before_advice_schema()
     Base.metadata.create_all(bind=engine)
     ensure_runtime_schema()
@@ -193,5 +194,49 @@ def backup_before_lead_schema(bind=None) -> None:
             os.link(temporary, backup)
         except FileExistsError:
             pass  # Another worker already published the one-time snapshot.
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def backup_before_certification_schema(bind=None) -> None:
+    """Keep the first complete Render SQLite snapshot before certification changes.
+
+    Publish a durable temporary sibling with a no-overwrite atomic link, as in
+    the lead migration backup. Any storage/backup failure aborts startup before
+    table creation or scoring migration; a competing worker's completed backup
+    is the only publication error that is safe to ignore.
+    """
+    import os
+    import sqlite3
+    import tempfile
+    from contextlib import closing
+
+    bind = bind or engine
+    if not os.getenv("RENDER") or bind.dialect.name != "sqlite":
+        return
+    database = bind.url.database
+    if not database or database == ":memory:":
+        return
+    path = Path(database).resolve()
+    if not path.is_file():
+        return
+    backup = path.with_name("vpsf-before-certifications-2026-11-15.sqlite.bak")
+    if backup.exists():
+        return
+    handle, temporary_name = tempfile.mkstemp(
+        prefix=".vpsf-certifications-backup-", suffix=".tmp", dir=path.parent
+    )
+    os.close(handle)
+    temporary = Path(temporary_name)
+    try:
+        with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as source:
+            with closing(sqlite3.connect(str(temporary))) as target:
+                source.backup(target)
+        with temporary.open("rb+") as contents:
+            os.fsync(contents.fileno())
+        try:
+            os.link(temporary, backup)
+        except FileExistsError:
+            pass  # Another worker published the one-time snapshot first.
     finally:
         temporary.unlink(missing_ok=True)

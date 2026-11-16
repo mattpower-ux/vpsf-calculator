@@ -48,6 +48,7 @@ class Factor(BaseModel):
 
 class ScoreModel(BaseModel):
     version: str
+    certificationLibraryVersion: str | None = None
     pillars: dict[str, int]
     factors: list[Factor]
     customFields: list[CustomField] = Field(default_factory=list)

@@ -2,7 +2,7 @@
 
 Reviewed November 15, 2026. Version: research-2026-11-15.
 
-This is the sourced research index for certification-derived feature discovery. It covers all eight requested program families. **It is not yet a live API, admin editor or automatic scoring integration.** The [implementation design](implementation-design.md) explains that transition. Rules must be published against an exact reviewed edition before use; naming a program in this index does not enable automatic assumptions for every certificate carrying that name.
+This is the sourced research index for certification-derived feature discovery. It covers all eight requested program families. The calculator integration now includes a versioned API library, authenticated admin drafts/publications, optional homeowner claims, and feature-based scoring. The [implementation design](implementation-design.md) describes the architecture; [release verification](integration-progress.md) records deployment status. Rules must be published against an exact reviewed edition before use; naming a program in this index does not enable automatic assumptions for every certificate carrying that name.
 
 A [machine-readable program index](index.json) provides stable IDs, document locations, candidate facts and prohibited assumptions. Its `automaticScoringEnabled` flag is false: it is a research manifest, not an executable rule set.
 
@@ -29,10 +29,12 @@ A [machine-readable program index](index.json) provides stable IDs, document loc
 
 **Report-only:** useful physical/performance information with no exact supported VPSF input or scoring rule yet. Do not force it into a vaguely similar scored field.
 
-All derived features need their source and time basis retained. Specific current home information overrides defaults, and the same feature receives points only once. Certification itself carries no additional bonus in the proposed replacement model.
+All derived features need their source and time basis retained. Specific current home information overrides defaults, and the same feature receives points only once. Certification itself carries no additional bonus in the feature-based model.
 
 ## Known coverage limits
 
 This is an initial rule-discovery index, not a transcription of every proprietary standard or historical edition. Each reference lists reviewed scope and unresolved requirements. Unreviewed versions and ambiguous claims stay recognition-only. Source links must remain attached to future admin rules; cached pages are not a substitute for the certificate's applicable edition.
 
-The fixture fields needed for the clearest WaterSense mappings are not built-in scoring inputs in this checkout. Existing direct certification lookup bonuses must be transitioned at the same release that activates feature-based credit. The design preserves old score runs, versions the new rules and avoids double counting.
+The runtime adds toilet, bathroom-faucet and showerhead categories. WaterSense Homes 2.0 Certified can fill those missing categories; Indoor AirPlus 2 Gold can fill balanced ventilation. Wildfire Prepared Home roof classification is retained as report-only evidence. Conditional siding requirements are not automatically applied without an established exception-review workflow. Other editions and programs remain recognition or report-only where the available certificate does not establish a specific scored feature.
+
+The new model removes direct certification package bonuses. It preserves earlier score runs and their model versions, and stores raw facts separately from derived features. Explicit current answers override assumptions; duplicate claims never multiply feature points. The admin editor supports draft descriptions and rule activation, revision checks, publication history, and source inspection. It does not execute arbitrary formulas or scrape standards during scoring.

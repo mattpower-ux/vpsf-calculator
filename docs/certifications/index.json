@@ -1,0 +1,156 @@
+{
+  "libraryVersion": "research-2026-11-15",
+  "reviewedAt": "2026-11-15",
+  "status": "research-reference-not-runtime",
+  "automaticScoringEnabled": false,
+  "design": "implementation-design.md",
+  "policy": "Exact edition, level, scope and exceptions must match. Fill unknown facts only. Current specific evidence overrides. No blanket or duplicate credits.",
+  "programs": [
+    {
+      "id": "watersense-homes",
+      "name": "WaterSense labeled homes",
+      "reference": "water-energy-indoor-air.md",
+      "reviewedEditions": [
+        "2.0 (February 2021)"
+      ],
+      "candidateFacts": [
+        "WaterSense-labeled toilets",
+        "WaterSense-labeled bathroom sink faucets",
+        "WaterSense-labeled showerheads"
+      ],
+      "prohibitedAssumptions": [
+        "Dishwasher efficiency",
+        "Kitchen faucet label",
+        "Smart irrigation",
+        "Automatic shutoff",
+        "Current leak-free condition"
+      ],
+      "source": "https://www.epa.gov/sites/default/files/2021-02/documents/watersense_final_homes_specification_v2.0.pdf"
+    },
+    {
+      "id": "energy-star-homes",
+      "name": "ENERGY STAR Certified Homes",
+      "reference": "water-energy-indoor-air.md",
+      "reviewedEditions": [
+        "Single-Family New Homes national 3.2 Rev.14"
+      ],
+      "candidateFacts": [
+        "Applicable certification verification process; physical equipment details require the project report"
+      ],
+      "prohibitedAssumptions": [
+        "Fixed HERS score",
+        "Heat pump",
+        "Solar",
+        "Battery",
+        "ENERGY STAR dishwasher",
+        "ERV"
+      ],
+      "source": "https://www.energystar.gov/sites/default/files/2025-01/National%20Program%20Requirements%20Version%203.2_Rev%2014.pdf"
+    },
+    {
+      "id": "indoor-airplus",
+      "name": "EPA Indoor AirPlus",
+      "reference": "water-energy-indoor-air.md",
+      "reviewedEditions": [
+        "2 Certified",
+        "2 Gold"
+      ],
+      "candidateFacts": [
+        "Gold: balanced ventilation (4.6.1)",
+        "Certified: mechanical ventilation, not necessarily balanced",
+        "Scoped material requirements, report-only"
+      ],
+      "prohibitedAssumptions": [
+        "Gold requirements for Certified tier",
+        "ERV instead of balanced ventilation",
+        "All materials zero-VOC",
+        "Whole-home pollutant monitoring"
+      ],
+      "source": "https://www.epa.gov/system/files/documents/2024-07/iap-v2-verification-requirements_508.pdf"
+    },
+    {
+      "id": "leed-residential",
+      "name": "LEED residential",
+      "reference": "leed-ngbs.md",
+      "reviewedEditions": [
+        "See reference for pathway and edition boundaries"
+      ],
+      "candidateFacts": [
+        "Applicable prerequisites",
+        "Actual awarded-credit features from project scorecard"
+      ],
+      "prohibitedAssumptions": [
+        "Optional features inferred from award level",
+        "Applying core-and-shell claims to uninstalled home equipment"
+      ],
+      "source": "https://www.usgbc.org/tools/leed-certification/residential"
+    },
+    {
+      "id": "ngbs-green",
+      "name": "NGBS Green",
+      "reference": "leed-ngbs.md",
+      "reviewedEditions": [
+        "See reference: 2020 and 2025 pathway distinctions"
+      ],
+      "candidateFacts": [
+        "Applicable mandatory practices",
+        "Verified individual practice selections"
+      ],
+      "prohibitedAssumptions": [
+        "Land development certification as home certification",
+        "Optional features inferred from Bronze/Silver/Gold/Emerald"
+      ],
+      "source": "https://www.ngbs.com/get-certified/certification-types-levels"
+    },
+    {
+      "id": "passive-house",
+      "name": "Phius / Passive House",
+      "reference": "passive-resilience.md",
+      "reviewedEditions": [
+        "See reference; separate Phius and Passive House Institute rules required"
+      ],
+      "candidateFacts": [
+        "Edition-specific tested/modelled performance evidence"
+      ],
+      "prohibitedAssumptions": [
+        "Treating Phius and PHI as identical",
+        "Fixed installed HVAC or window product",
+        "Certification date as equipment age"
+      ],
+      "source": "https://www.phius.org/"
+    },
+    {
+      "id": "fortified",
+      "name": "FORTIFIED",
+      "reference": "passive-resilience.md",
+      "reviewedEditions": [
+        "See reference for level, peril and edition"
+      ],
+      "candidateFacts": [
+        "Designation-specific roof, opening and structural requirements"
+      ],
+      "prohibitedAssumptions": [
+        "Roof designation implies noncombustible siding",
+        "Wind designation implies universal impact rating"
+      ],
+      "source": "https://fortifiedhome.org/"
+    },
+    {
+      "id": "wildfire-prepared-home",
+      "name": "Wildfire Prepared Home",
+      "reference": "passive-resilience.md",
+      "reviewedEditions": [
+        "See reference for Base/Plus and edition"
+      ],
+      "candidateFacts": [
+        "Tier-specific wildfire protection requirements"
+      ],
+      "prohibitedAssumptions": [
+        "Class A roofing means metal",
+        "Base and Plus have identical siding requirements",
+        "A specified material means a particular manufacturer"
+      ],
+      "source": "https://wildfireprepared.org/"
+    }
+  ]
+}

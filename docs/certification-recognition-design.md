@@ -1,7 +1,7 @@
 # Certification recognition without certification points
 
 Date: November 15, 2026
-Status: design for review; no scoring or production changes applied
+Status: SUPERSEDED by certifications/implementation-design.md. Retained as audit history only; no scoring or production changes applied. The user subsequently chose certification-derived feature discovery, not recognition alone.
 
 ## Approved intent
 

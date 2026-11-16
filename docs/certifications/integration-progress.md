@@ -34,3 +34,13 @@ Approved runtime design: implementation-design.md. Implementation in existing is
 
 ## Release
 Deployment pending final GitHub push and Render verification.
+
+## Live verification completed
+- Release commit: 3ecb2affb18c270c6c5433321e74e408b6a9f8e8.
+- Frontend Render deploy dep-dbt77015efls73fh5flg: live.
+- API Render deploy dep-dbt77015efls73fh5fng: live.
+- Production health reports vpsf-0.2.0-usfs-heating-resilience-noncombustible-siding-certifications-v1; public catalog returns eight program families.
+- Non-persisting production demonstration score checks: Water baseline 20, WaterSense 35, duplicate 35, explicit Standard toilet correction 30, certificate removed 20. Unauthenticated admin library returns 401.
+- Live Chrome phone/laptop: add/correct/remove/re-add certificate, generate score, effective-input assertions, FAQ/search/Field Guide navigation all pass; no page errors or horizontal overflow. Evidence in docs/qa/2026-11-15-certifications/live.
+- Desktop VPSF DASH main fast-forwarded to the release; existing untracked files preserved. Source and QA evidence committed to GitHub.
+- Sara's Google Drive punchlist updated with completion bullets and corrected the former integration-pending entry.

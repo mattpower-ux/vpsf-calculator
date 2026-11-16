@@ -17,6 +17,8 @@ class Settings:
     google_street_view_api_key = os.getenv("GOOGLE_STREET_VIEW_API_KEY", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
     attom_monthly_limit = int(os.getenv("ATTOM_MONTHLY_LIMIT", "100"))
+    permit_stack_api_key = os.getenv("PERMIT_STACK_API_KEY", "")
+    permit_stack_monthly_limit = max(0, min(10000, int(os.getenv("PERMIT_STACK_MONTHLY_LIMIT", "100"))))
     rentcast_api_key = os.getenv("RENTCAST_API_KEY", "")
     rentcast_monthly_limit = int(os.getenv("RENTCAST_MONTHLY_LIMIT", "100"))
     openai_api_key = os.getenv("OPENAI_API_KEY", "")
@@ -50,7 +52,8 @@ class Settings:
     def configured_integrations(self) -> dict[str, bool]:
         return {
             "mapbox": bool(self.mapbox_access_token),
-            "attom": bool(self.attom_api_key),
+            "attom": False,
+            "permitstack": bool(self.permit_stack_api_key.strip()),
             "rentcast": bool(self.rentcast_api_key),
             "openai": bool(self.openai_api_key),
             "mistral": bool(self.mistral_api_key),

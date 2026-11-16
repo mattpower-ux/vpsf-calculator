@@ -1,8 +1,9 @@
 """Shared, fail-fast admission for public inference routes.
 
-Limits are shared across the three routes on one application worker, not across
+OCR limits are shared across inference routes on one application worker, not across
 separate worker processes/replicas. Counters contain client addresses only, expire
 after an hour, and have a fixed cardinality bound. No provider work is queued.
+PermitStack uses independent, tighter limits so it cannot consume OCR capacity.
 """
 from collections import deque
 from contextlib import contextmanager
@@ -13,18 +14,24 @@ import time
 from fastapi import HTTPException, Request
 from fastapi.routing import APIRoute
 
-PROTECTED_PATHS = frozenset({'/api/home-walk/analyze', '/api/properties/ocr', '/api/properties/ocr-url'})
+PROTECTED_PATHS = frozenset({'/api/home-walk/analyze', '/api/properties/ocr', '/api/properties/ocr-url', '/api/properties/permitstack'})
 PER_MINUTE = 30
 PER_HOUR = 120
 MAX_CONCURRENT = 4
 MAX_CLIENTS = 4096
+PERMITSTACK_PER_MINUTE = 3
+PERMITSTACK_PER_HOUR = 10
 _initialization_lock = Lock()
 
 
 class InferenceLimiter:
-    def __init__(self, *, clock=time.monotonic, max_clients=MAX_CLIENTS):
+    def __init__(self, *, clock=time.monotonic, max_clients=MAX_CLIENTS,
+                 per_minute=PER_MINUTE, per_hour=PER_HOUR, max_concurrent=MAX_CONCURRENT):
         self.clock = clock
         self.max_clients = max_clients
+        self.per_minute = per_minute
+        self.per_hour = per_hour
+        self.max_concurrent = max_concurrent
         self.clients: dict[str, deque[float]] = {}
         self.active = 0
         self.lock = Lock()
@@ -41,15 +48,15 @@ class InferenceLimiter:
                     times.popleft()
                 recent = [stamp for stamp in times if stamp > now - 60]
                 retry = 0
-                if len(times) >= PER_HOUR:
+                if len(times) >= self.per_hour:
                     retry = max(retry, ceil(times[0] + 3600 - now))
-                if len(recent) >= PER_MINUTE:
+                if len(recent) >= self.per_minute:
                     retry = max(retry, ceil(recent[0] + 60 - now))
                 if retry:
-                    raise HTTPException(429, 'Image/document request limit reached. Please wait before trying again.',
+                    raise HTTPException(429, 'Request limit reached. Please wait before trying again.',
                                         headers={'Retry-After': str(max(1, retry)), 'Cache-Control': 'no-store'})
-            if self.active >= MAX_CONCURRENT or (times is None and len(self.clients) >= self.max_clients):
-                raise HTTPException(503, 'Image/document processing is busy. Please try again shortly.',
+            if self.active >= self.max_concurrent or (times is None and len(self.clients) >= self.max_clients):
+                raise HTTPException(503, 'Processing is busy. Please try again shortly.',
                                     headers={'Retry-After': '5', 'Cache-Control': 'no-store'})
             if times is None:
                 times = self.clients[client] = deque()
@@ -66,6 +73,11 @@ def limiter_for(request: Request):
     # App-local state keeps all routes coordinated, including across request
     # event loops, without coupling independently mounted test applications.
     with _initialization_lock:
+        if request.url.path == '/api/properties/permitstack':
+            if not hasattr(request.app.state, 'permitstack_limiter'):
+                request.app.state.permitstack_limiter = InferenceLimiter(
+                    per_minute=PERMITSTACK_PER_MINUTE, per_hour=PERMITSTACK_PER_HOUR)
+            return request.app.state.permitstack_limiter
         if not hasattr(request.app.state, 'inference_limiter'):
             request.app.state.inference_limiter = InferenceLimiter()
         return request.app.state.inference_limiter

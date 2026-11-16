@@ -59,7 +59,7 @@ class ScoreModel(BaseModel):
         ids = [factor.id for factor in self.factors]
         if len(ids) != len(set(ids)):
             raise ValueError("Factor IDs must be unique")
-        fields = set(PropertyInput.model_fields) | {field.id for field in self.customFields}
+        fields = (set(PropertyInput.model_fields) - {"permitEvidence"}) | {field.id for field in self.customFields}
         custom = {field.id: field for field in self.customFields}
         if len({field.id for field in self.customFields}) != len(self.customFields) or any(field.id in PropertyInput.model_fields for field in self.customFields):
             raise ValueError("Custom field IDs must be unique and cannot replace built-in facts")

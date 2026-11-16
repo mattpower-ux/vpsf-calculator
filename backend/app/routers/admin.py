@@ -85,7 +85,7 @@ def scoring_history(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.get("/scoring/available-fields", dependencies=[Depends(require_admin_session)])
 def scoring_available_fields() -> list[str]:
-    excluded = {"analysisLevel", "address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"}
+    excluded = {"permitEvidence", "analysisLevel", "address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"}
     return [key for key in PropertyInput.model_fields if key not in excluded]
 
 

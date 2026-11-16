@@ -19,6 +19,7 @@ from app.integrations.fema import FemaFloodClient, flood_label
 from app.integrations.mapbox import MapboxClient
 from app.integrations.rentcast import RentCastClient
 from app.integrations.wildfire import cached_wildfire_risk
+from app.integrations.permitstack import PermitStackRequest, PermitStackResponse, lookup_permits
 from app.notifications import send_email
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
@@ -513,64 +514,17 @@ async def enrich_property_with_attom(
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> dict:
-    try:
-        client = AttomClient(settings.attom_api_key)
-        if not client.is_configured:
-            raise HTTPException(status_code=503, detail="ATTOM_API_KEY is not configured")
+    # Keep a tombstone for cached clients; never contact the retired provider.
+    raise HTTPException(status_code=410, detail="ATTOM enrichment has been retired.")
 
-        address1, address2 = split_address_for_attom(request.address)
 
-        try:
-            data, package = await fetch_attom_property(client, address1, address2, db, settings)
-        except HTTPStatusError as error:
-            detail = error.response.text[:300] if error.response is not None else ""
-            status_code = error.response.status_code if error.response is not None else "unknown"
-            raise HTTPException(
-                status_code=502,
-                detail=f"ATTOM property request failed with status {status_code}: {detail}",
-            ) from error
-        except HTTPError as error:
-            raise HTTPException(
-                status_code=502,
-                detail=f"ATTOM property request failed before a response was received: {type(error).__name__}",
-            ) from error
-
-        try:
-            property_input = property_input_from_attom(attom_record_from_response(data))
-        except HTTPException:
-            raise
-        except Exception as error:
-            raise HTTPException(
-                status_code=502,
-                detail=f"ATTOM property record could not be parsed: {type(error).__name__}",
-            ) from error
-
-        property_input.sourceNote = f"{property_input.sourceNote} ATTOM package: {package}."
-        if get_api_usage(db, "attom").count >= settings.attom_monthly_limit:
-            property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup skipped because the monthly pull limit is reached."
-        else:
-            try:
-                reserve_attom_call_or_429(db, settings)
-                permits_data = await client.property_building_permits(address1, address2)
-                property_input = apply_attom_permit_facts(property_input, permit_records_from_attom(permits_data))
-            except HTTPStatusError as error:
-                if error.response is not None and error.response.status_code in {401, 403, 404}:
-                    property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit package unavailable for this key or address."
-                else:
-                    status_code = error.response.status_code if error.response is not None else "unknown"
-                    property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup failed with status {status_code}."
-            except HTTPError:
-                property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit lookup was unavailable."
-            except Exception:
-                property_input.sourceNote = f"{property_input.sourceNote} ATTOM permit response could not be parsed safely."
-        return property_input.model_dump()
-    except HTTPException:
-        raise
-    except Exception as error:
-        raise HTTPException(
-            status_code=502,
-            detail=f"ATTOM enrichment failed unexpectedly: {type(error).__name__}",
-        ) from error
+@router.post("/permitstack", response_model=PermitStackResponse)
+async def enrich_property_with_permitstack(
+    request: PermitStackRequest,
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> PermitStackResponse:
+    return await lookup_permits(request, db, settings)
 
 
 @router.post("/rentcast", response_model=PropertyInput)

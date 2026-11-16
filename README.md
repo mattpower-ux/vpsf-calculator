@@ -44,6 +44,14 @@ Do not scrape listing providers by default. Provider adapters should be wired to
 
 ## Deployment
 
+### Property and permit sources
+
+RentCast supplies property records; PermitStack supplies permit history. ATTOM's endpoint is retired (HTTP 410) and the calculator no longer calls it. Historical ATTOM snapshots remain readable.
+
+Set `PERMIT_STACK_API_KEY` only on the backend. `PERMIT_STACK_MONTHLY_LIMIT` defaults to 100 upstream requests per UTC month for the initial rollout; this is a VPSF guardrail, separate from the shared account's daily allowance. Matching results cache for 24 hours; empty results cache for one hour. Each lookup requests at most 25 records in one page and checks the normalized street address, state, and ZIP before keeping evidence. Partial searches are labeled. Coverage varies by jurisdiction, and an empty result does not establish that no work occurred.
+
+Permit history is retained as supporting evidence, not automatically converted to installed features, replacement ages, or score credits. Issued and cancelled permits cannot demonstrate completed work. Public integration status reports configuration and VPSF usage without exposing credentials. New cache and usage tables are added on startup.
+
 The default deployment path is GitHub plus Render.
 
 `render.yaml` defines:

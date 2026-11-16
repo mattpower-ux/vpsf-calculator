@@ -1,4 +1,5 @@
 import { prepareAnalysisHome } from './analysisLevels.js';
+import { permitEvidenceForHome } from './permitEvidence.js';
 
 export const DRAFT_KEY = 'vpsf.analysisDraft.v1';
 export const MAX_DRAFT_BYTES = 64 * 1024;
@@ -48,6 +49,8 @@ export function prepareDraftHome(input) {
     'blockGroup', 'latitude', 'longitude', 'retrievedAt']);
   home.sourceNote = text(input.sourceNote, 2000);
   home.extraInputs = customInputs(input.extraInputs);
+  const permits = permitEvidenceForHome(input);
+  if (permits) home.permitEvidence = permits;
   home.photoObservations = {};
   if (object(input.photoObservations)) {
     for (const [key, value] of Object.entries(input.photoObservations).slice(0, 32)) {

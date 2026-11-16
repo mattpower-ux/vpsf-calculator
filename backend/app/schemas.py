@@ -1,4 +1,5 @@
 from app.lead_schemas import LeadRequest, LeadResponse
+from app.permitstack_schemas import PermitStackResponse
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
@@ -38,6 +39,8 @@ class FieldProvenance(BaseModel):
 
 
 class PropertyInput(BaseModel):
+    # Permit history is retained for review/archive only, never scoring input.
+    permitEvidence: PermitStackResponse | None = None
     # Capture depth only: never a feature claim or scoring multiplier.
     analysisLevel: Literal["broad", "moderate", "inclusive"] = "moderate"
     demoScenario: str = ""

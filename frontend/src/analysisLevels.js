@@ -1,4 +1,5 @@
 import { wildfireAssessment } from './wildfire.js';
+import { permitEvidenceForHome } from './permitEvidence.js';
 
 const LEVELS = {
   broad: {label: '1. Basic', route: 3},
@@ -99,6 +100,8 @@ export function prepareHomeForLevel(input, value) {
   const located = {...home, latitude: result.latitude, longitude: result.longitude};
   result.wildfire = wildfireAssessment(located) ? structuredClone(home.wildfire) : null;
   result.epaWalkability = matchedWalkability(located) ? structuredClone(home.epaWalkability) : null;
+  const permits = permitEvidenceForHome({...result, permitEvidence:home.permitEvidence});
+  if (permits) result.permitEvidence = permits;
   if (level !== 'broad') {
     for (const key of ADDITIONAL_FIELDS) {
       if (home[key] !== undefined) result[key] = structuredClone(home[key]);

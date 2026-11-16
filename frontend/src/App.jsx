@@ -1,4 +1,7 @@
 import { pillarActionSummary } from './pillarActionSummary.js';
+import PermitHistory from './PermitHistory.jsx';
+import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome } from './permitEvidence.js';
+import { lookupPermitHistory } from './api/client.js';
 import { ModerateReview, InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { AnalysisEvidence, InclusiveIntroduction, BroadReview } from './AnalysisFlow.jsx';
@@ -15,7 +18,7 @@ import CaptureDialog from "./CaptureDialog.jsx";
 import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
 import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
 import { applyAnalysisEvidence } from "./captureFacts.js";
-import { getHardieDemo, cacheEducationContent, enrichPropertyRisk, enrichPropertyWithAttom, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { getHardieDemo, cacheEducationContent, enrichPropertyRisk, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { presentationAddress, isPresentationAddress } from "./presentationHome";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
@@ -799,6 +802,7 @@ function mergeSavedPropertySnapshot(current, saved) {
   if (current.sourceNote || saved.sourceNote) {
     merged.sourceNote = joinUniqueNotes(current.sourceNote, saved.sourceNote);
   }
+  if (merged.permitEvidence) merged.permitEvidence = permitEvidenceForHome(merged);
   return merged;
 }
 
@@ -921,7 +925,7 @@ function rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, atto
   };
 }
 
-function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress, onResume }) {
+function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, onQueryStarted, onCaptureApply, onListingSelect, initialAddress, onResume, onPermitLookup }) {
   const [address, setAddress] = useState(initialAddress || presentationAddress);
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
@@ -946,6 +950,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
 
   const applySavedAutofill = () => {
     if (!savedMatch) return;
+    onPermitLookup(null);
     const savedHome = savedPropertyToHome(savedMatch);
     setAddress(formatSavedAddress(savedMatch));
     setHome(savedHome);
@@ -955,6 +960,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   const startExistingHomeScan = async (level) => {
     if (isScanningAddress) return;
     if (address.trim().length < 5) { setScanNote("Enter a property address first."); return; }
+    onPermitLookup(null);
 
     if (isPresentationAddress(address)) {
       setIsScanningAddress(true);
@@ -1006,6 +1012,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         for (const key of ['address','city','state','zip']) if (savedHome[key] && savedHome[key] !== 'Unknown') savedHome.provenance[key] = {origin:'imported',source:'Address lookup'};
         savedHome = prepareAnalysisHome(savedHome, level);
         setHome(savedHome);
+        onPermitLookup(savedHome);
         setScanNote("Saved property details loaded from the VPSF archive. No new property-data API pull was used.");
         await onQueryStarted(savedHome, "saved_archive");
         setResultMode("manual");
@@ -1016,8 +1023,6 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       const geocode = await geocodeProperty(address);
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;
-      let attomProperty = null;
-      let attomNote = "";
       let riskEnrichment = null;
       try {
         rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
@@ -1025,30 +1030,26 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         console.warn("RentCast enrichment unavailable.", rentcastError);
       }
       try {
-        attomProperty = await enrichPropertyWithAttom(normalizedAddress);
-      } catch (attomError) {
-        console.warn("ATTOM enrichment unavailable.", attomError);
-        attomNote = " ATTOM did not return a usable property record for this address.";
-      }
-      try {
         riskEnrichment = await enrichPropertyRisk({
           latitude: geocode.latitude,
           longitude: geocode.longitude,
-          state: geocode.state || rentcastProperty?.state || attomProperty?.state,
-          zip: geocode.zip || rentcastProperty?.zip || attomProperty?.zip,
+          state: geocode.state || rentcastProperty?.state,
+          zip: geocode.zip || rentcastProperty?.zip,
           county: geocode.county,
         });
       } catch (riskError) {
         console.warn("Risk enrichment unavailable.", riskError);
       }
-      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, attomProperty, riskEnrichment);
+      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, null, riskEnrichment);
       const prepared = prepareAnalysisHome(importedHome(scannedHome), level);
       setHome(prepared);
-      setScanNote(`${rentcastProperty || attomProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}${attomNote}`);
-      await onQueryStarted(prepared, rentcastProperty && attomProperty ? "rentcast_attom" : rentcastProperty ? "rentcast" : attomProperty ? "attom" : "mapbox");
+      onPermitLookup(prepared);
+      setScanNote(`${rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}`);
+      await onQueryStarted(prepared, rentcastProperty ? "rentcast" : "mapbox");
     } catch (error) {
       const fallbackHome = prepareAnalysisHome(homeFromExistingScan(address), level);
       setHome(fallbackHome);
+      onPermitLookup(fallbackHome);
       setScanNote("Address lookup is unavailable. Continue with manual confirmation.");
       await onQueryStarted(fallbackHome, "manual_fallback");
     } finally {
@@ -1070,7 +1071,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
           <input
             value={address}
             disabled={isScanningAddress}
-            onChange={(event) => setAddress(event.target.value)}
+            onChange={(event) => { onPermitLookup(null); setAddress(event.target.value); }}
             aria-label="Property address"
             placeholder="Enter home address"
           />
@@ -1229,6 +1230,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect 
       <ProgressDots step={1} />
       <h2>Add Property Details</h2>
       <p className="subhead">Review the details we found and fill in what you know.</p>
+      <PermitHistory home={home}/>
       {Array.isArray(home.photoReview) && <section className="photoFindings formSection">
         <h3>Review photo findings</h3>
         <p className="photoReviewIntro">Check the suggested details below and correct anything that does not match your home. Then complete the remaining property details.</p>
@@ -3256,6 +3258,24 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHome] = useState(defaultHome);
+  const permitCancelRef = useRef(null);
+  const [permitLookupEpoch, setPermitLookupEpoch] = useState(0);
+  const permitIdentity = home.analysisLevel ? JSON.stringify(permitRequest(home)) : 'null';
+  useEffect(() => {
+    if (permitIdentity === 'null') return undefined;
+    const cancel = schedulePermitLookup(home, lookupPermitHistory, setHome);
+    permitCancelRef.current = cancel;
+    return cancel;
+  }, [permitIdentity, permitLookupEpoch]);
+  const startPermitLookup = (property) => {
+    permitCancelRef.current?.();
+    if (!property) {
+      setHome(current => current.permitEvidence ? {...current, permitEvidence:null} : current);
+      return;
+    }
+    // Restart even for a repeated scan of the same address. Never await permits.
+    setPermitLookupEpoch(current => current + 1);
+  };
   const [listingSource, setListingSource] = useState("mls");
   const listingReturnRef = useRef(1);
   const [customFields, setCustomFields] = useState([]);
@@ -3304,6 +3324,7 @@ export default function App() {
     setScreen(target);
   };
   const update = (key, value) => {
+    if (["address", "city", "state", "zip"].includes(key) && home[key] !== value) permitCancelRef.current?.();
     setApiResult(null);
     setScoreError("");
     setHome((current) => {
@@ -3319,6 +3340,7 @@ export default function App() {
     });
   };
   const handleCaptureApply = (facts, photoReview, preserveExisting = false, evidenceSource) => {
+    if (["address", "city", "state", "zip"].some(key => facts[key] && facts[key] !== home[key])) permitCancelRef.current?.();
     setApiResult(null); setScoreError(""); setHasAssessedHome(false);
     setQueryId(null); queryIdRef.current = null;
     setHome(current => {
@@ -3361,7 +3383,7 @@ export default function App() {
       setQueryId(record.id);
       queryIdRef.current = record.id;
       const archivedProperty = prepareAnalysisHome(property.analysisLevel === "broad" ? property : mergeSavedPropertySnapshot(property, record.latestSnapshot), property.analysisLevel);
-      setHome(archivedProperty);
+      setHome(current => mergeArchivedPermitEvidence(current, archivedProperty, property));
       previousArchivedHomeRef.current = archivedProperty;
     }
   };
@@ -3645,7 +3667,7 @@ export default function App() {
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
         {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
-        {screen === 0 && <StartScreen onResume={draft=>{setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
+        {screen === 0 && <StartScreen onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={hasAssessedHome || home.analysisLevel ? [home.address,home.city,home.state,home.zip].filter(Boolean).join(", ") : undefined} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 1 && <PropertyDetails home={home} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}

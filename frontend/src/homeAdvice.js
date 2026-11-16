@@ -1,5 +1,6 @@
 export function confirmedEdit(home, key, value) {
-  return {...home,[key]:value,provenance:{...home.provenance,[key]:{origin:'user-confirmed',source:'Home details',date:new Date().toISOString()}}};
+  const locationChanged = ['address','city','state','zip'].includes(key) && home[key] !== value;
+  return {...home,[key]:value,...(locationChanged ? {permitEvidence:null} : {}),provenance:{...home.provenance,[key]:{origin:'user-confirmed',source:'Home details',date:new Date().toISOString()}}};
 }
 export function importedHome(home) {
   const provenance={...home.provenance};

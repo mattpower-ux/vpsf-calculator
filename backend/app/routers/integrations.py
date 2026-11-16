@@ -5,6 +5,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.integrations.ocr import OcrConfiguration
 from app.repositories import get_api_usage
+from app.integrations.permitstack import usage_status, PAGE_SIZE, CACHE_HOURS, EMPTY_CACHE_HOURS
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
@@ -21,19 +22,22 @@ async def integration_status(settings: Settings = Depends(get_settings), db: Ses
     )
 
     rentcast_usage = get_api_usage(db, "rentcast")
-    attom_usage = get_api_usage(db, "attom")
 
     return {
+        "permitstack": {
+            "configured": settings.configured_integrations["permitstack"],
+            "missing": [] if settings.configured_integrations["permitstack"] else ["PERMIT_STACK_API_KEY"],
+            **usage_status(db),
+            "monthlyLimit": settings.permit_stack_monthly_limit,
+            "maxRequestsPerLookup": 1,
+            "maxRecordsPerLookup": PAGE_SIZE,
+            "cacheHours": CACHE_HOURS,
+            "emptyCacheHours": EMPTY_CACHE_HOURS,
+            "authenticationNotCheckedByStatus": True,
+        },
         "mapbox": {
             "configured": settings.configured_integrations["mapbox"],
             "missing": [] if settings.configured_integrations["mapbox"] else ["MAPBOX_ACCESS_TOKEN"],
-        },
-        "attom": {
-            "configured": settings.configured_integrations["attom"],
-            "missing": [] if settings.configured_integrations["attom"] else ["ATTOM_API_KEY"],
-            "usedThisMonth": attom_usage.count,
-            "monthlyLimit": settings.attom_monthly_limit,
-            "period": attom_usage.period,
         },
         "rentcast": {
             "configured": settings.configured_integrations["rentcast"],

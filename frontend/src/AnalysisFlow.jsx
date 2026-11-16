@@ -5,6 +5,7 @@ import DocumentUpload from './DocumentUpload.jsx';
 import GuidedHomeWalk from './GuidedHomeWalk.jsx';
 import { LISTING_SOURCES, ListingLogo } from './ListingImport.jsx';
 import './analysisFlow.css';
+import PermitHistory from './PermitHistory.jsx';
 
 export function AnalysisEvidence({ home, onApply, onListingSelect }) {
   const [mode, setMode] = useState(null);
@@ -52,6 +53,7 @@ export function BroadReview({ home, onSubmit, onBack, busy, error }) {
       {home.wildfire?.status === 'available' && <div><dt>USFS area wildfire risk</dt><dd>{home.wildfire.level}<small>{home.wildfire.areaName}</small></dd></div>}
       {home.epaWalkability?.status === 'available' && <div><dt>EPA walkability index</dt><dd>{home.epaWalkability.value} / 20</dd></div>}
     </dl></section>}
+    <PermitHistory home={home}/>
     <button className="primaryButton" onClick={onSubmit} disabled={busy}>{busy ? 'Analyzing…' : 'Generate Basic Analysis'} <ArrowRight size={18}/></button>
     <button className="textLink" onClick={onBack}>Choose another analysis level</button>
     {error && <p role="alert">{error}</p>}

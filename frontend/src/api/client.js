@@ -1,3 +1,5 @@
+import { permitRequest } from '../permitEvidence.js';
+
 function resolveApiBaseUrl() {
   if (import.meta.env?.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
@@ -94,10 +96,11 @@ export async function enrichPropertyWithRentCast(address) {
   });
 }
 
-export async function enrichPropertyWithAttom(address) {
-  return request("/api/properties/attom", {
-    method: "POST",
-    body: JSON.stringify({ address })
+export async function lookupPermitHistory(home) {
+  const query = permitRequest(home);
+  if (!query) return null;
+  return request('/api/properties/permitstack', {
+    method: 'POST', body: JSON.stringify(query), signal: AbortSignal.timeout(15000)
   });
 }
 

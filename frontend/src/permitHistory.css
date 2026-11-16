@@ -1,0 +1,12 @@
+.permitHistory { margin: 16px 0; overflow-wrap: anywhere; }
+.permitHistory > summary { cursor: pointer; min-height: 44px; padding: 10px 0; box-sizing: border-box; font-weight: 700; }
+.permitHistory > summary span { font-weight: 400; }
+.permitHistory p, .permitHistory small, .permitHistory dl { font-size: 14px; line-height: 1.5; }
+.permitHistory article { border-top: 1px solid var(--line); padding: 12px 0; }
+.permitHistory h4 { margin: 0 0 6px; font-size: 15px; }
+.permitHistory article p { margin: 6px 0; }
+.permitHistory dl { margin: 8px 0; }
+.permitHistory dl > div { display: flex; gap: 12px; }
+.permitHistory dt { min-width: 80px; color: var(--muted); }
+.permitHistory dd { margin: 0; }
+.permitHistory .permitCoverage { color: var(--muted); font-size: 12px; }

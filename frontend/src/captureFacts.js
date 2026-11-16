@@ -15,7 +15,7 @@ export function applyAnalysisEvidence(current, facts, photoReview, {fresh = fals
   for (const key of ['address','city','state','zip']) {
     if (reviewed[key] == null || String(reviewed[key]).trim() === '') delete reviewed[key];
   }
-  for (const key of ['analysisLevel','demoScenario','provenance']) delete reviewed[key];
+  for (const key of ['analysisLevel','demoScenario','provenance','permitEvidence']) delete reviewed[key];
   const moved = Boolean(addressKey(reviewed.address)) && addressKey(reviewed.address) !== addressKey(current.address);
   if (!moved && reviewed.address !== undefined) reviewed.address = current.address;
   const reset = fresh || moved;

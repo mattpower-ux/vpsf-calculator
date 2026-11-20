@@ -188,6 +188,12 @@ class ScoreResponse(BaseModel):
     improvements: list[dict] = Field(default_factory=list)
 
 
+class ProductAward(BaseModel):
+    year: int
+    sourceUrl: str
+    sourceTitle: str
+
+
 class ProductRecommendation(BaseModel):
     id: str
     brand: str
@@ -197,6 +203,11 @@ class ProductRecommendation(BaseModel):
     weight: str = "Standard"
     summary: str = ""
     imageUrl: str | None = None
+    companyUrl: str | None = None
+    awards: list[ProductAward] = Field(default_factory=list)
+    imageCredit: str | None = None
+    imageSourceUrl: str | None = None
+    catalogVersion: str | None = None
     needTags: list[str] = Field(default_factory=list)
     pillars: list[str] = Field(default_factory=list)
     requirements: list[str] = Field(default_factory=list)
@@ -206,6 +217,12 @@ class ProductRecommendation(BaseModel):
     isSponsored: bool = False
     sponsorName: str = ""
     metadataRevision: int = 0
+
+
+class ProductCatalogExport(BaseModel):
+    schemaVersion: int = 1
+    catalogVersion: str | None = None
+    products: list[ProductRecommendation]
 
 
 class EducationalContent(BaseModel):

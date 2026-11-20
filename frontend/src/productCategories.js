@@ -18,8 +18,14 @@ export function productsInCategory(products, category) {
 export function recommendationCategory(rec) {
   return {'resilience-siding':'siding','heating-boiler':'condensing boiler','energy-water-heating':'water heating','water-fixtures':'fixtures','roof-risk':'roofing','health-ventilation':'ventilation','water-irrigation':'irrigation'}[rec.id] || null;
 }
-export function focusedProducts(products, category) {
+export function searchProducts(products, query) {
+  const words = String(query || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+  return products.filter(p => words.every(word => [p.name,p.brand,p.product,p.category,p.description,p.summary].filter(Boolean).join(' ').toLowerCase().includes(word)));
+}
+
+export function focusedProducts(products, category, {all = false} = {}) {
   const selected = productsInCategory(products, category);
   if (!category) return selected;
-  return [...selected].sort((a,b) => Number(!!b.isSponsored)-Number(!!a.isSponsored) || Number(b.id==='james-hardie-plank' && !!b.isSponsored)-Number(a.id==='james-hardie-plank' && !!a.isSponsored)).slice(0,10);
+  const sorted = [...selected].sort((a,b) => Number(!!b.isSponsored)-Number(!!a.isSponsored) || Number(b.id==='james-hardie-plank' && !!b.isSponsored)-Number(a.id==='james-hardie-plank' && !!a.isSponsored));
+  return all ? sorted : sorted.slice(0,10);
 }

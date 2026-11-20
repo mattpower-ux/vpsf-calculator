@@ -2,10 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.repositories import get_educational_content, list_products, upsert_educational_content
-from app.schemas import EducationalContent, EducationalContentUpsert, ProductRecommendation
+from app.repositories import export_product_catalog, get_educational_content, list_products, upsert_educational_content
+from app.schemas import ProductCatalogExport, EducationalContent, EducationalContentUpsert, ProductRecommendation
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
+
+@router.get("/catalog", response_model=ProductCatalogExport)
+async def catalog(db: Session = Depends(get_db)) -> ProductCatalogExport:
+    return export_product_catalog(db)
 
 
 @router.get("/recommendations", response_model=list[ProductRecommendation])

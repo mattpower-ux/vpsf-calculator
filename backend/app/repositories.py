@@ -90,47 +90,66 @@ def create_source_document(
 
 
 def seed_products(db: Session) -> None:
-    for product in SEED_PRODUCTS:
-        existing = db.get(ProductRecord, product.id)
-        if existing:
-            continue
-        db.add(
-            ProductRecord(
-                id=product.id,
-                brand=product.brand,
-                product=product.product,
-                manufacturer=product.brand,
-                pillar=product.pillar,
-                category=product.category,
-                weight=product.weight,
-                summary=product.summary,
-                image_url=product.imageUrl,
-            )
-        )
-    db.commit()
+    from app.products.award_catalog import load_manifest, seed_awards, insert_if_missing
+    # Validate before any mutation, including the legacy catalog seed.
+    manifest = load_manifest()
+    try:
+        existing_ids = set(db.scalars(select(ProductRecord.id)).all())
+        for product in SEED_PRODUCTS:
+            if product.id in existing_ids:
+                continue
+            insert_if_missing(db, ProductRecord, dict(
+                id=product.id, brand=product.brand, product=product.product,
+                manufacturer=product.brand, pillar=product.pillar, category=product.category,
+                weight=product.weight, summary=product.summary, image_url=product.imageUrl,
+            ), 'id')
+        seed_awards(db, manifest)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def list_products(db: Session) -> list[ProductRecommendation]:
     seed_products(db)
-    records = db.scalars(select(ProductRecord).where(ProductRecord.status == "active").order_by(ProductRecord.brand)).all()
     from app.models import ProductAdviceRecord
     from app.advice.catalog_metadata import initial_metadata
+    from app.products.award_catalog import catalog_metadata, public_image_url
+    records = db.scalars(select(ProductRecord).where(ProductRecord.status == "active").order_by(ProductRecord.brand, ProductRecord.id)).all()
     metadata = {m.id: m for m in db.scalars(select(ProductAdviceRecord)).all()}
-    return [
-        ProductRecommendation(
-            id=record.id,
-            brand=record.brand,
-            product=record.product,
-            pillar=record.pillar,
-            category=record.category,
-            weight=record.weight,
-            summary=record.summary,
-            imageUrl=record.image_url,
-            **(metadata[record.id].payload if record.id in metadata else initial_metadata(record).model_dump()),
+    _, awards = catalog_metadata(db)
+    products = []
+    for record in records:
+        defaults = initial_metadata(record).model_dump()
+        evidence = awards.get(record.id)
+        if evidence:
+            defaults.update({key: evidence[key] for key in ('needTags', 'pillars', 'requirements', 'verificationNotes')})
+            defaults['sourceUrl'] = max(evidence['awards'], key=lambda a: a['year'])['sourceUrl']
+            # An editorial award is not a review of current technical specs.
+            defaults['reviewedAt'] = ''
+        if record.id in metadata:
+            defaults.update(metadata[record.id].payload)
+        products.append(ProductRecommendation(
+            id=record.id, brand=record.brand, product=record.product,
+            pillar=record.pillar, category=record.category, weight=record.weight,
+            summary=record.summary, imageUrl=public_image_url(record.image_url),
+            companyUrl=record.product_url,
+            awards=evidence['awards'] if evidence else [],
+            imageCredit=evidence['imageCredit'] if evidence else None,
+            imageSourceUrl=evidence['imageSourceUrl'] if evidence else None,
+            catalogVersion=evidence['catalogVersion'] if evidence else None,
+            **defaults,
             metadataRevision=metadata[record.id].revision if record.id in metadata else 0,
-        )
-        for record in records
-    ]
+        ))
+    return products
+
+
+def export_product_catalog(db: Session):
+    from app.products.award_catalog import catalog_metadata
+    from app.schemas import ProductCatalogExport
+    products = [p for p in list_products(db) if p.weight != 'Hidden']
+    version, _ = catalog_metadata(db)
+    return ProductCatalogExport(catalogVersion=version, products=products)
 
 
 def serialize_educational_content(record: EducationalContentRecord) -> EducationalContent:

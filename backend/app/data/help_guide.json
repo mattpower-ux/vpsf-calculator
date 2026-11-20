@@ -67,11 +67,19 @@
     "sections": [
       {
         "heading": "Explore",
-        "text": "From Recommendations, use Product Options to compare categories. Learn More explains the building science behind an upgrade."
+        "text": "Search by brand or product; filter by pillar or category."
+      },
+      {
+        "heading": "Award library",
+        "text": "Explore Green Builder's 2024–2026 award winners with photos and sources. Awards do not imply Premiere Partner status."
+      },
+      {
+        "heading": "Request information",
+        "text": "Request Specifications/Pricing sends inquiries to VPSF for review, not directly to manufacturers."
       },
       {
         "heading": "Check fit",
-        "text": "A listing alone adds no points. Ask a qualified professional about fit, local requirements, pricing, and proof of installation and performance."
+        "text": "Products add no automatic points. Confirm suitability and installation requirements."
       }
     ],
     "keywords": [

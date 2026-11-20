@@ -1,8 +1,8 @@
 import React,{useState} from 'react';
 import {saveProductMetadata} from '../api/client';
 import './editor.css';
-const tags=['heating','water-heating','irrigation','leaks','fixtures','rainwater','ventilation','roofing','fire-resistant-siding'];
-const requirements=['hydronic','gas','irrigation','space-and-electrical','ventilation-design','roof-design','reuse-code','fixture-fit','siding-assembly'];
+const tags=['heating','water-heating','irrigation','leaks','fixtures','rainwater','ventilation','roofing','fire-resistant-siding','insulation','air-sealing','windows','solar','battery','energy-management','lighting','appliances','water-treatment','graywater','low-carbon-materials','smart-thermostat','ember-protection','storm-protection','moisture-control','ev-charging','toilets','faucets','showerheads','dishwasher'];
+const requirements=['hydronic','gas','irrigation','space-and-electrical','ventilation-design','roof-design','reuse-code','fixture-fit','siding-assembly','envelope-design','window-fit','solar-design','battery-design','controls-compatibility','water-quality','material-assembly','ember-design','storm-design','moisture-design','ev-electrical','appliance-fit'];
 const pillars=['energy','water','health','resilience','carbon','financial','community'];
 export default function ProductMetadataEditor({products,setProducts,token}){
  const [id,setId]=useState(''),[draft,setDraft]=useState(null),[revision,setRevision]=useState(0),[status,setStatus]=useState(''),[busy,setBusy]=useState(false),[dirty,setDirty]=useState(false);

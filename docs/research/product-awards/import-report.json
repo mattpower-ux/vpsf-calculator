@@ -1,0 +1,62 @@
+{
+  "sourceWriteups": {
+    "2024": 50,
+    "2025": 54,
+    "2026": 55
+  },
+  "uniqueAwardProducts": 156,
+  "existingCatalogMatches": [
+    "niagara-high-efficiency-toilet",
+    "fiberon-wildwood",
+    "rachio-smart-irrigation",
+    "euroshield-recycled-rubber-roofing",
+    "nichiha-vintagewood"
+  ],
+  "repeatAwards": {
+    "lp-smartside-trim-siding": [
+      2024,
+      2025,
+      2026
+    ],
+    "arclin-firepoint": [
+      2025,
+      2026
+    ]
+  },
+  "pillarCounts": {
+    "energy": 82,
+    "health": 36,
+    "water": 22,
+    "carbon": 79,
+    "financial": 17,
+    "resilience": 60
+  },
+  "categoryCounts": {
+    "Appliances": 8,
+    "Lighting": 2,
+    "Fixtures": 5,
+    "Structure and Materials": 10,
+    "Insulation": 13,
+    "Decking and Lumber": 9,
+    "Energy Management": 10,
+    "Leak Protection": 2,
+    "Heat Pumps": 13,
+    "Windows and Doors": 10,
+    "Paints and Finishes": 9,
+    "Battery Storage": 6,
+    "Flooring and Surfaces": 14,
+    "Ventilation": 7,
+    "Landscaping and Drainage": 3,
+    "Irrigation": 2,
+    "Siding": 7,
+    "Roofing": 4,
+    "Solar": 6,
+    "Water Reuse": 2,
+    "Pool Pump": 1,
+    "Water Heating": 5,
+    "Design and Tools": 2,
+    "Fire Protection": 3,
+    "Dishwashers": 2,
+    "Water Treatment": 1
+  }
+}

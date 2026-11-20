@@ -29,7 +29,7 @@ import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
 import { buildReportModel } from "./reportModel";
 import { buildFutureCosts } from "./futureCosts";
-import { catalogCategories, productsInCategory, recommendationCategory, focusedProducts } from "./productCategories";
+import { catalogCategories, productsInCategory, recommendationCategory, focusedProducts, searchProducts } from "./productCategories";
 import { getArchivePage } from "./archivePagination";
 import { buildMenuGroups, getResultsMenuItems, hasEntryNavigation } from "./menuNavigation";
 import { bottomNavigationItems } from "./bottomNavigation";
@@ -2632,8 +2632,10 @@ function ProductCategories({ products, onChoose, setScreen }) {
 }
 
 function Products({ isDemo = false, browseAll, setBrowseAll, products, recommendedProducts, advice, setScreen, setSelectedProduct, activePillar, setActivePillar, activeCategory, setActiveCategory, onProductClick, propertyAddress }) {
-
-  const filteredProducts = focusedProducts((browseAll ? products : recommendedProducts).filter((product) => !activePillar || (product.pillars?.length ? product.pillars.includes(activePillar) : productMatchesPillar(product, activePillar))), activeCategory);
+  const [query, setQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(12);
+  useEffect(() => setVisibleCount(12), [query, browseAll, activePillar, activeCategory]);
+  const filteredProducts = focusedProducts(searchProducts((browseAll ? products : recommendedProducts).filter((product) => !activePillar || (product.pillars?.length ? product.pillars.includes(activePillar) : productMatchesPillar(product, activePillar))), query), activeCategory, {all: browseAll});
   const activeLabel = activeCategory ? catalogCategories(products).find(c => c.id === activeCategory)?.label : activePillar ? pillarLabelMap[activePillar] || "Selected" : null;
 
   return (
@@ -2657,15 +2659,17 @@ function Products({ isDemo = false, browseAll, setBrowseAll, products, recommend
         <label><span>Pillar</span><select value={activePillar||""} onChange={e=>setActivePillar(e.target.value||null)}><option value="">All pillars</option>{PILLARS.map(p=><option key={p.key} value={p.key}>{p.label}</option>)}</select></label>
         <label><span>Category</span><select value={activeCategory||""} onChange={e=>setActiveCategory(e.target.value||null)}><option value="">All categories</option>{catalogCategories(products).map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
       </div>
+      <label className="field"><span>Find a product</span><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Product, brand, or feature" /></label>
+      <p className="productPhotoCredit" aria-live="polite">{filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}</p>
       {!browseAll && <AdviceStatus advice={advice}/>}
       <div className="productList">
         {!filteredProducts.length && <p>No matching products are available in this selection. Confirm the home details or browse the full catalog; a product purchase may not be the next step.</p>}
-        {filteredProducts.map((product, index) => (
+        {filteredProducts.slice(0,visibleCount).map((product, index) => (
           <React.Fragment key={product.id}>
           {!isDemo && !browseAll && (index === 0 || product.match?.group !== filteredProducts[index-1].match?.group) && <h3 className="matchGroupHeading">{product.match?.group === "matched" ? "Matched to recorded needs" : "Needs verification"}</h3>}
           <article className={`productCard${product.imageCredit ? " productCardWithPhoto" : ""}`}>
             <div className="productImage realProductImage">
-              {product.image ? <img src={product.image} alt={product.imageAlt || product.name} /> : <Package size={44} aria-hidden="true" />}
+              {product.image ? <img src={product.image} alt={product.imageAlt || product.name} loading="lazy" decoding="async" /> : <Package size={44} aria-hidden="true" />}
             </div>
             <div>
               {product.imageCredit && <small className="productPhotoCredit">{product.imageCredit}</small>}
@@ -2690,6 +2694,7 @@ function Products({ isDemo = false, browseAll, setBrowseAll, products, recommend
           </article></React.Fragment>
         ))}
       </div>
+      {filteredProducts.length > visibleCount && <button className="secondaryButton" onClick={()=>setVisibleCount(n=>n+12)}>Show more products ({filteredProducts.length-visibleCount} remaining)</button>}
       <button className="secondaryButton" onClick={() => setScreen(28)}>Browse Product Categories</button>
       <button className="primaryButton" onClick={() => setScreen(8)}>Share Your Score</button>
       <BottomNav active="Menu" setScreen={setScreen} />
@@ -2717,6 +2722,8 @@ function ProductDetail({ isDemo = false, product, home, setScreen, onSubmitLead 
         </div>
       </section>
 
+      {product.description && <p>{product.description}</p>}
+      {!!product.awards?.length && <p className="productPhotoCredit">Green Builder Sustainable Products of the Year: {product.awards.map((award,i)=><React.Fragment key={`${award.year}-${i}`}>{i > 0 ? ', ' : ''}<a href={award.sourceUrl} target="_blank" rel="noopener noreferrer">{award.year}</a></React.Fragment>)}</p>}
       {!showLeadForm && (
         <>
           {allowSpecRequest && <button className="primaryButton" onClick={() => setShowLeadForm(true)}>Request Specifications/Pricing <ArrowRight size={18} /></button>}
@@ -3570,7 +3577,7 @@ export default function App() {
           ...product,
           image: product.image || productPhotos[product.id]?.image || demoProducts.find(item => item.id === product.id)?.image,
           imageAlt: product.image ? product.name : productPhotos[product.id]?.imageAlt || product.name,
-          imageCredit: product.image ? null : productPhotos[product.id]?.imageCredit
+          imageCredit: product.imageCredit || (product.image ? null : productPhotos[product.id]?.imageCredit)
         })));
       })
       .catch(() => {

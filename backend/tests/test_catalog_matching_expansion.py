@@ -10,7 +10,7 @@ def context(origin="user-confirmed", **values):
 
 
 def product(tag, **extra):
-    return dict(id=tag, needTags=[tag], reviewedAt="2026-11-20", **extra)
+    return {"id": tag, "needTags": [tag], "reviewedAt": "2026-11-20", **extra}
 
 
 @pytest.mark.parametrize("field,value,tag", [
@@ -103,3 +103,15 @@ def test_hidden_and_inactive_new_products_still_excluded():
     c = context(windows="Single Pane")
     assert match_products(c, [product("windows", weight="Hidden")]) == []
     assert match_products(c, [product("windows", status="inactive")]) == []
+
+
+def test_premiere_partners_lead_only_after_need_and_compatibility_filtering():
+    c = context(windows="Single Pane", hvac="Electric Resistance")
+    catalog = [
+        product("windows", id="ordinary", weight="Priority"),
+        product("windows", id="partner", isSponsored=True, requirements=["window-fit"]),
+        product("irrigation", id="unrelated-partner", isSponsored=True),
+        product("heating", id="incompatible-partner", isSponsored=True, requirements=["hydronic", "gas"]),
+        product("windows", id="hidden-partner", isSponsored=True, weight="Hidden"),
+    ]
+    assert [m["productId"] for m in match_products(c, catalog)] == ["partner", "ordinary"]

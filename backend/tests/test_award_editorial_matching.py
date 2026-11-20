@@ -79,3 +79,17 @@ def test_community_is_not_assigned_to_every_award(catalog):
     assert not all("community" in p.pillars for p in catalog.values())
     for identifier in WATER_HEATERS | {WATER_TREATMENT}:
         assert "community" not in catalog[identifier].pillars, identifier
+
+
+@pytest.mark.parametrize("values,category", [
+    ({"windows": "Single Pane"}, "Windows and Doors"),
+    ({"insulation": "Uninsulated"}, "Insulation"),
+    ({"toilets": "Standard"}, "Fixtures"),
+    ({"irrigation": "Conventional Irrigation", "reuse": "None"}, "Water Reuse"),
+    ({"roofAge": "25"}, "Roofing"),
+    ({"backup": "None"}, "Battery Storage"),
+])
+def test_new_award_products_enter_specific_home_paths(catalog, values, category):
+    matches = matched_ids(confirmed_context(**values), catalog)
+    assert any(catalog[identifier].category == category for identifier in matches)
+    assert all(match["reasons"] for match in match_products(confirmed_context(**values), catalog.values()))

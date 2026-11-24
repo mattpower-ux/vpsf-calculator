@@ -33,3 +33,12 @@ test("the enlarged FREE badge has an accessible reduced-motion sparkle", () => {
   assert.match(app, /prefers-reduced-motion:\s*reduce/);
   assert.match(app, /min-height:\s*34px/);
 });
+
+test("the first page names the four qualities the calculator measures", () => {
+  const app = readFileSync(new URL("./App.jsx", import.meta.url), "utf8");
+  assert.match(app, /className="measurementStrip"/);
+  for (const label of ["MEASURING", "Performance", "Durability", "Efficiency", "Resilience"]) {
+    assert.match(app, new RegExp(`>${label}<`));
+  }
+  assert.match(app, /\.measurementValues\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*max-content\)/s);
+});

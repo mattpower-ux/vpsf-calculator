@@ -1105,6 +1105,15 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         </span>
         <h1>Analyze an existing home</h1>
         <p className="centerCopy">Enter any address and the calculator will score the home's performance strengths and weaknesses.</p>
+        <div className="measurementStrip" aria-label="Measuring performance, durability, efficiency, and resilience">
+          <strong>MEASURING</strong>
+          <div className="measurementValues">
+            <span>Performance</span>
+            <span>Durability</span>
+            <span>Efficiency</span>
+            <span>Resilience</span>
+          </div>
+        </div>
         <ResumeAnalysisDraft onResume={onResume}/>
       </>}
       <section className={`existingHomeCard ${entryFlow.page === "depth" ? "depthSelectionCard" : ""}`}>
@@ -4181,6 +4190,38 @@ export default function App() {
           .freeBadgeSparkle { animation: none; opacity: 1; transform: none; }
         }
         .startScreen h1 { text-align: center; font-size: 24px; }
+        .measurementStrip {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 10px;
+          margin: 12px auto 2px;
+          color: var(--ink);
+          text-align: center;
+        }
+        .measurementStrip > strong {
+          color: var(--blue);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .12em;
+        }
+        .measurementValues {
+          display: grid;
+          grid-template-columns: repeat(2, max-content);
+          justify-content: center;
+          gap: 3px 0;
+          font-size: 12px;
+          font-weight: 650;
+          line-height: 1.35;
+        }
+        .measurementValues span:nth-child(even)::before {
+          content: "•";
+          margin: 0 7px;
+          color: var(--gold);
+        }
+        @media (max-width: 380px) {
+          .measurementStrip { align-items: center; flex-direction: column; gap: 4px; }
+        }
         .existingHomeCard {
           border: 1px solid var(--accent-line);
           background: linear-gradient(180deg, #ffffff 0%, var(--surface-tint) 100%);

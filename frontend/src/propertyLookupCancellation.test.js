@@ -17,7 +17,8 @@ function mount(overrides = {}, propOverrides = {}) {
   const effects = [], writes = [], lookupGeneration = {current:0};
   const record = name => value => writes.push([name,value]);
   const env = {
-    useState: initial => [initial,record('local')], useRef: value => ({current:value}),
+    useState: initial => [initial,record('local')], useReducer: (_reducer,initial) => [initial,record('flow')], useRef: value => ({current:value}),
+    analysisEntryReducer:(state)=>state, analysisEntryInitialState:{page:'address',expanded:null,confirmed:null},
     useEffect: effect => effects.push(effect),
     presentationAddress:'Demo address', isPresentationAddress: address => address === 'Demo address',
     savedMatchForAddress:()=>null, parseAddressParts:address=>({address}),

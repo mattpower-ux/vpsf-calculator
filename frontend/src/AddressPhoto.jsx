@@ -5,8 +5,10 @@ import demoExterior from './assets/demo-california-exterior.png';
 import './addressPhoto.css';
 import ExteriorPhotoDialog from './ExteriorPhotoDialog.jsx';
 import { analysisLevelLabel } from './analysisLevels.js';
+import { analysisEntryReducer, analysisLevelDetails } from './analysisEntryFlow.js';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
+export default function AddressPhoto({ address, flow, onFlowAction, onChooseLevel, busy = false }) {
   const filterId = useId().replace(/:/g, "");
   const [editing,setEditing] = useState(false);
   const [remote, setRemote] = useState(null), [local, setLocal] = useState(null);
@@ -29,8 +31,13 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
   const image = imported?.image || (demo ? demoExterior : found?.image);
   const canSketch = Boolean(imported || demo || found?.derivativesAllowed);
   const options = [['broad',analysisLevelLabel('broad'),'Quick Score from Public Records'],['moderate',analysisLevelLabel('moderate'),'Critical Systems Confirmed'],['inclusive',analysisLevelLabel('inclusive'),'Fully Documented Features']];
+  const selected = options.find(([level]) => level === flow.expanded);
   const imageFailed = () => { setRemote(null); setLocal(null); setError('This photo could not be displayed. Please choose another.'); };
-  return <section className="addressPhoto analysisChoices" aria-label="Depth of Scoring Desired" aria-busy={busy}>
+  const confirmLevel = level => {
+    const next = analysisEntryReducer(flow, {type:'confirm-level', level});
+    if (next.confirmed === level) onChooseLevel(level);
+  };
+  return <section className="addressPhoto analysisChoices" aria-label={flow.page === 'depth' ? 'Depth of Scoring Desired' : 'Start the Calculation'} aria-busy={busy}>
     <svg width="0" height="0" aria-hidden="true" className="sketchFilters"><defs>
       <filter id={`${filterId}-line`} colorInterpolationFilters="sRGB">
         <feColorMatrix type="saturate" values="0"/>
@@ -43,19 +50,33 @@ export default function AddressPhoto({ address, onChooseLevel, busy = false }) {
         <feComponentTransfer><feFuncR type="discrete" tableValues=".15 .3 .5 .7 .85 .98"/><feFuncG type="discrete" tableValues=".2 .38 .56 .74 .89 .99"/><feFuncB type="discrete" tableValues=".22 .4 .58 .76 .9 1"/></feComponentTransfer>
       </filter>
     </defs></svg>
-    {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
-    <h2>Depth of Scoring Desired</h2>
-    <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className="analysisChoice" type="button" disabled={busy || address.trim().length < 5} onClick={() => onChooseLevel(level)} aria-label={`${label}: ${caption}`}>
-      <span className="analysisChoiceImage">
-        <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
-        {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
-      </span>
-      <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
-    </button>)}</div>
-    {busy && <p role="status">Loading the available property information…</p>}
-    {image && !demo && !imported && <p className="photoAttribution">{found?.attribution || 'Google Street View'}{found?.date ? ` · ${found.date}` : ''}</p>}
-    <button type="button" className="addressPhotoUpload" disabled={busy} onClick={() => setEditing(true)}>{image ? 'Change exterior photo' : 'Upload exterior photo'}</button>
-    {!image && !busy && <p className="photoAvailability">You can choose an analysis level without a photo.</p>}
+    {flow.page === 'address' ? <>
+      {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
+      {image && !demo && !imported && <p className="photoAttribution">{found?.attribution || 'Google Street View'}{found?.date ? ` · ${found.date}` : ''}</p>}
+      <button type="button" className="addressPhotoUpload" disabled={busy} onClick={() => setEditing(true)}>{image ? 'Change exterior photo' : 'Upload exterior photo'}</button>
+      {!image && !busy && <p className="photoAvailability">You can continue without an exterior photo.</p>}
+      <button type="button" className="primaryButton addressPhotoStart" disabled={busy || address.trim().length < 5} onClick={() => onFlowAction({type:'open-depth'})}>Start the Calculation! <ArrowRight size={18}/></button>
+    </> : <>
+      <header className="analysisDepthHeader">
+        <button type="button" className="analysisDepthBack" onClick={() => onFlowAction({type:'back'})}><ArrowLeft size={18}/> Back</button>
+        <h2>Depth of Scoring Desired</h2>
+        <p>Choose a level to see what your calculation will include.</p>
+      </header>
+      <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className={`analysisChoice ${flow.expanded === level ? 'selected' : ''}`} type="button" disabled={busy} onClick={() => onFlowAction({type:'toggle-level', level})} aria-expanded={flow.expanded === level} aria-controls={`analysis-${level}-details`} aria-label={`${label}: ${caption}`}>
+        <span className="analysisChoiceImage">
+          <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
+          {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
+        </span>
+        <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
+      </button>)}</div>
+      {selected && <section className="analysisLevelResult" id={`analysis-${selected[0]}-details`} aria-live="polite">
+        <h3>{selected[1]}</h3>
+        <p>{analysisLevelDetails[selected[0]].summary}</p>
+        <ul>{analysisLevelDetails[selected[0]].results.map(result => <li key={result}>{result}</li>)}</ul>
+        <button type="button" className="primaryButton" disabled={busy} onClick={() => confirmLevel(selected[0])}>{busy ? 'Loading…' : 'DO IT!'} <ArrowRight size={18}/></button>
+      </section>}
+      {busy && <p role="status">Loading the available property information…</p>}
+    </>}
     {editing && <ExteriorPhotoDialog onClose={()=>setEditing(false)} onUse={image=>{setError('');setLocal({address,image});setEditing(false);}}/>}
     {error && <p role="alert">{error}</p>}
   </section>;

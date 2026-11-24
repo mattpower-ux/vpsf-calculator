@@ -14,11 +14,12 @@ import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLev
 import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
 import ProductRequestForm from "./ProductRequestForm.jsx";
 import { companyWebsite, leadForHome, inquiryHomeFor } from "./productInquiry";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import AdminDemo from "./admin/AdminDemo";
 import DocumentUpload from "./DocumentUpload.jsx";
 import ListingImport, { LISTING_SOURCES, ListingLogo } from "./ListingImport.jsx";
 import AddressPhoto from "./AddressPhoto.jsx";
+import { analysisEntryInitialState, analysisEntryReducer } from "./analysisEntryFlow.js";
 import CaptureDialog from "./CaptureDialog.jsx";
 import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
 import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
@@ -940,6 +941,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
   const [savedLookup, setSavedLookup] = useState(null);
+  const [entryFlow, dispatchEntryFlow] = useReducer(analysisEntryReducer, analysisEntryInitialState);
   const savedMatch = savedMatchForAddress(savedLookup, address);
   const lookupMounted = useRef(true);
   useEffect(() => {
@@ -968,6 +970,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
     lookupGeneration.current++;
     setIsScanningAddress(false);
     onPermitLookup(null);
+    dispatchEntryFlow({type:"back"});
     const savedHome = savedPropertyToHome(savedMatch);
     setAddress(formatSavedAddress(savedMatch));
     setHome(savedHome);
@@ -1094,25 +1097,27 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   };
 
   return (
-    <div className="screen startScreen">
-      <h1>Analyze an existing home</h1>
-      <p className="centerCopy">Enter any address and the calculator will score the home's performance strengths and weaknesses.</p>
-
-      <ResumeAnalysisDraft onResume={onResume}/>
-      <section className="existingHomeCard">
-        <div className="addressLookup">
+    <div className={`screen startScreen ${entryFlow.page === "depth" ? "depthSelectionScreen" : ""}`}>
+      {entryFlow.page === "address" && <>
+        <span className="freeBadge" aria-label="Free calculator">FREE</span>
+        <h1>Analyze an existing home</h1>
+        <p className="centerCopy">Enter any address and the calculator will score the home's performance strengths and weaknesses.</p>
+        <ResumeAnalysisDraft onResume={onResume}/>
+      </>}
+      <section className={`existingHomeCard ${entryFlow.page === "depth" ? "depthSelectionCard" : ""}`}>
+        {entryFlow.page === "address" && <div className="addressLookup">
           <MapPin size={18} />
           <input
             value={address}
             disabled={isScanningAddress}
-            onChange={(event) => { lookupGeneration.current++; setIsScanningAddress(false); onPermitLookup(null); setAddress(event.target.value); }}
+            onChange={(event) => { lookupGeneration.current++; setIsScanningAddress(false); onPermitLookup(null); dispatchEntryFlow({type:"back"}); setAddress(event.target.value); }}
             aria-label="Property address"
             placeholder="Enter home address"
           />
-        </div>
-        <AddressPhoto address={address} onChooseLevel={startExistingHomeScan} busy={isScanningAddress} />
+        </div>}
+        <AddressPhoto address={address} flow={entryFlow} onFlowAction={dispatchEntryFlow} onChooseLevel={startExistingHomeScan} busy={isScanningAddress} />
         {scanNote && <p className="addressScanNote">{scanNote}</p>}
-        {savedMatch && (
+        {entryFlow.page === "address" && savedMatch && (
           <button className="savedAddressAutofill" type="button" onClick={applySavedAutofill}>
             Autofill saved address: {formatSavedAddress(savedMatch)}
           </button>
@@ -1264,6 +1269,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
       <ProgressDots step={1} />
       <h2>Add Property Details</h2>
       <p className="subhead">Review the details we found and fill in what you know.</p>
+      {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
       <PermitHistory home={home}/>
       {Array.isArray(home.photoReview) && <section className="photoFindings formSection">
         <h3>Review photo findings</h3>
@@ -1311,7 +1317,6 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
 
 
       {home.analysisLevel !== "broad" && <Certifications catalogState={certificationCatalog} home={home} update={update} preview={certificationPreview} Field={Field} options={depthOptions}/>}
-      {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
 
       <button className="primaryButton stickyButton" onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>
         {home.analysisLevel === "moderate" ? "Next: Key Features" : "Next: Home Specs"} <ArrowRight size={18} />
@@ -4135,7 +4140,24 @@ export default function App() {
           margin: 12px 0 0;
         }
 
-        .startScreen { padding-top: 28px; }
+        .startScreen { position: relative; padding-top: 50px; }
+        .freeBadge {
+          position: absolute;
+          top: 14px;
+          right: 18px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 25px;
+          padding: 2px 10px;
+          border-radius: 999px;
+          background: #e2b33f;
+          color: var(--ink);
+          box-shadow: 0 5px 12px rgba(9, 33, 59, .12);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: .08em;
+        }
         .startScreen h1 { text-align: center; font-size: 24px; }
         .existingHomeCard {
           border: 1px solid var(--accent-line);

@@ -1,0 +1,36 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { analysisEntryInitialState, analysisEntryReducer, analysisLevelDetails } from './analysisEntryFlow.js';
+
+test('opening scoring depth does not select or start an analysis', () => {
+  const next = analysisEntryReducer(analysisEntryInitialState, {type:'open-depth'});
+  assert.deepEqual(next, {page:'depth', expanded:null, confirmed:null});
+});
+
+test('selecting a level reveals only that description without confirming it', () => {
+  const opened = analysisEntryReducer(analysisEntryInitialState, {type:'open-depth'});
+  const basic = analysisEntryReducer(opened, {type:'toggle-level', level:'broad'});
+  assert.deepEqual(basic, {page:'depth', expanded:'broad', confirmed:null});
+  const informed = analysisEntryReducer(basic, {type:'toggle-level', level:'moderate'});
+  assert.deepEqual(informed, {page:'depth', expanded:'moderate', confirmed:null});
+});
+
+test('DO IT confirms only the currently expanded level', () => {
+  const opened = analysisEntryReducer(analysisEntryInitialState, {type:'open-depth'});
+  assert.deepEqual(analysisEntryReducer(opened, {type:'confirm-level', level:'inclusive'}), opened);
+  const selected = analysisEntryReducer(opened, {type:'toggle-level', level:'inclusive'});
+  assert.equal(analysisEntryReducer(selected, {type:'confirm-level', level:'inclusive'}).confirmed, 'inclusive');
+});
+
+test('returning to the address page clears selection but keeps flow reusable', () => {
+  const selected = {page:'depth', expanded:'moderate', confirmed:null};
+  assert.deepEqual(analysisEntryReducer(selected, {type:'back'}), analysisEntryInitialState);
+});
+
+test('every scoring depth has a concrete result description', () => {
+  assert.deepEqual(Object.keys(analysisLevelDetails).sort(), ['broad','inclusive','moderate']);
+  for (const detail of Object.values(analysisLevelDetails)) {
+    assert.ok(detail.summary.length >= 40);
+    assert.ok(detail.results.length >= 2);
+  }
+});

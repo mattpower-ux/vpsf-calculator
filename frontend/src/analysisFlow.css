@@ -4,6 +4,7 @@
 .analysisChoiceGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .analysisChoice { min-width: 0; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #fff; color: var(--ink,#232c3b); padding: 6px 6px 10px; text-align: center; cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; transition: border-color .15s, box-shadow .15s; }
 .analysisChoice:hover:not(:disabled), .analysisChoice:focus-visible { border-color: var(--blue,#14778b); box-shadow: 0 0 0 2px var(--blue,#14778b); outline: 0; }
+.analysisChoice.selected { border-color: var(--blue,#14778b); box-shadow: 0 0 0 2px rgba(20,119,139,.18); background: #f7fbfb; }
 .analysisChoice:disabled { opacity: .55; cursor: default; }
 .analysisChoiceImage { display: flex; width: 100%; aspect-ratio: 1.6; border-radius: 10px; overflow: hidden; background: #f2f8f9; align-items: center; justify-content: center; }
 .analysisChoiceImage img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; }
@@ -12,6 +13,15 @@
 .analysisPhotoMissing { font-size: 12px; line-height: 1.35; padding: 8px; color: var(--muted,#526d78); }
 .analysisChoices .addressPhotoUpload { margin-top: 8px; min-height: 44px; }
 .analysisChoices .photoAttribution, .analysisChoices .photoAvailability { font-size: 12px; color: var(--muted,#526d78); }
+.addressPhotoStart { margin-top: 14px; width: 100%; }
+.analysisDepthHeader { position: relative; padding-top: 48px; text-align: center; }
+.analysisDepthHeader > p { margin: -4px auto 16px; max-width: 34ch; color: var(--muted,#526d78); line-height: 1.45; }
+.analysisDepthBack { position: absolute; top: 0; left: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 4px; border: 0; background: transparent; color: var(--blue,#14778b); font: inherit; font-weight: 700; cursor: pointer; }
+.analysisLevelResult { margin-top: 14px; padding: 16px; border: 1px solid var(--accent-line,var(--line,#d7e6e8)); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(9,33,59,.07); }
+.analysisLevelResult h3 { margin: 0 0 6px; font-size: 18px; }
+.analysisLevelResult p { margin: 0; color: var(--body-copy,var(--muted,#526d78)); line-height: 1.5; }
+.analysisLevelResult ul { margin: 12px 0 16px; padding-left: 20px; color: var(--body-copy,var(--muted,#526d78)); font-size: 14px; line-height: 1.5; }
+.analysisLevelResult .primaryButton { margin: 0; width: 100%; }
 .analysisLevelBadge { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--blue,#14778b); text-align: center; padding: 8px 60px 0; letter-spacing: .02em; }
 .analysisEvidence { margin: 20px 0; padding: 16px; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #f5f9f9; }
 .analysisEvidence h3 { font-size: 16px; margin: 0 0 6px; }
@@ -40,9 +50,11 @@
 .knownFacts dd small { display: block; font-size: 12px; font-weight: 400; margin-top: 4px; }
 
 .startScreen .addressPhoto.analysisChoices { margin: 12px 0 0; }
-.screen.startScreen { padding-top: 16px; }
+.screen.startScreen { padding-top: 44px; }
 .startScreen > .centerCopy { margin-bottom: 12px; }
 .startScreen .existingHomeCard { margin-top: 12px; }
+.screen.startScreen.depthSelectionScreen { padding-top: 10px; }
+.depthSelectionScreen .existingHomeCard.depthSelectionCard { margin-top: 0; padding: 10px 14px 16px; }
 
 .supportingListingImport { margin-top: 8px; border-top: 1px solid var(--line,#d7e6e8); padding-top: 8px; }
 .supportingListingImport summary { cursor: pointer; color: var(--blue,#14778b); font-weight: 700; padding: 10px 0; min-height: 44px; box-sizing: border-box; }
@@ -77,4 +89,7 @@
   .analysisChoice strong { font-size: 14px; }
   .analysisChoiceImage { aspect-ratio: 1.45; }
   .analysisChoiceNumber { width: 20px; height: 20px; font-size: 11px; top: 4px; left: 4px; }
+}
+@media (max-width: 480px) {
+  .analysisChoices .mainExteriorPhoto img { max-height: 150px; object-fit: cover; }
 }

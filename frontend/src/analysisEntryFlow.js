@@ -13,7 +13,7 @@ export const analysisLevelDetails = Object.freeze({
   },
   inclusive: {
     summary: 'The most complete review, using documented features, photos, and detailed home information.',
-    results: ['Highest-confidence VPSF score', 'Detailed findings and improvement opportunities'],
+    results: ['Highest-confidence VPSF score', 'Detailed findings and improvement opportunities', 'More info from you'],
   },
 });
 

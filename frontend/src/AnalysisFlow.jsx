@@ -15,13 +15,13 @@ export function AnalysisEvidence({ home, onApply, onListingSelect }) {
     <p>Fill in what you know, or let documents and photos help.</p>
     <div>
       <button type="button" onClick={() => setMode('documents')}><Upload size={19}/> Upload Documents / Photos</button>
-      <button type="button" onClick={() => setMode('walk')}><Camera size={19}/> Guided Home Walk</button>
+      <button type="button" onClick={() => setMode('walk')}><Camera size={19}/> Analyze my Photos</button>
     </div>
     <details className="supportingListingImport">
       <summary>Import a listing</summary>
       <div className="listingImportGrid">{Object.entries(LISTING_SOURCES).map(([source,brand]) => <button type="button" key={source} aria-label={`Import ${brand.name} Listing`} onClick={() => onListingSelect(source)}><ListingLogo source={source}/><span>Import listing <ArrowRight size={15} aria-hidden="true"/></span></button>)}</div>
     </details>
-    {mode && <CaptureDialog title={mode === 'walk' ? 'Guided Home Walk' : 'Upload Documents / Photos'} onClose={() => setMode(null)}>
+    {mode && <CaptureDialog title={mode === 'walk' ? 'Analyze my Photos' : 'Upload Documents / Photos'} onClose={() => setMode(null)}>
       {mode === 'walk' ? <GuidedHomeWalk demo={!!home.demoScenario} onApply={apply} onClose={() => setMode(null)}/> : <DocumentUpload onApply={apply}/>}
     </CaptureDialog>}
   </section>;

@@ -38,3 +38,9 @@ test('every scoring depth has a concrete result description', () => {
 test('Basic explains that it needs only limited additional entry', () => {
   assert.ok(analysisLevelDetails.broad.results.includes('Limited additional entry from you'));
 });
+
+test('only Superior asks for more information from the homeowner', () => {
+  assert.ok(analysisLevelDetails.inclusive.results.includes('More info from you'));
+  assert.equal(analysisLevelDetails.broad.results.includes('More info from you'), false);
+  assert.equal(analysisLevelDetails.moderate.results.includes('More info from you'), false);
+});

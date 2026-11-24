@@ -25,3 +25,11 @@ test("the branded calculator uses the approved logo and a self-hosted UI font", 
   assert.match(app, /Source Sans 3 Variable/);
   assert.match(entry, /@fontsource-variable\/source-sans-3\/wght\.css/);
 });
+
+test("the enlarged FREE badge has an accessible reduced-motion sparkle", () => {
+  const app = readFileSync(new URL("./App.jsx", import.meta.url), "utf8");
+  assert.match(app, /freeBadgeSparkle/);
+  assert.match(app, /freeBadgeSparkleMotion/);
+  assert.match(app, /prefers-reduced-motion:\s*reduce/);
+  assert.match(app, /min-height:\s*34px/);
+});

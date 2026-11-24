@@ -34,3 +34,7 @@ test('every scoring depth has a concrete result description', () => {
     assert.ok(detail.results.length >= 2);
   }
 });
+
+test('Basic explains that it needs only limited additional entry', () => {
+  assert.ok(analysisLevelDetails.broad.results.includes('Limited additional entry from you'));
+});

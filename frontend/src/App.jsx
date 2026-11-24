@@ -1099,7 +1099,10 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   return (
     <div className={`screen startScreen ${entryFlow.page === "depth" ? "depthSelectionScreen" : ""}`}>
       {entryFlow.page === "address" && <>
-        <span className="freeBadge" aria-label="Free calculator">FREE</span>
+        <span className="freeBadge" aria-label="Free calculator">
+          FREE
+          <Sparkles className="freeBadgeSparkle" size={18} strokeWidth={2.4} aria-hidden="true" />
+        </span>
         <h1>Analyze an existing home</h1>
         <p className="centerCopy">Enter any address and the calculator will score the home's performance strengths and weaknesses.</p>
         <ResumeAnalysisDraft onResume={onResume}/>
@@ -4148,15 +4151,34 @@ export default function App() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 25px;
-          padding: 2px 10px;
+          min-height: 34px;
+          padding: 4px 15px;
           border-radius: 999px;
           background: #e2b33f;
           color: var(--ink);
-          box-shadow: 0 5px 12px rgba(9, 33, 59, .12);
-          font-size: 11px;
+          box-shadow: 0 7px 16px rgba(9, 33, 59, .16);
+          font-size: 14px;
           font-weight: 900;
-          letter-spacing: .08em;
+          letter-spacing: .07em;
+          line-height: 1;
+          overflow: visible;
+        }
+        .freeBadgeSparkle {
+          position: absolute;
+          top: -7px;
+          right: -7px;
+          color: #fff8d6;
+          filter: drop-shadow(0 2px 3px rgba(92, 59, 0, .35));
+          transform-origin: 50% 50%;
+          animation: freeBadgeSparkleMotion 3.2s cubic-bezier(.16, 1, .3, 1) infinite;
+        }
+        @keyframes freeBadgeSparkleMotion {
+          0%, 66%, 100% { opacity: .62; transform: scale(.72) rotate(-12deg); }
+          74% { opacity: 1; transform: scale(1.28) rotate(10deg); filter: drop-shadow(0 2px 5px rgba(92, 59, 0, .48)); }
+          82% { opacity: .8; transform: scale(.92) rotate(2deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .freeBadgeSparkle { animation: none; opacity: 1; transform: none; }
         }
         .startScreen h1 { text-align: center; font-size: 24px; }
         .existingHomeCard {

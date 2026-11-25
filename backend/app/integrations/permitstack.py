@@ -29,6 +29,8 @@ from app.models import utc_now
 from app.permitstack_schemas import SOURCE_URL, PermitEvidence, PermitCoverage, PermitStackResponse
 
 SEARCH_URL = 'https://api.permit-stack.com/v1/permits/search'
+PROPERTY_HISTORY_URL = 'https://api.permit-stack.com/v1/property/history'
+PROPERTY_BY_PARCEL_URL = 'https://api.permit-stack.com/v1/property/by-parcel'
 PAGE_SIZE = 25
 MAX_RESPONSE_BYTES = 1_048_576
 CACHE_HOURS = 24
@@ -63,6 +65,7 @@ class PermitStackRequest(BaseModel):
     state: str = Field(min_length=2, max_length=30)
     zip: str = Field(pattern=r'^\d{5}(?:-\d{4})?$')
     city: str = Field(default='', max_length=100)
+    parcel: str = Field(default='', max_length=100, pattern=r'^[A-Za-z0-9 ./-]*$')
 
     @field_validator('address')
     @classmethod
@@ -95,6 +98,35 @@ class SearchPage(BaseModel):
     tier_window_clamped: bool = False
     tier_window_from: str | None = None
     coverage_confidence: dict | None = None
+
+
+class HistoryPage(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    query: dict
+    found: bool
+    total_matches: int = Field(ge=0, strict=True)
+    truncated: bool = False
+    distinct_addresses: list[str] = Field(default_factory=list, max_length=50)
+    distinct_jurisdictions: list[str] = Field(default_factory=list, max_length=50)
+    fan_out_warning: bool = False
+    summary: dict = Field(default_factory=dict)
+    coverage: dict = Field(default_factory=dict)
+    data_currency: dict = Field(default_factory=dict)
+    permits: list[dict] = Field(max_length=50)
+    page: int = Field(ge=1, le=10, strict=True)
+    per_page: int = Field(ge=1, le=50, strict=True)
+    has_more: bool = False
+
+
+class HistoryCollection(BaseModel):
+    records: list[dict] = Field(max_length=500)
+    lookup_mode: Literal['address-history','parcel-history']
+    coverage: dict = Field(default_factory=dict)
+    data_currency: dict = Field(default_factory=dict)
+    pages_checked: int = Field(ge=0, le=10)
+    records_checked: int = Field(ge=0, le=500)
+    completeness: Literal['complete','partial','ambiguous']
+    stop_reason: Literal['exhausted','page-budget','record-budget','provider-window','ambiguous','fallback']
 
 
 # Registered with Base when properties/integration-status routers are imported;
@@ -139,13 +171,10 @@ class PermitStackClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
 
-    async def search(self, request: PermitStackRequest) -> dict:
-        # Single page, no retries/detail fan-out/redirects, fixed origin, no keys in URLs.
+    async def _get(self, url: str, params: dict) -> dict:
+        # No redirects, environment proxies, credentials in URLs, or unbounded bodies.
         async with httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client:
-            async with client.stream('GET', SEARCH_URL, headers={'X-API-Key':self.api_key}, params={
-                'address':search_address_prefix(request.address), 'state':request.state, 'zip_code':request.zip,
-                'fields':'summary', 'record_kind':'permit', 'page':1, 'per_page':PAGE_SIZE
-            }) as response:
+            async with client.stream('GET', url, headers={'X-API-Key':self.api_key}, params=params) as response:
                 response.raise_for_status()
                 body = bytearray()
                 async for chunk in response.aiter_bytes(chunk_size=65536):
@@ -153,6 +182,111 @@ class PermitStackClient:
                     if len(body) > MAX_RESPONSE_BYTES:
                         raise ValueError('Response exceeds limit')
                 return json.loads(body)
+
+    async def search(self, request: PermitStackRequest) -> dict:
+        return await self._get(SEARCH_URL, {
+            'address':search_address_prefix(request.address), 'state':request.state, 'zip_code':request.zip,
+            'fields':'summary', 'record_kind':'permit', 'page':1, 'per_page':PAGE_SIZE
+        })
+
+    async def property_history(self, request: PermitStackRequest, page: int, per_page: int) -> dict:
+        return await self._get(PROPERTY_HISTORY_URL, {
+            'address':request.address, 'city':request.city, 'state':request.state, 'zip':request.zip,
+            'page':page, 'per_page':per_page,
+        })
+
+    async def property_by_parcel(self, request: PermitStackRequest, page: int, per_page: int) -> dict:
+        if not request.parcel:
+            raise ValueError('Parcel lookup requires a parcel identifier')
+        return await self._get(PROPERTY_BY_PARCEL_URL, {
+            'parcel':request.parcel, 'state':request.state, 'page':page, 'per_page':per_page,
+        })
+
+
+def _history_row_matches(request: PermitStackRequest, row: dict) -> bool:
+    street, state = row.get('address_street'), row.get('address_state')
+    return (isinstance(street, str) and isinstance(state, str)
+            and normalize_street_address(street) == normalize_street_address(request.address)
+            and normalize_state(state) == request.state and _zip(row.get('address_zip')) == request.zip)
+
+
+async def collect_history(client: PermitStackClient, request: PermitStackRequest,
+                          settings: Settings, reserve_page) -> HistoryCollection:
+    lookup_mode = 'parcel-history' if request.parcel else 'address-history'
+    method = client.property_by_parcel if request.parcel else client.property_history
+    records: list[dict] = []
+    seen: set[str] = set()
+    seen_permits: set[tuple[str, str]] = set()
+    records_checked = 0
+    coverage: dict = {}
+    data_currency: dict = {}
+    pages_checked = 0
+    for page_number in range(1, settings.permit_stack_max_pages + 1):
+        remaining = settings.permit_stack_max_records - records_checked
+        if remaining <= 0:
+            return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='partial', stop_reason='record-budget')
+        try:
+            reserve_page()
+        except HTTPException:
+            if not pages_checked:
+                raise
+            return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='partial', stop_reason='page-budget')
+        try:
+            payload = await method(request, page_number, min(settings.permit_stack_page_size, remaining))
+            page = HistoryPage.model_validate(payload)
+        except (httpx.HTTPError, ValueError, TypeError, KeyError):
+            if not pages_checked:
+                raise
+            return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='partial', stop_reason='fallback')
+        if page.page != page_number:
+            raise ValueError('Unexpected property-history page number')
+        pages_checked += 1
+        coverage = page.coverage
+        data_currency = page.data_currency
+        records_checked += len(page.permits)
+        row_addresses = {
+            (normalize_street_address(row.get('address_street','')),
+             normalize_state(row.get('address_state','')), _zip(row.get('address_zip')))
+            for row in page.permits
+            if isinstance(row.get('address_street'),str) and isinstance(row.get('address_state'),str)
+        }
+        if page.fan_out_warning or len(page.distinct_addresses) > 1 or len(row_addresses) > 1:
+            return HistoryCollection(records=[], lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='ambiguous', stop_reason='ambiguous')
+        new_ids = 0
+        for row in page.permits:
+            identifier = str(UUID(row['id']))
+            if identifier in seen:
+                continue
+            seen.add(identifier)
+            new_ids += 1
+            permit_key = ((_text(row.get('permit_number')) or '').casefold(),
+                          (_text(row.get('jurisdiction_name')) or '').casefold())
+            if all(permit_key) and permit_key in seen_permits:
+                continue
+            if all(permit_key):
+                seen_permits.add(permit_key)
+            if _history_row_matches(request, row):
+                records.append(row)
+        if page.has_more and not new_ids:
+            raise ValueError('Provider repeated a property-history page')
+        if not page.has_more:
+            provider_limited = bool(coverage.get('tier_window_from') or coverage.get('tier_window_days')
+                                    or page.truncated or page.total_matches > records_checked)
+            return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='partial' if provider_limited else 'complete',
+                stop_reason='provider-window' if provider_limited else 'exhausted')
+    return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+        data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+        completeness='partial', stop_reason='page-budget')
 
 
 def _text(value, limit=300):
@@ -172,10 +306,9 @@ def _zip(value):
     return value.strip()[:5] if isinstance(value, str) and re.fullmatch(r'\d{5}(?:-\d{4})?', value.strip()) else None
 
 
-def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStackResponse:
-    page = SearchPage.model_validate(payload)
+def _permit_evidence_rows(request: PermitStackRequest, rows: list[dict]) -> list[PermitEvidence]:
     permits, seen = [], set()
-    for row in page.results:
+    for row in rows:
         street, state = row.get('address_street'), row.get('address_state')
         # Never trust search filters: address is a substring upstream; state may
         # come from jurisdiction rather than the permit. Unit tokens are retained.
@@ -197,16 +330,37 @@ def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStack
             city=_text(row.get('address_city'),100), state=request.state, zip=request.zip,
             dateFiled=_date(row.get('date_filed')), dateIssued=_date(row.get('date_issued')),
             dateCompleted=_date(row.get('date_completed'))))
+    return permits
+
+
+def _coverage(raw: dict, data_currency: dict | None = None, *, clamped=False) -> PermitCoverage:
+    currency = data_currency or {}
+    ratio = raw.get('capture_ratio')
+    return PermitCoverage(
+        confidence=_text(raw.get('confidence'),80),
+        covered=raw.get('covered') if isinstance(raw.get('covered'),bool) else None,
+        dataThrough=_text(raw.get('data_through') or currency.get('data_through'),40),
+        tierWindowClamped=clamped or bool(raw.get('tier_window_clamped')),
+        tierWindowFrom=_text(raw.get('tier_window_from'),40),
+        jurisdiction=_text(raw.get('jurisdiction') or raw.get('jurisdiction_name'),300),
+        dataStatus=_text(raw.get('data_status'),80),
+        freshness=_text(raw.get('freshness'),80),
+        captureRatio=ratio if isinstance(ratio,(int,float)) and not isinstance(ratio,bool) else None,
+        captureCheckedAt=_text(raw.get('capture_checked_at'),40),
+        captureNote=_text(raw.get('capture_note') or raw.get('note'),500))
+
+
+def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStackResponse:
+    page = SearchPage.model_validate(payload)
+    permits = _permit_evidence_rows(request, page.results)
     raw_coverage = page.coverage_confidence or {}
-    coverage = PermitCoverage(
-        confidence=_text(raw_coverage.get('confidence'),80),
-        covered=raw_coverage.get('covered') if isinstance(raw_coverage.get('covered'),bool) else None,
-        dataThrough=_text(raw_coverage.get('data_through'),40),
-        tierWindowClamped=page.tier_window_clamped, tierWindowFrom=_text(page.tier_window_from,40))
+    raw_coverage = {**raw_coverage, 'tier_window_from':page.tier_window_from}
+    coverage = _coverage(raw_coverage, clamped=page.tier_window_clamped)
     truncated = (page.total is None or page.total > len(page.results)
                  or page.total_capped or page.total_unknown or page.tier_window_clamped)
     return PermitStackResponse(status='matched' if permits else 'no_exact_match',
         address=request.address, state=request.state, zip=request.zip, fetchedAt=utc_now().isoformat(),
+        parcelId=request.parcel,
         searchTruncated=truncated, searchedRecords=len(page.results), permits=permits, coverage=coverage,
         sourceNote='PermitStack permit evidence matched by normalized street address, state and ZIP. '
         'One bounded search page; coverage and subscription history may be incomplete. '
@@ -214,10 +368,48 @@ def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStack
         'do not establish installed equipment, replacement age, performance or scoring credit.')
 
 
+def history_evidence_response(request: PermitStackRequest,
+                              collection: HistoryCollection) -> PermitStackResponse:
+    permits = _permit_evidence_rows(request, collection.records)
+    coverage = _coverage(collection.coverage, collection.data_currency)
+    matched_by = 'parcel' if collection.lookup_mode == 'parcel-history' else 'address'
+    return PermitStackResponse(
+        status='matched' if permits else 'no_exact_match',
+        address=request.address, state=request.state, zip=request.zip,
+        fetchedAt=utc_now().isoformat(), lookupMode=collection.lookup_mode,
+        matchedBy=matched_by, parcelId=request.parcel,
+        completeness=collection.completeness,
+        pagesChecked=collection.pages_checked,
+        recordsChecked=collection.records_checked,
+        stopReason=collection.stop_reason,
+        searchTruncated=collection.completeness != 'complete',
+        searchedRecords=collection.records_checked,
+        permits=permits, coverage=coverage,
+        sourceNote='PermitStack available permit history matched to this property by normalized '
+        f'{matched_by}. History depth depends on jurisdiction coverage and subscription access; '
+        'no matching records is not proof that no work occurred. Permit status and dates do not '
+        'establish installed equipment, replacement age, performance or scoring credit.')
+
+
+def permit_cache_key(request: PermitStackRequest, settings: Settings) -> str:
+    if not settings.permit_stack_history_enabled:
+        identity = ['v2-prefix', normalize_street_address(request.address), request.state, request.zip]
+    else:
+        identity = [
+            'v3-property-history',
+            'parcel' if request.parcel else 'address',
+            normalize_street_address(request.address), request.parcel,
+            request.city.casefold(), request.state, request.zip,
+            settings.permit_stack_max_pages, settings.permit_stack_page_size,
+            settings.permit_stack_max_records,
+        ]
+    return hashlib.sha256(json.dumps(identity).encode()).hexdigest()
+
+
 async def lookup_permits(request: PermitStackRequest, db: Session, settings: Settings) -> PermitStackResponse:
     if not settings.permit_stack_api_key.strip():
         raise HTTPException(503, 'PermitStack is not configured.')
-    cache_key = hashlib.sha256(json.dumps(['v2-prefix',normalize_street_address(request.address),request.state,request.zip]).encode()).hexdigest()
+    cache_key = permit_cache_key(request, settings)
     # Process-local single-flight; the atomic monthly cap remains cross-worker.
     # concurrent Future supports callers on different event loops/threads. No
     # Session or async task is shared. Finished entries are always removed.
@@ -260,13 +452,44 @@ async def _lookup_permits_once(request: PermitStackRequest, db: Session, setting
     if record and record.expires_at.replace(tzinfo=timezone.utc) > now:
         try:
             cached = PermitStackResponse.model_validate(record.result)
-            return cached.model_copy(update={'cacheHit':True, 'address':request.address})
+            if (normalize_street_address(cached.address) == normalize_street_address(request.address)
+                    and cached.state == request.state and cached.zip == request.zip
+                    and (not request.parcel or cached.parcelId == request.parcel)):
+                return cached.model_copy(update={'cacheHit':True, 'address':request.address})
         except ValueError:
             pass
-    reserve_call(db, settings.permit_stack_monthly_limit)
     try:
-        payload = await asyncio.wait_for(PermitStackClient(settings.permit_stack_api_key).search(request), timeout=12)
-        result = evidence_response(request, payload)
+        client = PermitStackClient(settings.permit_stack_api_key)
+        if settings.permit_stack_history_enabled:
+            try:
+                collection = await asyncio.wait_for(collect_history(
+                    client, request, settings,
+                    lambda: reserve_call(db, settings.permit_stack_monthly_limit)), timeout=25)
+            except (TimeoutError, httpx.HTTPError, ValueError, TypeError, KeyError):
+                reserve_call(db, settings.permit_stack_monthly_limit)
+                payload = await asyncio.wait_for(client.search(request), timeout=12)
+                result = evidence_response(request, payload).model_copy(update={
+                    'completeness':'partial', 'stopReason':'fallback',
+                    'sourceNote':'Property history was unavailable, so exact-address search results '
+                    'are shown. Coverage may be incomplete. No matching records is not proof that '
+                    'no work occurred; permits do not establish scoring credit.'})
+                collection = None
+            if collection is not None and collection.completeness == 'ambiguous':
+                reserve_call(db, settings.permit_stack_monthly_limit)
+                payload = await asyncio.wait_for(client.search(request), timeout=12)
+                result = evidence_response(request, payload).model_copy(update={
+                    'completeness':'ambiguous', 'stopReason':'fallback',
+                    'pagesChecked':collection.pages_checked,
+                    'recordsChecked':collection.records_checked,
+                    'sourceNote':'Property-history results were ambiguous, so only exact-address '
+                    'search matches are shown. Coverage may be incomplete. No matching records is '
+                    'not proof that no work occurred; permits do not establish scoring credit.'})
+            elif collection is not None:
+                result = history_evidence_response(request, collection)
+        else:
+            reserve_call(db, settings.permit_stack_monthly_limit)
+            payload = await asyncio.wait_for(client.search(request), timeout=12)
+            result = evidence_response(request, payload)
     except (TimeoutError, httpx.TimeoutException):
         raise HTTPException(504, 'PermitStack lookup timed out. Try again later.') from None
     except (httpx.HTTPError, ValueError, TypeError, KeyError):

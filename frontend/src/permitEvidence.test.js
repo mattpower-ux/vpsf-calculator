@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { permitRequest, permitEvidenceForHome, attachPermitEvidence, fetchPermitEvidence, schedulePermitLookup, mergeArchivedPermitEvidence } from './permitEvidence.js';
+import { permitRequest, permitEvidenceForHome, attachPermitEvidence, fetchPermitEvidence, schedulePermitLookup, mergeArchivedPermitEvidence, permitCoverageSummary } from './permitEvidence.js';
 import { prepareAnalysisHome } from './analysisLevels.js';
 import { saveAnalysisDraft, loadAnalysisDraft } from './analysisDraft.js';
 import { confirmedEdit } from './homeAdvice.js';
@@ -18,6 +18,27 @@ test('request is street-only and excludes demo, incomplete and invalid identitie
   assert.deepEqual(permitRequest(home()),{address:'123 Main Street',city:'Denver',state:'CO',zip:'80202'});
   for(const input of [{...home(),demoScenario:'demo'},{...home(),address:'53017 Double View Lane'},
     {...home(),address:'123 Main St, Denver, CO 80202'},{...home(),state:''},{...home(),zip:''}]) assert.equal(permitRequest(input),null);
+});
+
+test('permit request includes a safe parcel identity', () => {
+  assert.deepEqual(permitRequest({...home(),parcelId:'12-34-567'}),
+    {address:'123 Main Street',city:'Denver',state:'CO',zip:'80202',parcel:'12-34-567'});
+  assert.deepEqual(permitRequest({...home(),parcelId:'bad\u0000parcel'}),permitRequest(home()));
+  assert.deepEqual(permitRequest({...home(),parcelId:'x'.repeat(101)}),permitRequest(home()));
+  assert.equal(permitRequest({...home(),parcelId:'12-34-567',demoScenario:'demo'}),null);
+});
+
+test('parcel changes invalidate existing and late permit evidence', () => {
+  const withParcel={...home(),parcelId:'12-34-567'};
+  const parcelEvidence={...evidence(),parcelId:'12-34-567',matchedBy:'parcel'};
+  const current={...withParcel,permitEvidence:parcelEvidence};
+  assert.equal(confirmedEdit(current,'parcelId','98-76-543').permitEvidence,null);
+  assert.equal(permitEvidenceForHome(current).parcelId,'12-34-567');
+  const moved={...current,parcelId:'98-76-543',permitEvidence:null};
+  assert.equal(attachPermitEvidence(moved,withParcel,parcelEvidence),moved);
+  const fresh=applyAnalysisEvidence(current,{address:'999 Other Street'},undefined,{fresh:true});
+  assert.ok(!fresh.parcelId);
+  assert.equal(fresh.permitEvidence ?? null,null);
 });
 
 test('permits persist through each preparation level and drafts without becoming home facts', () => {
@@ -50,10 +71,61 @@ test('sanitize evidence and reject oversized/mismatched records', () => {
   const data=evidence(); data.photo='secret';data.permits[0].raw='secret';
   const clean=permitEvidenceForHome({...home(),permitEvidence:data});
   assert.doesNotMatch(JSON.stringify(clean),/secret/);
-  assert.equal(permitEvidenceForHome({...home(),permitEvidence:{...data,permits:Array(26).fill(data.permits[0])}}),null);
+  assert.equal(permitEvidenceForHome({...home(),permitEvidence:{...data,permits:Array(501).fill(data.permits[0])}}),null);
   data.permits[0].address='999 Main St';
   assert.equal(permitEvidenceForHome({...home(),permitEvidence:data}),null);
   assert.equal(permitEvidenceForHome({...home(),permitEvidence:{...evidence(),status:'no_exact_match',permits:[]}}).permits.length,0);
+});
+
+test('history evidence with 75 records survives sanitization and draft round trips', () => {
+  const permits=Array.from({length:75},(_,index)=>({...evidence().permits[0],id:`permit-${index}`}));
+  const history={...evidence(),lookupMode:'address-history',matchedBy:'address',completeness:'partial',
+    pagesChecked:2,recordsChecked:75,stopReason:'page-budget',searchedRecords:75,searchTruncated:true,
+    permits,coverage:{confidence:'high',covered:true,dataThrough:'2026-11-18',jurisdiction:'Denver',
+      dataStatus:'active',freshness:'current',captureRatio:0.82,captureCheckedAt:'2026-11-20',
+      captureNote:'Representative municipal coverage.',tierWindowClamped:false,tierWindowFrom:null}};
+  const clean=permitEvidenceForHome({...home(),permitEvidence:history});
+  assert.equal(clean.permits.length,75);
+  assert.equal(clean.recordsChecked,75);
+  let raw;
+  const store={setItem:(_,value)=>{raw=value;},getItem:()=>raw};
+  saveAnalysisDraft({...home(),permitEvidence:history},store);
+  assert.equal(loadAnalysisDraft(store).home.permitEvidence.permits.length,75);
+  const archived=prepareAnalysisHome({...home(),permitEvidence:history},'inclusive');
+  assert.equal(mergeArchivedPermitEvidence({...home(),permitEvidence:history},archived,home()).permitEvidence.permits.length,75);
+});
+
+test('legacy evidence receives safe history defaults', () => {
+  const clean=permitEvidenceForHome({...home(),permitEvidence:evidence()});
+  assert.equal(clean.lookupMode,'search');
+  assert.equal(clean.completeness,'unknown');
+  assert.equal(clean.pagesChecked,1);
+  assert.equal(clean.recordsChecked,1);
+  assert.equal(clean.stopReason,'unknown');
+});
+
+test('malformed history metadata rejects only the evidence object', () => {
+  const valid={...evidence(),lookupMode:'address-history',completeness:'complete',pagesChecked:1,
+    recordsChecked:1,stopReason:'exhausted'};
+  for (const changed of [
+    {...valid,lookupMode:'everything'}, {...valid,completeness:'certain'},
+    {...valid,stopReason:'provider-secret'}, {...valid,pagesChecked:11},
+    {...valid,recordsChecked:501},
+    {...valid,coverage:{...valid.coverage,captureRatio:1.1}},
+  ]) assert.equal(permitEvidenceForHome({...home(),permitEvidence:changed}),null);
+  assert.equal(permitEvidenceForHome({...home(),permitEvidence:null}),null);
+  assert.equal(home().address,'123 Main Street');
+});
+
+test('coverage summary is concise and never claims every public record was searched', () => {
+  const complete=permitEvidenceForHome({...home(),permitEvidence:{...evidence(),lookupMode:'address-history',
+    completeness:'complete',pagesChecked:2,recordsChecked:1,stopReason:'exhausted'}});
+  assert.match(permitCoverageSummary(complete),/^Complete available history/);
+  const partial={...complete,completeness:'partial'};
+  assert.match(permitCoverageSummary(partial),/^Partial available history/);
+  assert.match(permitCoverageSummary({...complete,completeness:'unknown'}),/^Coverage unknown/);
+  assert.match(permitCoverageSummary({...complete,completeness:'ambiguous'}),/^Property-history match ambiguous/);
+  for (const item of [complete,partial]) assert.doesNotMatch(permitCoverageSummary(item),/all public records/i);
 });
 
 test('optional lookup does not query demos and provider failure is nonfatal', async () => {

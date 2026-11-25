@@ -9,7 +9,7 @@ from app.models import AdminSessionRecord, LeadRecord, ProductRecord, PropertyRe
 from app.repositories import list_educational_content, list_product_clicks, list_products, list_property_detail_archive, list_property_queries, seed_products, upsert_educational_content
 from app.schemas import AdminSummary, EducationalContent, EducationalContentUpsert, ProductRecommendation
 from app.schemas import PropertyInput
-from app.scoring.catalog import ScoreModel, evaluate_model
+from app.scoring.catalog import NON_SCORING_PROPERTY_FIELDS, ScoreModel, evaluate_model
 from app.scoring.candidates import CANDIDATES
 from app.scoring.store import ConflictError, ModelUnavailableError, load_or_create_draft, load_published, model_history, publish_draft, save_draft, rebase_draft
 
@@ -100,7 +100,7 @@ def scoring_history(db: Session = Depends(get_db)) -> list[dict]:
 
 @router.get("/scoring/available-fields", dependencies=[Depends(require_admin_session)])
 def scoring_available_fields() -> list[str]:
-    excluded = {"certifications", "permitEvidence", "analysisLevel", "address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"}
+    excluded = {"certifications", "analysisLevel", "address", "city", "state", "zip", "latitude", "longitude", "wildfire", "sourceNote", "extraInputs", "epaWalkability"} | NON_SCORING_PROPERTY_FIELDS
     return [key for key in PropertyInput.model_fields if key not in excluded]
 
 

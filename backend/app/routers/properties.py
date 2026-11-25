@@ -1,5 +1,6 @@
 from app.inference_limits import InferenceLimitedRoute
 import asyncio
+import re
 import json
 import math
 
@@ -98,7 +99,7 @@ def provider_fact_text(value: object) -> str:
 def provider_provenance(home: PropertyInput, source: str) -> PropertyInput:
     # Explicit unknown entries prevent clients treating schema defaults as facts.
     mapped_fields = {
-        "address", "city", "state", "zip", "squareFeet", "yearBuilt",
+        "address", "city", "state", "zip", "parcelId", "squareFeet", "yearBuilt",
         "homeType", "stories", "bedrooms", "bathrooms", "garage", "lotSize",
         "hvac", "roof", "waterHeater",
     }
@@ -134,6 +135,13 @@ def acres_from_square_feet(value: object) -> str:
     return f"{acres:.2f} acres"
 
 
+def safe_parcel_id(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    value = value.strip()
+    return value if len(value) <= 100 and re.fullmatch(r"[A-Za-z0-9 ./-]*", value) else ""
+
+
 def property_input_from_rentcast(record: dict) -> PropertyInput:
     features = record.get("features") or {}
     lot_size = first_value(record, "lotSize")
@@ -145,6 +153,7 @@ def property_input_from_rentcast(record: dict) -> PropertyInput:
         city=first_value(record, "city"),
         state=first_value(record, "state"),
         zip=first_value(record, "zipCode", "zipcode"),
+        parcelId=safe_parcel_id(first_value(record, "assessorID", "parcelNumber", "apn")),
         squareFeet=known_or_unknown(first_value(record, "squareFootage", "livingArea")),
         yearBuilt=known_or_unknown(first_value(record, "yearBuilt")),
         homeType=first_value(record, "propertyType") or "Unknown",

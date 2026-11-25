@@ -2,6 +2,21 @@ import os
 from functools import lru_cache
 
 
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
 def default_database_url() -> str:
     if os.getenv("RENDER"):
         return "sqlite:////var/data/vpsf.db"
@@ -19,6 +34,10 @@ class Settings:
     attom_monthly_limit = int(os.getenv("ATTOM_MONTHLY_LIMIT", "100"))
     permit_stack_api_key = os.getenv("PERMIT_STACK_API_KEY", "")
     permit_stack_monthly_limit = max(0, min(10000, int(os.getenv("PERMIT_STACK_MONTHLY_LIMIT", "100"))))
+    permit_stack_history_enabled = env_bool("PERMIT_STACK_HISTORY_ENABLED", False)
+    permit_stack_max_pages = bounded_env_int("PERMIT_STACK_MAX_PAGES", 3, 1, 10)
+    permit_stack_page_size = bounded_env_int("PERMIT_STACK_PAGE_SIZE", 50, 1, 50)
+    permit_stack_max_records = bounded_env_int("PERMIT_STACK_MAX_RECORDS", 150, 1, 500)
     rentcast_api_key = os.getenv("RENTCAST_API_KEY", "")
     rentcast_monthly_limit = int(os.getenv("RENTCAST_MONTHLY_LIMIT", "100"))
     openai_api_key = os.getenv("OPENAI_API_KEY", "")

@@ -14,7 +14,10 @@ import time
 from fastapi import HTTPException, Request
 from fastapi.routing import APIRoute
 
-PROTECTED_PATHS = frozenset({'/api/home-walk/analyze', '/api/properties/ocr', '/api/properties/ocr-url', '/api/properties/permitstack'})
+PROTECTED_PATHS = frozenset({
+    '/api/home-walk/analyze', '/api/properties/ocr', '/api/properties/ocr-url',
+    '/api/properties/permitstack', '/api/properties/discover',
+})
 PER_MINUTE = 30
 PER_HOUR = 120
 MAX_CONCURRENT = 4

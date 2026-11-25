@@ -101,6 +101,13 @@ def normalize_street_address(value: str | None) -> str:
     return " ".join(words)
 
 
+def contains_exact_street(normalized_text: str, normalized_street: str) -> bool:
+    """Match a complete normalized street without numeric-prefix collisions."""
+    if not normalized_text or not normalized_street:
+        return False
+    return bool(re.search(rf"(?<![a-z0-9]){re.escape(normalized_street)}(?![a-z0-9])", normalized_text))
+
+
 def property_query_key(address: str | None, city: str | None, state: str | None, zip_code: str | None) -> str:
     parts = [
         normalize_street_address(address),

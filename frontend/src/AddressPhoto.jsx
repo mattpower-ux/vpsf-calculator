@@ -53,7 +53,12 @@ export default function AddressPhoto({ address, searchRequest, flow, onFlowActio
     </defs></svg>
     {flow.page === 'address' ? <>
       {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
-      {image && !demo && !imported && <p className="photoAttribution">{found?.attribution || 'Google Street View'}{found?.date ? ` · ${found.date}` : ''}</p>}
+      {image && !demo && !imported && <p className="photoAttribution">
+        {found?.sourceUrl
+          ? <a href={found.sourceUrl} target="_blank" rel="noopener noreferrer">{found?.attribution || 'Property photo source'}</a>
+          : (found?.attribution || 'Google Street View')}
+        {found?.date ? ` · ${found.date}` : ''}
+      </p>}
       {found?.status === 'loading' && <p className="photoSearchStatus" role="status">Searching for an exterior photo…</p>}
       {found && ['unavailable','not_configured'].includes(found.status) && <p className="photoSearchStatus">No exterior photo was found. You can upload one below or continue without it.</p>}
       <button type="button" className="addressPhotoUpload" disabled={busy} onClick={() => setEditing(true)}>{image ? 'Change exterior photo' : 'Upload exterior photo'}</button>

@@ -30,6 +30,7 @@ class Settings:
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     google_street_view_api_key = os.getenv("GOOGLE_STREET_VIEW_API_KEY", "")
+    firecrawl_api_key = os.getenv("FIRECRAWL_API_KEY", "")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
     attom_monthly_limit = int(os.getenv("ATTOM_MONTHLY_LIMIT", "100"))
     permit_stack_api_key = os.getenv("PERMIT_STACK_API_KEY", "")
@@ -73,6 +74,7 @@ class Settings:
             "mapbox": bool(self.mapbox_access_token),
             "attom": False,
             "permitstack": bool(self.permit_stack_api_key.strip()),
+            "firecrawl": bool(self.firecrawl_api_key.strip()),
             "rentcast": bool(self.rentcast_api_key),
             "openai": bool(self.openai_api_key),
             "mistral": bool(self.mistral_api_key),

@@ -24,7 +24,7 @@ import CaptureDialog from "./CaptureDialog.jsx";
 import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
 import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
 import { applyAnalysisEvidence } from "./captureFacts.js";
-import { getHardieDemo, cacheEducationContent, enrichPropertyRisk, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
+import { getHardieDemo, cacheEducationContent, discoverPublicProperty, enrichPropertyRisk, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { presentationAddress, isPresentationAddress } from "./presentationHome";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
 import { classification, gradeFor, pillarTone, reportAddress, reportText, REPORT_LIMITATIONS } from "./scorePresentation";
@@ -867,8 +867,8 @@ function formatSavedAddress(record) {
   ].filter(Boolean).join(", ");
 }
 
-function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
-  const home = rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment);
+function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, discoveredProperty, riskEnrichment) {
+  const home = rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, discoveredProperty, riskEnrichment);
   const provenance = {...home.provenance};
   for (const key of ['address','city','state','zip']) {
     if (home[key] && home[key] !== 'Unknown') provenance[key] = {origin:'imported',source:'Address lookup'};
@@ -879,8 +879,8 @@ function homeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomPr
   return {...home,provenance};
 }
 
-function rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, attomProperty, riskEnrichment) {
-  const publicRecordProperty = mergePropertyFacts(rentcastProperty, attomProperty);
+function rawHomeFromExistingScan(enteredAddress, geocode, rentcastProperty, discoveredProperty, riskEnrichment) {
+  const publicRecordProperty = mergePropertyFacts(rentcastProperty, discoveredProperty);
   const enteredParts = parseAddressParts(enteredAddress);
 
   if (publicRecordProperty) {
@@ -1079,14 +1079,17 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
       if (!isCurrent()) return;
       const normalizedAddress = geocode.normalizedAddress || address;
       let rentcastProperty = null;
+      let discoveredProperty = null;
       let riskEnrichment = null;
-      try {
-        rentcastProperty = await enrichPropertyWithRentCast(normalizedAddress);
-      } catch (rentcastError) {
-        if (!isCurrent()) return;
-        console.warn("RentCast enrichment unavailable.", rentcastError);
-      }
+      const [rentcastResult, discoveryResult] = await Promise.allSettled([
+        enrichPropertyWithRentCast(normalizedAddress),
+        discoverPublicProperty(normalizedAddress),
+      ]);
       if (!isCurrent()) return;
+      if (rentcastResult.status === "fulfilled") rentcastProperty = rentcastResult.value;
+      else console.warn("RentCast enrichment unavailable.", rentcastResult.reason);
+      if (discoveryResult.status === "fulfilled") discoveredProperty = discoveryResult.value;
+      else console.warn("Exact-address public discovery unavailable.", discoveryResult.reason);
       try {
         riskEnrichment = await enrichPropertyRisk({
           latitude: geocode.latitude,
@@ -1100,12 +1103,13 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         console.warn("Risk enrichment unavailable.", riskError);
       }
       if (!isCurrent()) return;
-      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, null, riskEnrichment);
+      const scannedHome = homeFromExistingScan(address, geocode, rentcastProperty, discoveredProperty, riskEnrichment);
       const prepared = prepareAnalysisHome(importedHome(scannedHome), level);
       setHome(prepared);
       onPermitLookup(prepared);
-      setScanNote(`${rentcastProperty ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation."}`);
-      await onQueryStarted(prepared, rentcastProperty ? "rentcast" : "mapbox", isCurrent);
+      const publicFactsLoaded = Boolean(rentcastProperty || discoveredProperty);
+      setScanNote(publicFactsLoaded ? "Address, public facts, and risk context loaded." : "Address normalized with Mapbox. Property facts still need confirmation.");
+      await onQueryStarted(prepared, rentcastProperty && discoveredProperty ? "rentcast+public-web" : rentcastProperty ? "rentcast" : discoveredProperty ? "public-web" : "mapbox", isCurrent);
     } catch (error) {
       if (!isCurrent()) return;
       const fallbackHome = prepareAnalysisHome(homeFromExistingScan(address), level);

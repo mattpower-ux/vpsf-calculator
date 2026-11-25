@@ -27,7 +27,7 @@ function mount(overrides = {}, propOverrides = {}) {
     savedPropertyToHomeForEnteredAddress:home=>home, formatSavedAddress:home=>home.address,
     getHardieDemo:async()=>({home:{address:'Demo address'}}),
     findSavedProperty:async()=>({found:false}), geocodeProperty:async()=>({normalizedAddress:'12 First Street'}),
-    enrichPropertyWithRentCast:async()=>({}), enrichPropertyRisk:async()=>({}),
+    enrichPropertyWithRentCast:async()=>({}), discoverPublicProperty:async()=>({}), enrichPropertyRisk:async()=>({}),
     console:{warn(){}}, window:{setTimeout:()=>1,clearTimeout(){}},
     ...overrides,
   };
@@ -106,6 +106,18 @@ test('a current lookup still commits its home, query and destination',async()=>{
   assert.equal(view.writes.filter(([kind])=>kind === 'home').length,1);
   assert.equal(view.writes.filter(([kind])=>kind === 'query').length,1);
   assert.deepEqual(view.writes.filter(([kind])=>kind === 'screen'),[['screen',1]]);
+});
+
+test('a current lookup merges exact-address public web facts into the property scan',async()=>{
+  const discovered={yearBuilt:'1910',squareFeet:'3140',sourceNote:'Exact-address listing metadata.'};
+  let captured;
+  const view=mount({
+    discoverPublicProperty:async()=>discovered,
+    homeFromExistingScan:(address,geocode,rentcast,web)=>{captured={address,geocode,rentcast,web}; return {address};}
+  });
+  await view.startExistingHomeScan('inclusive');
+  assert.equal(captured.web,discovered);
+  assert.equal(captured.address,'12 First Street');
 });
 
 test('navigation invalidates lookup generation synchronously before React cleanup',()=>{

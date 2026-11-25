@@ -101,6 +101,13 @@ export async function enrichPropertyWithRentCast(address) {
   });
 }
 
+export async function discoverPublicProperty(address) {
+  return request("/api/properties/discover", {
+    method: "POST",
+    body: JSON.stringify({ address })
+  });
+}
+
 export async function lookupPermitHistory(home) {
   const query = permitRequest(home);
   if (!query) return null;

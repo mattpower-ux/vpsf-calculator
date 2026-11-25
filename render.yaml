@@ -18,6 +18,10 @@ services:
         value: "100"
       - key: PERMIT_STACK_API_KEY
         sync: false
+      - key: GOOGLE_STREET_VIEW_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
       - key: FRONTEND_ORIGIN
         value: https://vpsf-calculator.onrender.com,https://vpsf-frontend.onrender.com
       - key: ADMIN_PASSWORD

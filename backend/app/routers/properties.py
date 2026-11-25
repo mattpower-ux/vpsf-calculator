@@ -21,6 +21,7 @@ from app.integrations.mapbox import MapboxClient
 from app.integrations.rentcast import RentCastClient
 from app.integrations.wildfire import cached_wildfire_risk
 from app.integrations.permitstack import PermitStackRequest, PermitStackResponse, lookup_permits
+from app.integrations.public_property_discovery import property_from_search_results, search_public_property
 from app.notifications import send_email
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
@@ -573,6 +574,30 @@ async def enrich_property_with_rentcast(
         raise HTTPException(status_code=404, detail="No RentCast property record found")
 
     return property_input_from_rentcast(records[0])
+
+
+@router.post("/discover", response_model=PropertyInput)
+async def discover_public_property(
+    request: GeocodeRequest,
+    settings: Settings = Depends(get_settings),
+) -> PropertyInput:
+    key = settings.firecrawl_api_key.strip()
+    if not key:
+        raise HTTPException(status_code=503, detail="FIRECRAWL_API_KEY is not configured")
+    try:
+        data = await search_public_property(request.address, key)
+    except (HTTPError, ValueError, json.JSONDecodeError) as error:
+        raise HTTPException(status_code=502, detail="Public property discovery is temporarily unavailable") from error
+    home = property_from_search_results(request.address, data)
+    if not home:
+        try:
+            archived = await search_public_property(request.address, key, archived=True)
+        except (HTTPError, ValueError, json.JSONDecodeError):
+            archived = {}
+        home = property_from_search_results(request.address, archived)
+    if not home:
+        raise HTTPException(status_code=404, detail="No exact-address public property facts found")
+    return home
 
 
 @router.post("/risk", response_model=RiskEnrichmentResponse)

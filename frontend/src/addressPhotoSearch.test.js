@@ -18,4 +18,6 @@ test("exterior-photo discovery runs only from an explicit search request without
   assert.doesNotMatch(source, /setTimeout\(/);
   assert.match(source, /Searching for an exterior photo/);
   assert.match(source, /No exterior photo was found/);
+  assert.match(source, /found\?\.sourceUrl/);
+  assert.match(source, /rel="noopener noreferrer"/);
 });

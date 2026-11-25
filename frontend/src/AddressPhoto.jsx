@@ -8,7 +8,7 @@ import { analysisLevelLabel } from './analysisLevels.js';
 import { analysisEntryReducer, analysisLevelDetails } from './analysisEntryFlow.js';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function AddressPhoto({ address, flow, onFlowAction, onChooseLevel, busy = false }) {
+export default function AddressPhoto({ address, searchRequest, flow, onFlowAction, onChooseLevel, busy = false }) {
   const filterId = useId().replace(/:/g, "");
   const [editing,setEditing] = useState(false);
   const [remote, setRemote] = useState(null), [local, setLocal] = useState(null);
@@ -16,18 +16,19 @@ export default function AddressPhoto({ address, flow, onFlowAction, onChooseLeve
   const demo = isPresentationAddress(address);
   useEffect(() => {
     setRemote(null); setError(''); setEditing(false);
-    if (demo || address.trim().length < 10) return;
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      setRemote({ address, status:'loading' });
-      getPropertyPhoto(address, controller.signal).then(result => setRemote({ ...result, address }))
-        .catch(err => { if (err.name !== 'AbortError') setRemote({ address, status:'unavailable' }); });
-    }, 900);
-    return () => { clearTimeout(timer); controller.abort(); };
   }, [address, demo]);
+  useEffect(() => {
+    if (demo || !searchRequest?.id || searchRequest.address.trim().length < 5) return;
+    const controller = new AbortController();
+    const target = searchRequest.address.trim();
+    setRemote({ address: target, status:'loading' });
+    getPropertyPhoto(searchRequest.address.trim(), controller.signal).then(result => setRemote({ ...result, address: target }))
+      .catch(err => { if (err.name !== 'AbortError') setRemote({ address: target, status:'unavailable' }); });
+    return () => controller.abort();
+  }, [searchRequest, demo]);
   useEffect(() => () => { if (local?.image) URL.revokeObjectURL(local.image); }, [local]);
   const imported = local?.address === address ? local : null;
-  const found = remote?.address === address ? remote : null;
+  const found = remote?.address === address.trim() ? remote : null;
   const image = imported?.image || (demo ? demoExterior : found?.image);
   const canSketch = Boolean(imported || demo || found?.derivativesAllowed);
   const options = [['broad',analysisLevelLabel('broad'),'Quick Score from Public Records'],['moderate',analysisLevelLabel('moderate'),'Critical Systems Confirmed'],['inclusive',analysisLevelLabel('inclusive'),'Fully Documented Features']];
@@ -53,6 +54,8 @@ export default function AddressPhoto({ address, flow, onFlowAction, onChooseLeve
     {flow.page === 'address' ? <>
       {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
       {image && !demo && !imported && <p className="photoAttribution">{found?.attribution || 'Google Street View'}{found?.date ? ` · ${found.date}` : ''}</p>}
+      {found?.status === 'loading' && <p className="photoSearchStatus" role="status">Searching for an exterior photo…</p>}
+      {found && ['unavailable','not_configured'].includes(found.status) && <p className="photoSearchStatus">No exterior photo was found. You can upload one below or continue without it.</p>}
       <button type="button" className="addressPhotoUpload" disabled={busy} onClick={() => setEditing(true)}>{image ? 'Change exterior photo' : 'Upload exterior photo'}</button>
       {!image && !busy && <p className="photoAvailability">You can continue without an exterior photo.</p>}
       <button type="button" className="primaryButton addressPhotoStart" disabled={busy || address.trim().length < 5} onClick={() => onFlowAction({type:'open-depth'})}>Start the Calculation! <ArrowRight size={18}/></button>

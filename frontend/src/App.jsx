@@ -573,6 +573,10 @@ function AppChrome({ children, screen, setScreen, onBack }) {
       <div className="bannerWrap">
         <img src={isBrandTheme ? brandPreviewLogo : VPSF_BANNER} alt="VPSF Value Per Square Foot" />
         <span className="brandCredit">POWERED BY GREEN BUILDER MEDIA</span>
+        {screen === 0 && <span className="freeSeal" aria-label="Free calculator">
+          FREE
+          <Sparkles className="freeSealSparkle" size={13} strokeWidth={2.2} aria-hidden="true" />
+        </span>}
       </div>
       {screen > 0 && screen !== 12 && (
         <button className="backButton" onClick={() => (onBack ? onBack() : setScreen(Math.max(0, screen - 1)))} aria-label="Go back">
@@ -580,6 +584,15 @@ function AppChrome({ children, screen, setScreen, onBack }) {
         </button>
       )}
       {children}
+      {screen === 0 && <div className="measurementFooter" aria-label="Measuring performance, durability, efficiency, and resilience">
+        <strong>MEASURING</strong>
+        <div className="measurementValues">
+          <span>Performance</span>
+          <span>Durability</span>
+          <span>Efficiency</span>
+          <span>Resilience</span>
+        </div>
+      </div>}
       {screen !== 12 && <BottomNav active={[4, 5, 9, 10, 17, 18, 19, 24, 31].includes(screen) ? "My Scores" : [25, 27].includes(screen) ? "Help?" : "Menu"} setScreen={setScreen} />}
     </div>
   );
@@ -941,6 +954,7 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   const [isScanningAddress, setIsScanningAddress] = useState(false);
   const [scanNote, setScanNote] = useState("");
   const [savedLookup, setSavedLookup] = useState(null);
+  const [photoSearchRequest, setPhotoSearchRequest] = useState({ id: 0, address: "" });
   const [entryFlow, dispatchEntryFlow] = useReducer(analysisEntryReducer, analysisEntryInitialState);
   const savedMatch = savedMatchForAddress(savedLookup, address);
   const lookupMounted = useRef(true);
@@ -975,6 +989,18 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
     setAddress(formatSavedAddress(savedMatch));
     setHome(savedHome);
     setScanNote("Saved property details loaded from the VPSF archive.");
+  };
+
+  const searchAddress = (event) => {
+    event.preventDefault();
+    const query = address.trim();
+    if (query.length < 5) {
+      setScanNote("Enter a complete property address first.");
+      return;
+    }
+    dispatchEntryFlow({type:"back"});
+    setScanNote("");
+    setPhotoSearchRequest(current => ({ id: current.id + 1, address: query }));
   };
 
   const startExistingHomeScan = async (level) => {
@@ -1099,35 +1125,26 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
   return (
     <div className={`screen startScreen ${entryFlow.page === "depth" ? "depthSelectionScreen" : ""}`}>
       {entryFlow.page === "address" && <>
-        <span className="freeBadge" aria-label="Free calculator">
-          FREE
-          <Sparkles className="freeBadgeSparkle" size={18} strokeWidth={2.4} aria-hidden="true" />
-        </span>
         <h1>Analyze an existing home</h1>
         <p className="centerCopy">Enter any address and the calculator will score the home's performance strengths and weaknesses.</p>
-        <div className="measurementStrip" aria-label="Measuring performance, durability, efficiency, and resilience">
-          <strong>MEASURING</strong>
-          <div className="measurementValues">
-            <span>Performance</span>
-            <span>Durability</span>
-            <span>Efficiency</span>
-            <span>Resilience</span>
-          </div>
-        </div>
         <ResumeAnalysisDraft onResume={onResume}/>
       </>}
       <section className={`existingHomeCard ${entryFlow.page === "depth" ? "depthSelectionCard" : ""}`}>
-        {entryFlow.page === "address" && <div className="addressLookup">
+        {entryFlow.page === "address" && <form className="addressLookup" onSubmit={searchAddress}>
           <MapPin size={18} />
           <input
             value={address}
             disabled={isScanningAddress}
-            onChange={(event) => { lookupGeneration.current++; setIsScanningAddress(false); onPermitLookup(null); dispatchEntryFlow({type:"back"}); setAddress(event.target.value); }}
+            onChange={(event) => { lookupGeneration.current++; setIsScanningAddress(false); onPermitLookup(null); dispatchEntryFlow({type:"back"}); setScanNote(""); setAddress(event.target.value); }}
             aria-label="Property address"
             placeholder="Enter home address"
           />
-        </div>}
-        <AddressPhoto address={address} flow={entryFlow} onFlowAction={dispatchEntryFlow} onChooseLevel={startExistingHomeScan} busy={isScanningAddress} />
+          <button type="submit" aria-label="Search address" disabled={isScanningAddress || address.trim().length < 5}>
+            <Search size={18} aria-hidden="true" />
+            <span>Search</span>
+          </button>
+        </form>}
+        <AddressPhoto address={address} searchRequest={photoSearchRequest} flow={entryFlow} onFlowAction={dispatchEntryFlow} onChooseLevel={startExistingHomeScan} busy={isScanningAddress} />
         {scanNote && <p className="addressScanNote">{scanNote}</p>}
         {entryFlow.page === "address" && savedMatch && (
           <button className="savedAddressAutofill" type="button" onClick={applySavedAutofill}>
@@ -3955,6 +3972,7 @@ export default function App() {
           width: 100%;
           height: 72px;
           flex: 0 0 72px;
+          position: relative;
           background: var(--navy);
           overflow: hidden;
           border-radius: 28px 28px 0 0;
@@ -4152,75 +4170,84 @@ export default function App() {
           margin: 12px 0 0;
         }
 
-        .startScreen { position: relative; padding-top: 50px; }
-        .freeBadge {
+        .startScreen { position: relative; }
+        .freeSeal {
           position: absolute;
-          top: 14px;
-          right: 18px;
+          top: 7px;
+          right: 8px;
+          z-index: 3;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 34px;
-          padding: 4px 15px;
-          border-radius: 999px;
-          background: #e2b33f;
+          min-width: 48px;
+          min-height: 25px;
+          padding: 3px 8px;
+          border: 1px solid #d6a52e;
+          border-radius: 7px;
+          background: #fffaf0;
           color: var(--ink);
-          box-shadow: 0 7px 16px rgba(9, 33, 59, .16);
-          font-size: 14px;
+          box-shadow: 0 4px 10px rgba(9, 33, 59, .1);
+          font-size: 11px;
           font-weight: 900;
-          letter-spacing: .07em;
+          letter-spacing: .1em;
           line-height: 1;
           overflow: visible;
         }
-        .freeBadgeSparkle {
+        .freeSealSparkle {
           position: absolute;
-          top: -7px;
-          right: -7px;
-          color: #fff8d6;
-          filter: drop-shadow(0 2px 3px rgba(92, 59, 0, .35));
+          top: -6px;
+          right: -5px;
+          color: #d6a52e;
+          filter: drop-shadow(0 1px 2px rgba(92, 59, 0, .2));
           transform-origin: 50% 50%;
-          animation: freeBadgeSparkleMotion 3.2s cubic-bezier(.16, 1, .3, 1) infinite;
+          animation: freeSealSparkleMotion 5.4s cubic-bezier(.16, 1, .3, 1) infinite;
         }
-        @keyframes freeBadgeSparkleMotion {
-          0%, 66%, 100% { opacity: .62; transform: scale(.72) rotate(-12deg); }
-          74% { opacity: 1; transform: scale(1.28) rotate(10deg); filter: drop-shadow(0 2px 5px rgba(92, 59, 0, .48)); }
-          82% { opacity: .8; transform: scale(.92) rotate(2deg); }
+        @keyframes freeSealSparkleMotion {
+          0%, 78%, 100% { opacity: .45; transform: scale(.78) rotate(-8deg); }
+          84% { opacity: 1; transform: scale(1.2) rotate(8deg); }
+          90% { opacity: .62; transform: scale(.9) rotate(0); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .freeBadgeSparkle { animation: none; opacity: 1; transform: none; }
+          .freeSealSparkle { animation: none; opacity: .75; transform: none; }
         }
         .startScreen h1 { text-align: center; font-size: 24px; }
-        .measurementStrip {
+        .measurementFooter {
+          flex: 0 0 38px;
           display: flex;
-          align-items: baseline;
+          align-items: center;
           justify-content: center;
-          gap: 10px;
-          margin: 12px auto 2px;
+          gap: 9px;
+          min-width: 0;
+          padding: 0 10px;
+          border-top: 1px solid var(--line);
+          background: #fff;
           color: var(--ink);
           text-align: center;
         }
-        .measurementStrip > strong {
+        .measurementFooter > strong {
           color: var(--blue);
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: .12em;
+          font-size: 9px;
+          font-weight: 850;
+          letter-spacing: .13em;
+          white-space: nowrap;
         }
         .measurementValues {
           display: grid;
-          grid-template-columns: repeat(2, max-content);
+          grid-template-columns: repeat(4, max-content);
           justify-content: center;
-          gap: 3px 0;
-          font-size: 12px;
-          font-weight: 650;
-          line-height: 1.35;
+          font-size: 9.5px;
+          font-weight: 700;
+          line-height: 1;
         }
-        .measurementValues span:nth-child(even)::before {
+        .measurementValues span + span::before {
           content: "•";
-          margin: 0 7px;
+          margin: 0 5px;
           color: var(--gold);
         }
         @media (max-width: 380px) {
-          .measurementStrip { align-items: center; flex-direction: column; gap: 4px; }
+          .measurementFooter { gap: 6px; padding-inline: 7px; }
+          .measurementValues { font-size: 8.5px; }
+          .measurementValues span + span::before { margin-inline: 3px; }
         }
         .existingHomeCard {
           border: 1px solid var(--accent-line);
@@ -4233,13 +4260,13 @@ export default function App() {
         .addressLookup {
           height: 48px;
           display: grid;
-          grid-template-columns: 22px 1fr;
-          gap: 9px;
+          grid-template-columns: 22px minmax(0, 1fr) auto;
+          gap: 8px;
           align-items: center;
           border: 1px solid var(--accent-line);
           background: #fff;
           border-radius: 10px;
-          padding: 0 12px;
+          padding: 0 6px 0 12px;
           color: var(--blue);
         }
         .addressLookup input {
@@ -4252,6 +4279,23 @@ export default function App() {
           font-weight: 750;
           background: transparent;
         }
+        .addressLookup button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          min-width: 72px;
+          min-height: 34px;
+          padding: 0 10px;
+          border: 0;
+          border-radius: 7px;
+          background: var(--blue);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 850;
+        }
+        .addressLookup button:disabled { opacity: .45; cursor: default; }
+        .addressLookup button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
         .quickScanButton { margin-top: 12px; }
         .quickScanButton:disabled {
           opacity: .78;

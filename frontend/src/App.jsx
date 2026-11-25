@@ -47,6 +47,7 @@ import "./advice.css";
 import { pillarDefinitionTopics } from "./pillarDefinitionTopics";
 import { manualChapters, manualChapterAt } from "./guideManual";
 import { themeFromSearch } from "./theme";
+import { normalizeAddressForSearch } from "./addressSearch";
 import { createScoreRequestSession, resultForCurrentAssessment, requiresAssessmentScore } from "./scoreSession";
 import knowHowCatalog from "./data/knowHowArticles.json";
 import { recordedPillarFeatures } from "./recordedFeatures";
@@ -991,16 +992,23 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
     setScanNote("Saved property details loaded from the VPSF archive.");
   };
 
-  const searchAddress = (event) => {
+  const searchAddress = async (event) => {
     event.preventDefault();
     const query = address.trim();
     if (query.length < 5) {
       setScanNote("Enter a complete property address first.");
       return;
     }
+    const generation = ++lookupGeneration.current;
     dispatchEntryFlow({type:"back"});
-    setScanNote("");
-    setPhotoSearchRequest(current => ({ id: current.id + 1, address: query }));
+    setIsScanningAddress(true);
+    setScanNote("Confirming the property address…");
+    const normalizedQuery = await normalizeAddressForSearch(query, geocodeProperty);
+    if (!lookupMounted.current || lookupGeneration.current !== generation) return;
+    setAddress(normalizedQuery);
+    setScanNote(normalizedQuery === query ? "" : "Address confirmed. Searching available property sources.");
+    setPhotoSearchRequest(current => ({ id: current.id + 1, address: normalizedQuery }));
+    setIsScanningAddress(false);
   };
 
   const startExistingHomeScan = async (level) => {

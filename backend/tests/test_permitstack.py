@@ -142,6 +142,57 @@ def test_status_nonsecret_and_retired_attom_preserved(setup):
     assert not calls
 
 
+def test_history_settings_are_bounded_and_status_is_nonsecret(setup, monkeypatch):
+    from app.config import bounded_env_int
+    client, _, settings, _, _ = setup
+    assert settings.permit_stack_history_enabled is False
+    assert settings.permit_stack_max_pages == 3
+    assert settings.permit_stack_page_size == 50
+    assert settings.permit_stack_max_records == 150
+    monkeypatch.setenv('LOW_TEST', '-8')
+    monkeypatch.setenv('HIGH_TEST', '900')
+    assert bounded_env_int('LOW_TEST', 3, 1, 10) == 1
+    assert bounded_env_int('HIGH_TEST', 3, 1, 10) == 10
+    body = client.get('/api/integrations/status').json()['permitstack']
+    assert body['historyEnabled'] is False
+    assert body['maxPagesPerLookup'] == 3
+    assert body['pageSize'] == 50
+    assert body['maxRecordsPerLookup'] == 150
+    assert 'test-secret' not in str(body)
+
+
+def test_expanded_evidence_contract_accepts_legacy_and_history_shapes():
+    from app.permitstack_schemas import PermitStackResponse
+    request = ps.PermitStackRequest(**ADDRESS)
+    legacy = ps.evidence_response(request, {
+        'results': [permit()], 'total': 1, 'page': 1, 'per_page': 25,
+    }).model_dump(mode='json')
+    legacy_model = PermitStackResponse.model_validate(legacy)
+    assert legacy_model.lookupMode == 'search'
+    assert legacy_model.completeness == 'unknown'
+    history = {
+        **legacy,
+        'lookupMode': 'address-history',
+        'matchedBy': 'address',
+        'parcelId': '',
+        'completeness': 'partial',
+        'pagesChecked': 2,
+        'recordsChecked': 75,
+        'stopReason': 'page-budget',
+        'coverage': {
+            **legacy['coverage'],
+            'jurisdiction': 'Example County',
+            'dataStatus': 'active',
+            'freshness': 'current',
+            'captureRatio': 0.82,
+        },
+    }
+    model = PermitStackResponse.model_validate(history)
+    assert model.lookupMode == 'address-history'
+    assert model.recordsChecked == 75
+    assert model.coverage.captureRatio == 0.82
+
+
 def test_client_uses_fixed_endpoint_header_and_single_bounded_page(monkeypatch):
     requests = []
     def reply(request):

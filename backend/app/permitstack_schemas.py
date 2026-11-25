@@ -29,6 +29,12 @@ class PermitCoverage(BaseModel):
     dataThrough: str | None = Field(default=None, max_length=40)
     tierWindowClamped: bool = False
     tierWindowFrom: str | None = Field(default=None, max_length=40)
+    jurisdiction: str | None = Field(default=None, max_length=300)
+    dataStatus: str | None = Field(default=None, max_length=80)
+    freshness: str | None = Field(default=None, max_length=80)
+    captureRatio: float | None = Field(default=None, ge=0, le=1)
+    captureCheckedAt: str | None = Field(default=None, max_length=40)
+    captureNote: str | None = Field(default=None, max_length=500)
 
 
 class PermitStackResponse(BaseModel):
@@ -38,12 +44,19 @@ class PermitStackResponse(BaseModel):
     address: str = Field(max_length=200)
     state: str = Field(pattern=r'^[A-Z]{2}$')
     zip: str = Field(pattern=r'^\d{5}$')
+    lookupMode: Literal['search','address-history','parcel-history'] = 'search'
+    matchedBy: Literal['address','parcel'] = 'address'
+    parcelId: str = Field(default='', max_length=100, pattern=r'^[A-Za-z0-9 ./-]*$')
+    completeness: Literal['complete','partial','unknown','unavailable','ambiguous'] = 'unknown'
+    pagesChecked: int = Field(default=1, ge=0, le=10)
+    recordsChecked: int = Field(default=0, ge=0, le=500)
+    stopReason: Literal['exhausted','page-budget','record-budget','provider-window','ambiguous','fallback','unknown'] = 'unknown'
     # Keep JSON-native strings: existing archive repositories use model_dump().
     fetchedAt: str = Field(max_length=40)
     cacheHit: bool = False
     searchTruncated: bool
-    searchedRecords: int = Field(ge=0, le=25)
-    permits: list[PermitEvidence] = Field(max_length=25)
+    searchedRecords: int = Field(ge=0, le=500)
+    permits: list[PermitEvidence] = Field(max_length=500)
     coverage: PermitCoverage
     sourceNote: str = Field(max_length=1000)
 

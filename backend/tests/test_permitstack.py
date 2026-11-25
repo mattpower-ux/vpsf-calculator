@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import AsyncExitStack
 from datetime import timedelta
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -327,6 +328,85 @@ def test_history_rejects_repeated_pages_invalid_ids_and_unexpected_schema():
         async def property_history(self, request, page, per_page): return {'permits': []}
     with pytest.raises(ValueError):
         asyncio.run(ps.collect_history(Malformed(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+
+
+def test_history_evidence_sanitizes_maps_coverage_and_preserves_counts():
+    rows = []
+    for index in range(150):
+        rows.append(permit(
+            id=str(uuid4()), permit_number=f'R-{index}',
+            owner_name='PRIVATE OWNER', contractor_email='private@example.com',
+            raw={'private': True}, unrecognized_secret='hidden'))
+    collection = ps.HistoryCollection(
+        records=rows, lookup_mode='address-history',
+        coverage={
+            'confidence': 'high', 'covered': True,
+            'jurisdiction': 'Example County', 'data_status': 'active',
+            'freshness': 'current', 'capture_ratio': 0.82,
+            'capture_checked_at': '2026-11-20',
+            'capture_note': 'Representative municipal coverage.',
+            'tier_window_from': '2016-01-01',
+        },
+        data_currency={'data_through': '2026-11-18'},
+        pages_checked=3, records_checked=150,
+        completeness='partial', stop_reason='record-budget')
+    response = ps.history_evidence_response(ps.PermitStackRequest(**ADDRESS), collection)
+    body = response.model_dump(mode='json')
+    assert len(body['permits']) == 150
+    assert body['lookupMode'] == 'address-history'
+    assert body['matchedBy'] == 'address'
+    assert body['pagesChecked'] == 3 and body['recordsChecked'] == 150
+    assert body['completeness'] == 'partial' and body['stopReason'] == 'record-budget'
+    assert body['coverage']['jurisdiction'] == 'Example County'
+    assert body['coverage']['dataThrough'] == '2026-11-18'
+    assert body['coverage']['captureRatio'] == 0.82
+    serialized = str(body)
+    assert 'PRIVATE OWNER' not in serialized
+    assert 'private@example.com' not in serialized
+    assert 'unrecognized_secret' not in serialized
+
+
+def test_cache_key_preserves_legacy_and_varies_for_history_identity_and_limits():
+    settings = Settings()
+    request = ps.PermitStackRequest(**ADDRESS)
+    legacy = ps.permit_cache_key(request, settings)
+    assert legacy == ps.permit_cache_key(
+        ps.PermitStackRequest(**{**ADDRESS, 'address': '123 MAIN STREET'}), settings)
+    settings.permit_stack_history_enabled = True
+    base = ps.permit_cache_key(request, settings)
+    variants = []
+    for field, value in [
+        ('permit_stack_max_pages', 4),
+        ('permit_stack_page_size', 40),
+        ('permit_stack_max_records', 120),
+    ]:
+        changed = Settings()
+        changed.permit_stack_history_enabled = True
+        setattr(changed, field, value)
+        variants.append(ps.permit_cache_key(request, changed))
+    variants.append(ps.permit_cache_key(
+        ps.PermitStackRequest(**ADDRESS, parcel='12-34-567'), settings))
+    assert all(key != base for key in variants)
+    assert len(set(variants)) == len(variants)
+
+
+def test_history_mode_uses_property_history_and_caches_normalized_evidence(setup, monkeypatch):
+    client, _, settings, search_calls, _ = setup
+    settings.permit_stack_history_enabled = True
+    history_calls = []
+    async def property_history(self, request, page, per_page):
+        history_calls.append((request, page, per_page))
+        return history_page(permit(), coverage={'covered': True},
+                            data_currency={'data_through': '2026-11-18'})
+    monkeypatch.setattr(ps.PermitStackClient, 'property_history', property_history)
+    first = client.post('/api/properties/permitstack', json=ADDRESS)
+    second = client.post('/api/properties/permitstack', json=ADDRESS)
+    assert first.status_code == second.status_code == 200
+    assert first.json()['lookupMode'] == 'address-history'
+    assert first.json()['completeness'] == 'complete'
+    assert first.json()['coverage']['dataThrough'] == '2026-11-18'
+    assert second.json()['cacheHit'] is True
+    assert len(history_calls) == 1 and not search_calls
 
 
 @pytest.mark.parametrize('address,prefix', [

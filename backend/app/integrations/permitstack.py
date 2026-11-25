@@ -285,10 +285,9 @@ def _zip(value):
     return value.strip()[:5] if isinstance(value, str) and re.fullmatch(r'\d{5}(?:-\d{4})?', value.strip()) else None
 
 
-def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStackResponse:
-    page = SearchPage.model_validate(payload)
+def _permit_evidence_rows(request: PermitStackRequest, rows: list[dict]) -> list[PermitEvidence]:
     permits, seen = [], set()
-    for row in page.results:
+    for row in rows:
         street, state = row.get('address_street'), row.get('address_state')
         # Never trust search filters: address is a substring upstream; state may
         # come from jurisdiction rather than the permit. Unit tokens are retained.
@@ -310,12 +309,32 @@ def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStack
             city=_text(row.get('address_city'),100), state=request.state, zip=request.zip,
             dateFiled=_date(row.get('date_filed')), dateIssued=_date(row.get('date_issued')),
             dateCompleted=_date(row.get('date_completed'))))
+    return permits
+
+
+def _coverage(raw: dict, data_currency: dict | None = None, *, clamped=False) -> PermitCoverage:
+    currency = data_currency or {}
+    ratio = raw.get('capture_ratio')
+    return PermitCoverage(
+        confidence=_text(raw.get('confidence'),80),
+        covered=raw.get('covered') if isinstance(raw.get('covered'),bool) else None,
+        dataThrough=_text(raw.get('data_through') or currency.get('data_through'),40),
+        tierWindowClamped=clamped or bool(raw.get('tier_window_clamped')),
+        tierWindowFrom=_text(raw.get('tier_window_from'),40),
+        jurisdiction=_text(raw.get('jurisdiction') or raw.get('jurisdiction_name'),300),
+        dataStatus=_text(raw.get('data_status'),80),
+        freshness=_text(raw.get('freshness'),80),
+        captureRatio=ratio if isinstance(ratio,(int,float)) and not isinstance(ratio,bool) else None,
+        captureCheckedAt=_text(raw.get('capture_checked_at'),40),
+        captureNote=_text(raw.get('capture_note') or raw.get('note'),500))
+
+
+def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStackResponse:
+    page = SearchPage.model_validate(payload)
+    permits = _permit_evidence_rows(request, page.results)
     raw_coverage = page.coverage_confidence or {}
-    coverage = PermitCoverage(
-        confidence=_text(raw_coverage.get('confidence'),80),
-        covered=raw_coverage.get('covered') if isinstance(raw_coverage.get('covered'),bool) else None,
-        dataThrough=_text(raw_coverage.get('data_through'),40),
-        tierWindowClamped=page.tier_window_clamped, tierWindowFrom=_text(page.tier_window_from,40))
+    raw_coverage = {**raw_coverage, 'tier_window_from':page.tier_window_from}
+    coverage = _coverage(raw_coverage, clamped=page.tier_window_clamped)
     truncated = (page.total is None or page.total > len(page.results)
                  or page.total_capped or page.total_unknown or page.tier_window_clamped)
     return PermitStackResponse(status='matched' if permits else 'no_exact_match',
@@ -328,10 +347,48 @@ def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStack
         'do not establish installed equipment, replacement age, performance or scoring credit.')
 
 
+def history_evidence_response(request: PermitStackRequest,
+                              collection: HistoryCollection) -> PermitStackResponse:
+    permits = _permit_evidence_rows(request, collection.records)
+    coverage = _coverage(collection.coverage, collection.data_currency)
+    matched_by = 'parcel' if collection.lookup_mode == 'parcel-history' else 'address'
+    return PermitStackResponse(
+        status='matched' if permits else 'no_exact_match',
+        address=request.address, state=request.state, zip=request.zip,
+        fetchedAt=utc_now().isoformat(), lookupMode=collection.lookup_mode,
+        matchedBy=matched_by, parcelId=request.parcel,
+        completeness=collection.completeness,
+        pagesChecked=collection.pages_checked,
+        recordsChecked=collection.records_checked,
+        stopReason=collection.stop_reason,
+        searchTruncated=collection.completeness != 'complete',
+        searchedRecords=collection.records_checked,
+        permits=permits, coverage=coverage,
+        sourceNote='PermitStack available permit history matched to this property by normalized '
+        f'{matched_by}. History depth depends on jurisdiction coverage and subscription access; '
+        'no matching records is not proof that no work occurred. Permit status and dates do not '
+        'establish installed equipment, replacement age, performance or scoring credit.')
+
+
+def permit_cache_key(request: PermitStackRequest, settings: Settings) -> str:
+    if not settings.permit_stack_history_enabled:
+        identity = ['v2-prefix', normalize_street_address(request.address), request.state, request.zip]
+    else:
+        identity = [
+            'v3-property-history',
+            'parcel' if request.parcel else 'address',
+            request.parcel or normalize_street_address(request.address),
+            request.city.casefold(), request.state, request.zip,
+            settings.permit_stack_max_pages, settings.permit_stack_page_size,
+            settings.permit_stack_max_records,
+        ]
+    return hashlib.sha256(json.dumps(identity).encode()).hexdigest()
+
+
 async def lookup_permits(request: PermitStackRequest, db: Session, settings: Settings) -> PermitStackResponse:
     if not settings.permit_stack_api_key.strip():
         raise HTTPException(503, 'PermitStack is not configured.')
-    cache_key = hashlib.sha256(json.dumps(['v2-prefix',normalize_street_address(request.address),request.state,request.zip]).encode()).hexdigest()
+    cache_key = permit_cache_key(request, settings)
     # Process-local single-flight; the atomic monthly cap remains cross-worker.
     # concurrent Future supports callers on different event loops/threads. No
     # Session or async task is shared. Finished entries are always removed.
@@ -377,10 +434,28 @@ async def _lookup_permits_once(request: PermitStackRequest, db: Session, setting
             return cached.model_copy(update={'cacheHit':True, 'address':request.address})
         except ValueError:
             pass
-    reserve_call(db, settings.permit_stack_monthly_limit)
     try:
-        payload = await asyncio.wait_for(PermitStackClient(settings.permit_stack_api_key).search(request), timeout=12)
-        result = evidence_response(request, payload)
+        client = PermitStackClient(settings.permit_stack_api_key)
+        if settings.permit_stack_history_enabled:
+            collection = await asyncio.wait_for(collect_history(
+                client, request, settings,
+                lambda: reserve_call(db, settings.permit_stack_monthly_limit)), timeout=25)
+            if collection.completeness == 'ambiguous':
+                reserve_call(db, settings.permit_stack_monthly_limit)
+                payload = await asyncio.wait_for(client.search(request), timeout=12)
+                result = evidence_response(request, payload).model_copy(update={
+                    'completeness':'ambiguous', 'stopReason':'fallback',
+                    'pagesChecked':collection.pages_checked,
+                    'recordsChecked':collection.records_checked,
+                    'sourceNote':'Property-history results were ambiguous, so only exact-address '
+                    'search matches are shown. Coverage may be incomplete. No matching records is '
+                    'not proof that no work occurred; permits do not establish scoring credit.'})
+            else:
+                result = history_evidence_response(request, collection)
+        else:
+            reserve_call(db, settings.permit_stack_monthly_limit)
+            payload = await asyncio.wait_for(client.search(request), timeout=12)
+            result = evidence_response(request, payload)
     except (TimeoutError, httpx.TimeoutException):
         raise HTTPException(504, 'PermitStack lookup timed out. Try again later.') from None
     except (httpx.HTTPError, ValueError, TypeError, KeyError):

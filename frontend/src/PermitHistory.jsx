@@ -1,5 +1,5 @@
 import React from 'react';
-import { permitEvidenceForHome } from './permitEvidence.js';
+import { permitEvidenceForHome, permitCoverageSummary } from './permitEvidence.js';
 import './permitHistory.css';
 
 export default function PermitHistory({ home }) {
@@ -16,9 +16,6 @@ export default function PermitHistory({ home }) {
       {permit.description && <p>{permit.description}</p>}
       {permit.jurisdiction && <small>{permit.jurisdiction}</small>}
     </article>)}
-    <p className="permitCoverage">Coverage may be incomplete. {evidence.searchTruncated ? 'Only part of the matching history was returned. ' : ''}
-      {evidence.coverage.tierWindowClamped ? 'Available history is limited by the provider’s subscription window. ' : ''}
-      {evidence.coverage.dataThrough ? `Coverage through ${evidence.coverage.dataThrough.slice(0,10)}. ` : ''}
-      Retrieved {evidence.fetchedAt.slice(0,10)}{evidence.cacheHit ? ' (cached)' : ''}.</p>
+    <p className="permitCoverage">{permitCoverageSummary(evidence)}</p>
   </details>;
 }

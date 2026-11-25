@@ -61,3 +61,16 @@ def test_permit_hints_are_inferred_not_verified_system_facts():
     assert home.provenance["solar"].origin == "inferred"
     assert home.provenance["occupancy"].origin == "unknown"
     assert home.provenance["analysisLevel"].origin == "unknown"
+
+
+def test_rentcast_maps_parcel_identity_without_scoring_provenance():
+    from app.scoring.catalog import evaluate_model
+    from app.scoring.seed import seed_model_v1
+    home = property_input_from_rentcast({
+        "addressLine1": "123 Main St", "state": "CO", "zipCode": "80202",
+        "assessorID": "12-34-567",
+    })
+    assert home.parcelId == "12-34-567"
+    assert home.provenance["parcelId"].origin == "imported"
+    assert evaluate_model(home, seed_model_v1()) == evaluate_model(
+        home.model_copy(update={"parcelId": ""}), seed_model_v1())

@@ -63,6 +63,7 @@ class PermitStackRequest(BaseModel):
     state: str = Field(min_length=2, max_length=30)
     zip: str = Field(pattern=r'^\d{5}(?:-\d{4})?$')
     city: str = Field(default='', max_length=100)
+    parcel: str = Field(default='', max_length=100, pattern=r'^[A-Za-z0-9 ./-]*$')
 
     @field_validator('address')
     @classmethod
@@ -207,6 +208,7 @@ def evidence_response(request: PermitStackRequest, payload: dict) -> PermitStack
                  or page.total_capped or page.total_unknown or page.tier_window_clamped)
     return PermitStackResponse(status='matched' if permits else 'no_exact_match',
         address=request.address, state=request.state, zip=request.zip, fetchedAt=utc_now().isoformat(),
+        parcelId=request.parcel,
         searchTruncated=truncated, searchedRecords=len(page.results), permits=permits, coverage=coverage,
         sourceNote='PermitStack permit evidence matched by normalized street address, state and ZIP. '
         'One bounded search page; coverage and subscription history may be incomplete. '

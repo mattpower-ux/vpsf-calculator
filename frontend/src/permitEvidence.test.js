@@ -20,6 +20,27 @@ test('request is street-only and excludes demo, incomplete and invalid identitie
     {...home(),address:'123 Main St, Denver, CO 80202'},{...home(),state:''},{...home(),zip:''}]) assert.equal(permitRequest(input),null);
 });
 
+test('permit request includes a safe parcel identity', () => {
+  assert.deepEqual(permitRequest({...home(),parcelId:'12-34-567'}),
+    {address:'123 Main Street',city:'Denver',state:'CO',zip:'80202',parcel:'12-34-567'});
+  assert.deepEqual(permitRequest({...home(),parcelId:'bad\u0000parcel'}),permitRequest(home()));
+  assert.deepEqual(permitRequest({...home(),parcelId:'x'.repeat(101)}),permitRequest(home()));
+  assert.equal(permitRequest({...home(),parcelId:'12-34-567',demoScenario:'demo'}),null);
+});
+
+test('parcel changes invalidate existing and late permit evidence', () => {
+  const withParcel={...home(),parcelId:'12-34-567'};
+  const parcelEvidence={...evidence(),parcelId:'12-34-567',matchedBy:'parcel'};
+  const current={...withParcel,permitEvidence:parcelEvidence};
+  assert.equal(confirmedEdit(current,'parcelId','98-76-543').permitEvidence,null);
+  assert.equal(permitEvidenceForHome(current).parcelId,'12-34-567');
+  const moved={...current,parcelId:'98-76-543',permitEvidence:null};
+  assert.equal(attachPermitEvidence(moved,withParcel,parcelEvidence),moved);
+  const fresh=applyAnalysisEvidence(current,{address:'999 Other Street'},undefined,{fresh:true});
+  assert.ok(!fresh.parcelId);
+  assert.equal(fresh.permitEvidence ?? null,null);
+});
+
 test('permits persist through each preparation level and drafts without becoming home facts', () => {
   const input = {...home(),permitEvidence:evidence()};
   for(const level of ['broad','moderate','inclusive']) {

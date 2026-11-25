@@ -57,6 +57,7 @@ class PropertyInput(BaseModel):
     city: str = ""
     state: str = ""
     zip: str = ""
+    parcelId: str = Field(default="", max_length=100, pattern=r"^[A-Za-z0-9 ./-]*$")
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     wildfire: WildfireRisk | None = None

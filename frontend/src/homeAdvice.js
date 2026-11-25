@@ -2,7 +2,7 @@ import { boundedCertificationFields } from './certifications.js';
 
 export function confirmedEdit(home, key, value) {
   if (boundedCertificationFields.includes(key) && !value) value = 'Unknown';
-  const locationChanged = ['address','city','state','zip'].includes(key) && home[key] !== value;
+  const locationChanged = ['address','city','state','zip','parcelId'].includes(key) && home[key] !== value;
   const certificationPatch = Array.isArray(home.certifications) && key !== 'certifications'
     ? {certifications: locationChanged ? [] : home.certifications.map(claim => ({...claim,
       replacedFields: typeof value === 'string' || typeof value === 'number'

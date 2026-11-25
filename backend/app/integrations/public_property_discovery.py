@@ -16,7 +16,7 @@ from app.address_normalization import contains_exact_street, normalize_state, no
 from app.schemas import FieldProvenance, PropertyInput
 
 
-FIRECRAWL_SEARCH_URL = "https://api.firecrawl.dev/v2/search"
+CRAWL4AI_SEARCH_URL = "https://api.crawl4ai.com/tools/search"
 MAX_RESPONSE_BYTES = 768 * 1024
 TRUSTED_PROPERTY_DOMAINS = {
     "zillow.com": "Zillow",
@@ -64,7 +64,7 @@ def _provider(url: object) -> str | None:
 
 
 def _normalized_result_text(result: dict) -> str:
-    raw = f"{result.get('title', '')} {result.get('description', '')} {result.get('url', '')}".lower()
+    raw = f"{result.get('title', '')} {result.get('snippet', result.get('description', ''))} {result.get('url', '')}".lower()
     return normalize_street_address(re.sub(r"[-_/]+", " ", raw))
 
 
@@ -81,7 +81,7 @@ def _exact_result(result: dict, address: str) -> tuple[str, str] | None:
     entered_has_unit = bool(re.search(r"\b(?:apt|apartment|unit|suite)\b|#\s*\w+", street))
     if not entered_has_unit and re.search(r"\b(?:apt|apartment|unit|suite)\s+\w+\b", text):
         return None
-    return provider, " ".join(str(result.get(key) or "") for key in ("title", "description"))
+    return provider, " ".join((str(result.get("title") or ""), str(result.get("snippet") or result.get("description") or "")))
 
 
 def _first_match(text: str, patterns: tuple[str, ...]) -> str:
@@ -126,7 +126,7 @@ def _selected_value(evidence: list[tuple[str, str]]) -> tuple[str, list[str]]:
 
 
 def property_from_search_results(address: str, data: object) -> PropertyInput | None:
-    web = data.get("web", []) if isinstance(data, dict) else []
+    web = data.get("rows", []) if isinstance(data, dict) else []
     collected: dict[str, list[tuple[str, str]]] = defaultdict(list)
     matched_providers: list[str] = []
     for result in web if isinstance(web, list) else []:
@@ -174,18 +174,17 @@ async def search_public_property(address: str, key: str, *, archived: bool = Fal
         return {}
     headers = {"Accept": "application/json", "Content-Type": "application/json", "Authorization": "Bearer " + key}
     body = {
-        "query": f'"{address}" site:web.archive.org' if archived else f'"{address}" property',
-        "sources": ["web"],
-        "limit": 20,
+        "q": f'"{address}" site:web.archive.org' if archived else f'"{address}" property',
+        "rich": False,
+        "deep": False,
     }
     async with httpx.AsyncClient(timeout=httpx.Timeout(15, connect=5), follow_redirects=False, trust_env=False) as client:
-        async with client.stream("POST", FIRECRAWL_SEARCH_URL, headers=headers, json=body) as response:
+        async with client.stream("POST", CRAWL4AI_SEARCH_URL, headers=headers, json=body) as response:
             response.raise_for_status()
             raw = bytearray()
             async for chunk in response.aiter_bytes():
                 if len(raw) + len(chunk) > MAX_RESPONSE_BYTES:
-                    raise ValueError("Firecrawl response exceeds limit")
+                    raise ValueError("Crawl4AI response exceeds limit")
                 raw.extend(chunk)
     payload = json.loads(raw)
-    data = payload.get("data") if isinstance(payload, dict) else None
-    return data if isinstance(data, dict) else {}
+    return payload if isinstance(payload, dict) else {}

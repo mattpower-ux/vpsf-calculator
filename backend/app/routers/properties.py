@@ -581,9 +581,9 @@ async def discover_public_property(
     request: GeocodeRequest,
     settings: Settings = Depends(get_settings),
 ) -> PropertyInput:
-    key = settings.firecrawl_api_key.strip()
+    key = settings.crawl4ai_api_key.strip()
     if not key:
-        raise HTTPException(status_code=503, detail="FIRECRAWL_API_KEY is not configured")
+        raise HTTPException(status_code=503, detail="CRAWL4AI_API_KEY is not configured")
     try:
         data = await search_public_property(request.address, key)
     except (HTTPError, ValueError, json.JSONDecodeError) as error:

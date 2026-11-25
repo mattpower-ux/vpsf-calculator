@@ -11,16 +11,17 @@ from fastapi.testclient import TestClient
 
 from app.routers import property_photo as photo
 
+
 JPEG = b'\xff\xd8\xff\xe0unaltered-google-attribution\xff\xd9'
 
 
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setattr(photo, 'get_settings', lambda: SimpleNamespace(
-        google_street_view_api_key='test-secret', firecrawl_api_key=''))
+        google_street_view_api_key='test-secret', crawl4ai_api_key=''))
     async def no_fallback(*args, **kwargs):
         return None
-    monkeypatch.setattr(photo, 'firecrawl_listing_photo', no_fallback)
+    monkeypatch.setattr(photo, 'crawl4ai_listing_photo', no_fallback)
     photo._requests.clear()
     app = FastAPI()
     app.include_router(photo.router)
@@ -59,7 +60,7 @@ def test_metadata_precedes_image_and_parameters_target_address(client, monkeypat
 
 def test_missing_key_never_calls_google(client, monkeypatch):
     monkeypatch.setattr(photo, 'get_settings', lambda: SimpleNamespace(
-        google_street_view_api_key='', firecrawl_api_key=''))
+        google_street_view_api_key='', crawl4ai_api_key=''))
     provider(monkeypatch, lambda request: pytest.fail('No provider request without key'))
     response = client.get('/api/property-photo', params={'address': '123 Example Street'})
     assert response.json()['status'] == 'not_configured'
@@ -67,20 +68,20 @@ def test_missing_key_never_calls_google(client, monkeypatch):
     assert response.headers['cache-control'] == 'no-store'
 
 
-def test_missing_street_view_key_uses_exact_firecrawl_listing_photo(client, monkeypatch):
+def test_missing_street_view_key_uses_exact_crawl4ai_listing_photo(client, monkeypatch):
     monkeypatch.setattr(photo, 'get_settings', lambda: SimpleNamespace(
-        google_street_view_api_key='', firecrawl_api_key='fc-test'))
+        google_street_view_api_key='', crawl4ai_api_key='c4-test'))
     provider(monkeypatch, lambda request: pytest.fail('Google must not be called without a key'))
     async def fallback(address, key):
         assert address == '22 Dow St, Portland, ME 04102'
-        assert key == 'fc-test'
+        assert key == 'c4-test'
         return {
             'image': 'data:image/jpeg;base64,ZmFrZQ==',
             'attribution': 'Exterior photo · Redfin',
             'date': None,
             'sourceUrl': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1',
         }
-    monkeypatch.setattr(photo, 'firecrawl_listing_photo', fallback)
+    monkeypatch.setattr(photo, 'crawl4ai_listing_photo', fallback)
     response = client.get('/api/property-photo', params={'address': '22 Dow St, Portland, ME 04102'})
     assert response.status_code == 200
     assert response.json() == {
@@ -92,47 +93,47 @@ def test_missing_street_view_key_uses_exact_firecrawl_listing_photo(client, monk
     }
 
 
-def test_google_zero_results_falls_back_to_firecrawl(client, monkeypatch):
+def test_google_zero_results_falls_back_to_crawl4ai(client, monkeypatch):
     provider(monkeypatch, lambda request: httpx.Response(200, json={'status': 'ZERO_RESULTS'}))
     async def fallback(address, key):
         return {'image': 'data:image/jpeg;base64,ZmFrZQ==', 'attribution': 'Exterior photo · Realtor.com', 'date': None}
-    monkeypatch.setattr(photo, 'firecrawl_listing_photo', fallback)
+    monkeypatch.setattr(photo, 'crawl4ai_listing_photo', fallback)
     data = client.get('/api/property-photo', params={'address': '22 Dow St, Portland, ME 04102'}).json()
     assert data['status'] == 'available'
     assert data['attribution'] == 'Exterior photo · Realtor.com'
 
 
-def test_firecrawl_candidate_requires_exact_address_and_excludes_units():
-    results = {
-        'images': [
-            {'title': '20 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/20-Dow-St/home/1', 'imageUrl': 'https://img.example/nearby.jpg', 'imageWidth': 900, 'imageHeight': 600},
-            {'title': '22 Dow St Apt 3, Portland, ME 04102', 'url': 'https://www.zillow.com/homedetails/22-Dow-St-APT-3/1_zpid/', 'imageUrl': 'https://img.example/unit.jpg', 'imageWidth': 900, 'imageHeight': 600},
-            {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://www.realtor.com/realestateandhomes-detail/22-Dow-St_Portland_ME_04102', 'imageUrl': 'https://img.example/exterior.jpg', 'imageWidth': 900, 'imageHeight': 600},
-        ]
-    }
-    candidate = photo.select_firecrawl_candidate(results, '22 Dow St, Portland, ME 04102')
-    assert candidate['imageUrl'] == 'https://img.example/exterior.jpg'
+def test_crawl4ai_listing_page_requires_exact_address_and_excludes_units():
+    results = {'rows': [
+        {'title': '20 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/20-Dow-St/home/1'},
+        {'title': '22 Dow St Apt 3, Portland, ME 04102', 'url': 'https://www.zillow.com/homedetails/22-Dow-St-APT-3/1_zpid/'},
+        {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://www.realtor.com/realestateandhomes-detail/22-Dow-St_Portland_ME_04102'},
+    ]}
+    candidate = photo.select_crawl4ai_listing_page(results, '22 Dow St, Portland, ME 04102')
+    assert candidate['url'].startswith('https://www.realtor.com/')
     assert candidate['provider'] == 'Realtor.com'
 
 
-def test_firecrawl_candidate_rejects_untrusted_or_portrait_images():
-    results = {
-        'images': [
-            {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://example.com/property', 'imageUrl': 'https://img.example/unknown.jpg', 'imageWidth': 900, 'imageHeight': 600},
-            {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/22-Dow-St/home/1', 'imageUrl': 'https://img.example/portrait.jpg', 'imageWidth': 300, 'imageHeight': 900},
-        ]
-    }
-    assert photo.select_firecrawl_candidate(results, '22 Dow St, Portland, ME 04102') is None
-
-
-def test_firecrawl_candidate_rejects_house_number_prefix_and_missing_dimensions():
-    results = {'images': [
-        {'title': '122 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/122-Dow-St/home/1',
-         'imageUrl': 'https://img.example/wrong.jpg', 'imageWidth': 900, 'imageHeight': 600},
-        {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://www.zillow.com/homedetails/22-Dow-St/1_zpid/',
-         'imageUrl': 'https://img.example/no-size.jpg'},
+def test_crawl4ai_listing_page_rejects_untrusted_result():
+    results = {'rows': [
+        {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://example.com/property'},
     ]}
-    assert photo.select_firecrawl_candidate(results, '22 Dow St, Portland, ME 04102') is None
+    assert photo.select_crawl4ai_listing_page(results, '22 Dow St, Portland, ME 04102') is None
+
+
+def test_crawl4ai_listing_page_rejects_house_number_prefix():
+    results = {'rows': [
+        {'title': '122 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/122-Dow-St/home/1'},
+    ]}
+    assert photo.select_crawl4ai_listing_page(results, '22 Dow St, Portland, ME 04102') is None
+
+
+def test_listing_image_dimensions_are_read_without_decoding_pixels():
+    jpeg = b'\xff\xd8\xff\xc0\x00\x08\x08\x02\x58\x03\x84\x01\xff\xd9'
+    png = b'\x89PNG\r\n\x1a\n' + b'\x00' * 8 + (900).to_bytes(4, 'big') + (600).to_bytes(4, 'big')
+    assert photo.image_dimensions('image/jpeg', jpeg) == (900, 600)
+    assert photo.image_dimensions('image/png', png) == (900, 600)
+    assert photo.image_dimensions('image/webp', b'not-a-webp') is None
 
 
 def test_public_image_download_enforces_total_deadline_while_reading(monkeypatch):
@@ -167,30 +168,94 @@ def test_public_image_download_enforces_total_deadline_while_reading(monkeypatch
     assert len(reads) == 1
 
 
-def test_firecrawl_search_uses_exact_address_and_returns_bounded_image(monkeypatch):
-    original = httpx.AsyncClient
-    def handle(request):
-        assert request.url == photo.FIRECRAWL_URL
-        assert request.headers['authorization'] == 'Bearer fc-test'
-        body = json.loads(request.content)
-        assert body == {
-            'query': '"22 Dow St, Portland, ME 04102" exterior home',
-            'sources': ['images'],
-            'limit': 10,
-        }
-        return httpx.Response(200, json={'success': True, 'data': {'images': [{
-            'title': '22 Dow St, Portland, ME 04102',
-            'url': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1',
-            'imageUrl': 'https://ssl.cdn-redfin.com/photo/home.jpg',
-            'imageWidth': 900,
-            'imageHeight': 600,
-        }]}})
-    monkeypatch.setattr(photo.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
+def test_crawl4ai_search_then_scrape_uses_exact_listing_and_returns_bounded_image(monkeypatch):
+    search_payload = {'rows': [{
+        'title': '22 Dow St, Portland, ME 04102',
+        'url': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1',
+        'snippet': '22 Dow St is a home in Portland, ME 04102.',
+    }]}
+    scrape_payload = {'data': {'html': (
+        '<html><head><meta property="og:image" '
+        'content="https://ssl.cdn-redfin.com/photo/home.jpg"></head></html>'
+    )}}
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        async def aiter_bytes(self):
+            yield json.dumps(calls[-1][1]).encode()
+
+    class Stream:
+        async def __aenter__(self):
+            return Response()
+
+        async def __aexit__(self, *args):
+            return None
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        def stream(self, method, url, *, headers, json):
+            assert method == 'POST'
+            assert headers['Authorization'] == 'Bearer c4-test'
+            if url == photo.CRAWL4AI_SEARCH_URL:
+                assert json == {'q': '"22 Dow St, Portland, ME 04102" exterior home', 'rich': False, 'deep': False}
+                calls.append((url, search_payload))
+            else:
+                assert url == photo.CRAWL4AI_SCRAPE_URL
+                assert json == {
+                    'url': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1',
+                    'format': 'html',
+                    'parse': ['metadata'],
+                    'timeout': 8,
+                }
+                calls.append((url, scrape_payload))
+            return Stream()
+
+    monkeypatch.setattr(photo.httpx, 'AsyncClient', lambda **kwargs: Client())
     monkeypatch.setattr(photo, '_download_public_image', lambda url: ('image/jpeg', JPEG))
-    data = asyncio.run(photo.firecrawl_listing_photo('22 Dow St, Portland, ME 04102', 'fc-test'))
+    monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (900, 600))
+    data = asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test'))
     assert data['attribution'] == 'Exterior photo · Redfin'
     assert data['sourceUrl'].startswith('https://www.redfin.com/')
     assert data['image'] == 'data:image/jpeg;base64,' + base64.b64encode(JPEG).decode()
+
+
+def test_crawl4ai_photo_rejects_small_or_portrait_download(monkeypatch):
+    async def fake_json(*args, **kwargs):
+        if args[1] == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows': [{'title': '22 Dow St, Portland, ME 04102',
+                              'url': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1'}]}
+        return {'data': {'metadata': {'og:image': 'https://img.example/portrait.jpg'}}}
+
+    monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
+    monkeypatch.setattr(photo, '_download_public_image', lambda url: ('image/jpeg', JPEG))
+    monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (300, 900))
+    assert asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test')) is None
+
+
+def test_crawl4ai_photo_degrades_safely_for_non_public_image(monkeypatch):
+    async def fake_json(*args, **kwargs):
+        if args[1] == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows': [{'title': '22 Dow St, Portland, ME 04102',
+                              'url': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1'}]}
+        return {'data': {'metadata': {'og:image': 'https://127.0.0.1/private.jpg'}}}
+
+    monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
+    def blocked(_url):
+        raise photo.HTTPException(status_code=400, detail='Private destination')
+    monkeypatch.setattr(photo, '_download_public_image', blocked)
+    assert asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test')) is None
+
+
+def test_listing_image_url_requires_https():
+    assert photo.listing_image_url({'data': {'metadata': {'og:image': 'http://images.example/home.jpg'}}}) is None
 
 
 @pytest.mark.parametrize('status', ['ZERO_RESULTS', 'NOT_FOUND', 'REQUEST_DENIED', 'OVER_QUERY_LIMIT', 'UNKNOWN_ERROR'])

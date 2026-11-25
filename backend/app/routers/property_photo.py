@@ -22,7 +22,8 @@ import time
 from urllib.parse import urljoin, urlsplit
 
 import httpx
-from fastapi import APIRouter, Request
+from bs4 import BeautifulSoup
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
@@ -34,8 +35,9 @@ METADATA_URL = 'https://maps.googleapis.com/maps/api/streetview/metadata'
 IMAGE_URL = 'https://maps.googleapis.com/maps/api/streetview'
 MAX_METADATA_BYTES = 64 * 1024
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
-MAX_FIRECRAWL_BYTES = 512 * 1024
-FIRECRAWL_URL = 'https://api.firecrawl.dev/v2/search'
+MAX_CRAWL4AI_BYTES = 512 * 1024
+CRAWL4AI_SEARCH_URL = 'https://api.crawl4ai.com/tools/search'
+CRAWL4AI_SCRAPE_URL = 'https://api.crawl4ai.com/tools/scrape'
 TRUSTED_LISTING_DOMAINS = {
     'zillow.com': 'Zillow',
     'redfin.com': 'Redfin',
@@ -126,33 +128,82 @@ def trusted_provider(url):
     return None
 
 
-def select_firecrawl_candidate(data, address):
-    """Choose only an exact-address, landscape image from a known listing source."""
+def select_crawl4ai_listing_page(data, address):
+    """Choose only an exact-address page from a known listing source."""
     street, city, state, zip_code = address_identity(address)
     if not street or not city or (not state and not zip_code):
         return None
     entered_has_unit = bool(re.search(r'\b(?:apt|apartment|unit|suite)\b|#\s*\w+', street))
-    for candidate in data.get('images', []) if isinstance(data, dict) else []:
+    for candidate in data.get('rows', []) if isinstance(data, dict) else []:
         if not isinstance(candidate, dict):
             continue
         page_url = candidate.get('url')
-        image_url = candidate.get('imageUrl')
         provider = trusted_provider(page_url)
-        if not provider or not isinstance(image_url, str):
+        if not provider:
             continue
-        text = normalized_candidate_text(f"{candidate.get('title', '')} {page_url}")
+        text = normalized_candidate_text(
+            f"{candidate.get('title', '')} {candidate.get('snippet', '')} {page_url}")
         if not contains_exact_street(text, street) or city not in text:
             continue
         if not (zip_code and zip_code in text) and not (state and re.search(rf'\b{re.escape(state.lower())}\b', text)):
             continue
         if not entered_has_unit and re.search(r'\b(?:apt|apartment|unit|suite)\s+\w+\b', text):
             continue
-        width, height = candidate.get('imageWidth'), candidate.get('imageHeight')
-        if not isinstance(width, (int, float)) or not isinstance(height, (int, float)):
-            continue
-        if width < 400 or height < 250 or width < height * 1.1:
-            continue
         return {**candidate, 'provider': provider}
+    return None
+
+
+def listing_image_url(data):
+    """Read an Open Graph image from Crawl4AI's parsed metadata or returned HTML."""
+    payload = data.get('data') if isinstance(data, dict) else None
+    if not isinstance(payload, dict):
+        return None
+    metadata = payload.get('metadata')
+    if isinstance(metadata, dict):
+        for key in ('og:image', 'ogImage', 'og_image', 'twitter:image', 'twitterImage', 'image'):
+            value = metadata.get(key)
+            if isinstance(value, str) and value.startswith('https://'):
+                return value
+    html = payload.get('html')
+    if not isinstance(html, str) or len(html) > MAX_CRAWL4AI_BYTES:
+        return None
+    soup = BeautifulSoup(html, 'html.parser')
+    for attribute, value in (('property', 'og:image'), ('name', 'twitter:image')):
+        tag = soup.find('meta', attrs={attribute: value})
+        image_url = tag.get('content') if tag else None
+        if isinstance(image_url, str) and image_url.startswith('https://'):
+            return image_url
+    return None
+
+
+def image_dimensions(mime, data):
+    """Return dimensions for common listing image formats without decoding pixels."""
+    if mime == 'image/png' and len(data) >= 24 and data.startswith(b'\x89PNG\r\n\x1a\n'):
+        return int.from_bytes(data[16:20], 'big'), int.from_bytes(data[20:24], 'big')
+    if mime == 'image/jpeg' and data.startswith(b'\xff\xd8'):
+        index = 2
+        start_of_frame = {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}
+        while index + 4 <= len(data):
+            if data[index] != 0xFF:
+                index += 1
+                continue
+            while index < len(data) and data[index] == 0xFF:
+                index += 1
+            if index >= len(data):
+                break
+            marker = data[index]
+            index += 1
+            if marker in {0x01, 0xD8, 0xD9} or 0xD0 <= marker <= 0xD7:
+                continue
+            if index + 2 > len(data):
+                break
+            length = int.from_bytes(data[index:index + 2], 'big')
+            if length < 2 or index + length > len(data):
+                break
+            if marker in start_of_frame and length >= 7:
+                return (int.from_bytes(data[index + 5:index + 7], 'big'),
+                        int.from_bytes(data[index + 3:index + 5], 'big'))
+            index += length
     return None
 
 
@@ -213,33 +264,50 @@ def _download_public_image(url):
     return None
 
 
-async def firecrawl_listing_photo(address, key=''):
-    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
-    if key:
-        headers['Authorization'] = 'Bearer ' + key
-    body = {
-        'query': f'"{address}" exterior home',
-        'sources': ['images'],
-        'limit': 10,
-    }
-    async with httpx.AsyncClient(timeout=httpx.Timeout(12, connect=4), follow_redirects=False, trust_env=False) as client:
-        async with client.stream('POST', FIRECRAWL_URL, headers=headers, json=body) as response:
-            response.raise_for_status()
-            raw = bytearray()
-            async for chunk in response.aiter_bytes():
-                if len(raw) + len(chunk) > MAX_FIRECRAWL_BYTES:
-                    return None
-                raw.extend(chunk)
+async def _crawl4ai_json(client, url, headers, body):
+    async with client.stream('POST', url, headers=headers, json=body) as response:
+        response.raise_for_status()
+        raw = bytearray()
+        async for chunk in response.aiter_bytes():
+            if len(raw) + len(chunk) > MAX_CRAWL4AI_BYTES:
+                return None
+            raw.extend(chunk)
     payload = json.loads(raw)
-    data = payload.get('data') if isinstance(payload, dict) else None
-    candidate = select_firecrawl_candidate(data, address)
-    if not candidate:
+    return payload if isinstance(payload, dict) else None
+
+
+async def crawl4ai_listing_photo(address, key=''):
+    if not key:
         return None
-    downloaded = await asyncio.get_running_loop().run_in_executor(
-        _image_executor, _download_public_image, candidate['imageUrl'])
+    headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
+               'Authorization': 'Bearer ' + key}
+    async with httpx.AsyncClient(timeout=httpx.Timeout(12, connect=4), follow_redirects=False, trust_env=False) as client:
+        search = await _crawl4ai_json(client, CRAWL4AI_SEARCH_URL, headers, {
+            'q': f'"{address}" exterior home', 'rich': False, 'deep': False,
+        })
+        candidate = select_crawl4ai_listing_page(search, address)
+        if not candidate:
+            return None
+        page = await _crawl4ai_json(client, CRAWL4AI_SCRAPE_URL, headers, {
+            'url': candidate['url'], 'format': 'html', 'parse': ['metadata'], 'timeout': 8,
+        })
+    image_url = listing_image_url(page)
+    if not image_url:
+        return None
+    try:
+        downloaded = await asyncio.get_running_loop().run_in_executor(
+            _image_executor, _download_public_image, image_url)
+    except (HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
+        return None
     if not downloaded:
         return None
     mime, image = downloaded
+    dimensions = image_dimensions(mime, image)
+    if not dimensions:
+        return None
+    width, height = dimensions
+    if width < 400 or height < 250 or width < height * 1.1:
+        return None
     return {
         'image': f'data:{mime};base64,' + base64.b64encode(image).decode('ascii'),
         'attribution': f"Exterior photo · {candidate['provider']}",
@@ -282,7 +350,7 @@ async def property_photo(request: Request, address: str = ''):
                                 date = None
                             return result('available', image='data:image/jpeg;base64,' + base64.b64encode(image).decode('ascii'),
                                           attribution=attribution, date=date)
-            fallback = await firecrawl_listing_photo(address, getattr(settings, 'firecrawl_api_key', ''))
+            fallback = await crawl4ai_listing_photo(address, getattr(settings, 'crawl4ai_api_key', ''))
             if fallback:
                 return result('available', image=fallback['image'], attribution=fallback['attribution'],
                               date=fallback.get('date'), source_url=fallback.get('sourceUrl'))

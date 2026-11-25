@@ -91,7 +91,7 @@ Create a server-side registry keyed by county FIPS and, where necessary, municip
 - Field mapping and date semantics.
 - Freshness expectations, request limits, terms, and adapter status.
 
-The first registry release should support a small benchmark set of jurisdictions in different states rather than pretending to be nationwide. Unsupported locations return a transparent unsupported status and continue with national sources. Firecrawl or an official-site index may discover candidate public sources, but an admin must approve a new adapter and mapping before its fields become scoring-eligible.
+The first registry release should support a small benchmark set of jurisdictions in different states rather than pretending to be nationwide. Unsupported locations return a transparent unsupported status and continue with national sources. Crawl4AI Cloud or an official-site index may discover candidate public sources, but an admin must approve a new adapter and mapping before its fields become scoring-eligible.
 
 ## Listing and historical-web strategy
 

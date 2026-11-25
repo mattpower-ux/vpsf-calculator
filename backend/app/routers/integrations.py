@@ -49,9 +49,9 @@ async def integration_status(settings: Settings = Depends(get_settings), db: Ses
             "monthlyLimit": settings.rentcast_monthly_limit,
             "period": rentcast_usage.period,
         },
-        "firecrawl": {
-            "configured": settings.configured_integrations["firecrawl"],
-            "missing": [] if settings.configured_integrations["firecrawl"] else ["FIRECRAWL_API_KEY"],
+        "crawl4ai": {
+            "configured": settings.configured_integrations["crawl4ai"],
+            "missing": [] if settings.configured_integrations["crawl4ai"] else ["CRAWL4AI_API_KEY"],
             "purpose": "Exact-address public listing discovery and exterior-photo fallback",
         },
         "climateZone": {

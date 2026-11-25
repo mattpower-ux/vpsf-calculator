@@ -93,6 +93,16 @@ def test_missing_street_view_key_uses_exact_crawl4ai_listing_photo(client, monke
     }
 
 
+def test_configured_crawl4ai_failure_is_unavailable_not_not_configured(client, monkeypatch):
+    monkeypatch.setattr(photo, 'get_settings', lambda: SimpleNamespace(
+        google_street_view_api_key='', crawl4ai_api_key='c4-test'))
+    async def no_photo(*args, **kwargs):
+        return None
+    monkeypatch.setattr(photo, 'crawl4ai_listing_photo', no_photo)
+    response = client.get('/api/property-photo', params={'address': '22 Dow St, Portland, ME 04102'})
+    assert response.json()['status'] == 'unavailable'
+
+
 def test_google_zero_results_falls_back_to_crawl4ai(client, monkeypatch):
     provider(monkeypatch, lambda request: httpx.Response(200, json={'status': 'ZERO_RESULTS'}))
     async def fallback(address, key):
@@ -225,6 +235,30 @@ def test_crawl4ai_search_then_scrape_uses_exact_listing_and_returns_bounded_imag
     assert data['attribution'] == 'Exterior photo · Redfin'
     assert data['sourceUrl'].startswith('https://www.redfin.com/')
     assert data['image'] == 'data:image/jpeg;base64,' + base64.b64encode(JPEG).decode()
+
+
+def test_crawl4ai_photo_tries_next_exact_listing_when_first_has_no_image(monkeypatch):
+    scraped = []
+
+    async def fake_json(_client, url, _headers, body):
+        if url == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows': [
+                {'title': '22 Dow St, Portland, ME 04102',
+                 'url': 'https://www.realtor.com/realestateandhomes-detail/22-Dow-St_Portland_ME_04102'},
+                {'title': '22 Dow St, Portland, ME 04102',
+                 'url': 'https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1'},
+            ]}
+        scraped.append(body['url'])
+        if 'realtor.com' in body['url']:
+            return {'data': {'metadata': {}}}
+        return {'data': {'metadata': {'og:image': 'https://img.example/home.jpg'}}}
+
+    monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
+    monkeypatch.setattr(photo, '_download_public_image', lambda url: ('image/jpeg', JPEG))
+    monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (900, 600))
+    data = asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test'))
+    assert data['sourceUrl'].startswith('https://www.redfin.com/')
+    assert len(scraped) == 2
 
 
 def test_crawl4ai_photo_rejects_small_or_portrait_download(monkeypatch):

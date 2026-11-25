@@ -43,6 +43,7 @@ TRUSTED_LISTING_DOMAINS = {
     'redfin.com': 'Redfin',
     'realtor.com': 'Realtor.com',
 }
+PHOTO_PROVIDER_PRIORITY = {'Realtor.com': 0, 'Redfin': 1, 'Zillow': 2}
 PER_MINUTE = 10
 PER_HOUR = 50
 MAX_CLIENTS = 4096
@@ -128,12 +129,13 @@ def trusted_provider(url):
     return None
 
 
-def select_crawl4ai_listing_page(data, address):
-    """Choose only an exact-address page from a known listing source."""
+def crawl4ai_listing_pages(data, address):
+    """Return exact-address pages from known listing sources in fallback order."""
     street, city, state, zip_code = address_identity(address)
     if not street or not city or (not state and not zip_code):
-        return None
+        return []
     entered_has_unit = bool(re.search(r'\b(?:apt|apartment|unit|suite)\b|#\s*\w+', street))
+    matches = []
     for candidate in data.get('rows', []) if isinstance(data, dict) else []:
         if not isinstance(candidate, dict):
             continue
@@ -149,8 +151,14 @@ def select_crawl4ai_listing_page(data, address):
             continue
         if not entered_has_unit and re.search(r'\b(?:apt|apartment|unit|suite)\s+\w+\b', text):
             continue
-        return {**candidate, 'provider': provider}
-    return None
+        matches.append({**candidate, 'provider': provider})
+    matches.sort(key=lambda candidate: PHOTO_PROVIDER_PRIORITY.get(candidate['provider'], 99))
+    return matches[:3]
+
+
+def select_crawl4ai_listing_page(data, address):
+    matches = crawl4ai_listing_pages(data, address)
+    return matches[0] if matches else None
 
 
 def listing_image_url(data):
@@ -285,35 +293,37 @@ async def crawl4ai_listing_photo(address, key=''):
         search = await _crawl4ai_json(client, CRAWL4AI_SEARCH_URL, headers, {
             'q': f'"{address}" exterior home', 'rich': False, 'deep': False,
         })
-        candidate = select_crawl4ai_listing_page(search, address)
-        if not candidate:
-            return None
-        page = await _crawl4ai_json(client, CRAWL4AI_SCRAPE_URL, headers, {
-            'url': candidate['url'], 'format': 'html', 'parse': ['metadata'], 'timeout': 8,
-        })
-    image_url = listing_image_url(page)
-    if not image_url:
-        return None
-    try:
-        downloaded = await asyncio.get_running_loop().run_in_executor(
-            _image_executor, _download_public_image, image_url)
-    except (HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
-        return None
-    if not downloaded:
-        return None
-    mime, image = downloaded
-    dimensions = image_dimensions(mime, image)
-    if not dimensions:
-        return None
-    width, height = dimensions
-    if width < 400 or height < 250 or width < height * 1.1:
-        return None
-    return {
-        'image': f'data:{mime};base64,' + base64.b64encode(image).decode('ascii'),
-        'attribution': f"Exterior photo · {candidate['provider']}",
-        'date': None,
-        'sourceUrl': candidate['url'],
-    }
+        for candidate in crawl4ai_listing_pages(search, address):
+            try:
+                page = await _crawl4ai_json(client, CRAWL4AI_SCRAPE_URL, headers, {
+                    'url': candidate['url'], 'format': 'html', 'parse': ['metadata'], 'timeout': 8,
+                })
+            except (httpx.HTTPError, ValueError, json.JSONDecodeError):
+                continue
+            image_url = listing_image_url(page)
+            if not image_url:
+                continue
+            try:
+                downloaded = await asyncio.get_running_loop().run_in_executor(
+                    _image_executor, _download_public_image, image_url)
+            except (HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
+                continue
+            if not downloaded:
+                continue
+            mime, image = downloaded
+            dimensions = image_dimensions(mime, image)
+            if not dimensions:
+                continue
+            width, height = dimensions
+            if width < 400 or height < 250 or width < height * 1.1:
+                continue
+            return {
+                'image': f'data:{mime};base64,' + base64.b64encode(image).decode('ascii'),
+                'attribution': f"Exterior photo · {candidate['provider']}",
+                'date': None,
+                'sourceUrl': candidate['url'],
+            }
+    return None
 
 
 @router.get('/api/property-photo')
@@ -326,6 +336,8 @@ async def property_photo(request: Request, address: str = ''):
         return result('unavailable', code=422)
     settings = get_settings()
     key = getattr(settings, 'google_street_view_api_key', '')
+    crawl4ai_key = getattr(settings, 'crawl4ai_api_key', '')
+    provider_configured = bool(key or crawl4ai_key)
     # Use ASGI's client identity; never trust caller-supplied forwarding headers here.
     retry = reserve_request(request.client.host if request.client else 'unknown')
     if retry:
@@ -350,11 +362,11 @@ async def property_photo(request: Request, address: str = ''):
                                 date = None
                             return result('available', image='data:image/jpeg;base64,' + base64.b64encode(image).decode('ascii'),
                                           attribution=attribution, date=date)
-            fallback = await crawl4ai_listing_photo(address, getattr(settings, 'crawl4ai_api_key', ''))
+            fallback = await crawl4ai_listing_photo(address, crawl4ai_key)
             if fallback:
                 return result('available', image=fallback['image'], attribution=fallback['attribution'],
                               date=fallback.get('date'), source_url=fallback.get('sourceUrl'))
-            return result('not_configured' if not key else 'unavailable')
+            return result('unavailable' if provider_configured else 'not_configured')
     except (httpx.HTTPError, http.client.HTTPException, TimeoutError, ValueError, json.JSONDecodeError):
         # Provider URLs/errors may contain the key; neither log nor return them.
-        return result('not_configured' if not key else 'unavailable')
+        return result('unavailable' if provider_configured else 'not_configured')

@@ -15,12 +15,14 @@ EXACT_RESULTS = {
         {
             "url": "https://www.zillow.com/homedetails/22-Dow-St-Portland-ME-04102/1_zpid/",
             "title": "22 Dow St, Portland, ME 04102 | Zillow",
-            "snippet": "This 3,140 square foot multi family home has 6 bedrooms and 3 bathrooms. Built in 1910.",
+            "snippet": "Off-market property page.",
+            "markdown": "22 Dow St, Portland, ME 04102. Property facts: 3,140 square feet, 6 bedrooms, 3 bathrooms, built in 1910. Multi-family home.",
         },
         {
             "url": "https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1",
             "title": "22 Dow St, Portland, ME 04102 | Redfin",
-            "snippet": "22 Dow St is a 3,140 sq. ft. multi-family home with 6 beds and 3 baths.",
+            "snippet": "Property overview for the entered address.",
+            "markdown": "22 Dow St, Portland, ME 04102. 3,140 sq. ft. multi-family home with 6 beds and 3 baths.",
         },
         {
             "url": "https://www.realtor.com/realestateandhomes-detail/24-Dow-St_Portland_ME_04102",
@@ -78,6 +80,76 @@ def test_rejects_house_number_prefix_collision_and_untrusted_dot_us():
     assert discovery.property_from_search_results("22 Dow St, Portland, ME 04102", results) is None
 
 
+def test_deep_page_text_cannot_make_a_nearby_listing_exact():
+    results = {"rows": [{
+        "url": "https://www.redfin.com/ME/Portland/24-Dow-St-04102/home/3",
+        "title": "24 Dow St, Portland, ME 04102",
+        "snippet": "A nearby property page.",
+        "markdown": "Homes nearby include 22 Dow St, Portland, ME 04102. Built in 1900 with 4 beds.",
+    }]}
+    assert discovery.property_from_search_results("22 Dow St, Portland, ME 04102", results) is None
+
+
+def test_deep_facts_are_scoped_to_entered_address_not_nearby_cards():
+    results = {"rows": [{
+        "url": "https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1",
+        "title": "22 Dow St, Portland, ME 04102",
+        "snippet": "Property overview.",
+        "markdown": (
+            "Nearby home: 24 Dow St, Portland, ME 04102. Built in 1900 with 4 beds. "
+            "22 Dow St, Portland, ME 04102. Built in 1910 with 6 beds, 3 baths and 3,140 square feet."
+        ),
+    }]}
+    home = discovery.property_from_search_results("22 Dow St, Portland, ME 04102", results)
+    assert home.yearBuilt == "1910"
+    assert home.bedrooms == "6"
+    assert home.bathrooms == "3"
+    assert home.squareFeet == "3140"
+
+
+def test_deep_facts_stop_before_a_following_nearby_property_card():
+    results = {"rows": [{
+        "url": "https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1",
+        "title": "22 Dow St, Portland, ME 04102",
+        "snippet": "Property overview.",
+        "markdown": (
+            "22 Dow St, Portland, ME 04102. Nearby home: 24 Market Sq, Portland, ME 04102. "
+            "Built in 1900 with 4 beds and 2 baths. More details for 22 Dow St: built in 1910 with 6 beds."
+        ),
+    }]}
+    home = discovery.property_from_search_results("22 Dow St, Portland, ME 04102", results)
+    assert home is None
+
+
+def test_deep_fact_boundary_recognizes_numeric_street_names():
+    results = {"rows": [{
+        "url": "https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1",
+        "title": "22 Dow St, Portland, ME 04102",
+        "snippet": "Property overview.",
+        "markdown": (
+            "22 Dow St, Portland, ME 04102. Nearby home: 24 1st Ave, Portland, ME 04102. "
+            "Built in 1900 with 4 beds and 2 baths."
+        ),
+    }]}
+    assert discovery.property_from_search_results("22 Dow St, Portland, ME 04102", results) is None
+
+
+def test_square_footage_is_not_mistaken_for_a_nearby_square_address():
+    results = {"rows": [{
+        "url": "https://www.redfin.com/ME/Portland/22-Dow-St-04102/home/1",
+        "title": "22 Dow St, Portland, ME 04102",
+        "snippet": "Property overview.",
+        "markdown": (
+            "22 Dow St, Portland, ME 04102. This 3,140 finished square foot home in Portland, ME "
+            "was built in 1910 and has 6 beds."
+        ),
+    }]}
+    home = discovery.property_from_search_results("22 Dow St, Portland, ME 04102", results)
+    assert home.squareFeet == "3140"
+    assert home.yearBuilt == "1910"
+    assert home.bedrooms == "6"
+
+
 def test_wayback_accepts_only_snapshots_of_trusted_publishers():
     results = {"rows": [{
         "url": "https://web.archive.org/web/20200101/https://attacker.example/22-dow-st",
@@ -122,7 +194,7 @@ def test_crawl4ai_search_uses_exact_address_and_cloud_contract(monkeypatch):
             assert json == {
                 "q": '"22 Dow St, Portland, ME 04102" property',
                 "rich": False,
-                "deep": False,
+                "deep": True,
             }
             return Stream()
 

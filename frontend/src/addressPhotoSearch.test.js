@@ -7,11 +7,17 @@ test("photo search uses the geocoder's complete normalized address", async () =>
   const calls = [];
   const result = await normalizeAddressForSearch("22 dow Street, portland, main", async address => {
     calls.push(address);
-    return { normalizedAddress: "22 Dow Street, Portland, Maine 04102, United States" };
+    return {
+      normalizedAddress: "22 Dow Street, Portland, Maine 04102, United States",
+      address: "22 Dow Street",
+      city: "Portland",
+      state: "ME",
+      zip: "04102",
+    };
   });
 
   assert.deepEqual(calls, ["22 dow Street, portland, main"]);
-  assert.equal(result, "22 Dow Street, Portland, Maine 04102, United States");
+  assert.equal(result, "22 Dow Street, Portland, ME 04102");
 });
 
 test("the address field provides an immediate Search action with Enter-key form submission", () => {

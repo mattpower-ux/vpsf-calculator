@@ -27,6 +27,15 @@ test('zero values are retained and unknown fallback evidence does not replace kn
   assert.equal(home.bedrooms,0); assert.equal(home.provenance.bedrooms.source,'RentCast');
 });
 
+test('an admin-verified correction overrides an older provider value', () => {
+  const primary={hvac:'Gas Furnace',provenance:{hvac:{origin:'imported',source:'RentCast'}}};
+  const fallback={hvac:'Heat Pump (Electric) + Boiler',provenance:{hvac:{origin:'imported',source:'Public records: VPSF admin-verified property correction'}}};
+  const home=mergeProviderFields(primary,fallback);
+  assert.equal(home.hvac,'Heat Pump (Electric) + Boiler');
+  assert.equal(home.provenance.hvac.origin,'imported');
+  assert.equal(prepareAnalysisHome(home,'broad').hvac,'Heat Pump (Electric) + Boiler');
+});
+
 test('cached match is unusable immediately after changing the address', () => {
   const property={address:'12 First Street',roof:'Metal'};
   const cached={lookupAddress:'12 First Street',property};

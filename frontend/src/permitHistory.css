@@ -10,3 +10,13 @@
 .permitHistory dt { min-width: 80px; color: var(--muted); }
 .permitHistory dd { margin: 0; }
 .permitHistory .permitCoverage { color: var(--muted); font-size: 12px; }
+.permitHistory .permitImports, .permitHistory .permitConfirmations { border-top: 1px solid var(--line); padding: 12px 0; }
+.permitHistory .permitImports h4, .permitHistory .permitConfirmations h4 { color: var(--teal); }
+.permitHistory .permitImports dl { margin: 8px 0 0; }
+.permitHistory .permitImports dl > div { justify-content: space-between; gap: 16px; }
+.permitHistory .permitImports dt { min-width: 0; }
+.permitHistory .permitImports dd { font-weight: 700; text-align: right; }
+.permitHistory .permitConfirmations ul { margin: 8px 0 0; padding-left: 20px; }
+.permitHistory .permitConfirmations li { margin: 0 0 9px; }
+.permitHistory .permitConfirmations li span { display: block; color: var(--muted); }
+.permitHistory .permitConfirmations button { margin-top: 6px; border: 0; padding: 0; background: transparent; color: var(--teal); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }

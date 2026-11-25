@@ -65,6 +65,7 @@ class PropertyInput(BaseModel):
     squareFeet: str = ""
     yearBuilt: str = ""
     homeType: str = "Single Family Detached"
+    unitCount: str = "Unknown"
     stories: str = "1"
     bedrooms: str = ""
     bathrooms: str = ""

@@ -11,7 +11,7 @@ export const STEPS = [
   ['windows', 'Windows', 'Capture windows and readable labels. Glazing performance needs a readable product label or record, not appearance.'],
 ];
 export const OPTIONS = {
-  hvac: ['Heat Pump (Electric)', 'Geothermal', 'Gas Furnace', 'Electric Resistance', 'Boiler', 'Combination Boiler', 'Hydronic Heating'],
+  hvac: ['Heat Pump (Electric)', 'Heat Pump (Electric) + Boiler', 'Geothermal', 'Gas Furnace', 'Electric Resistance', 'Boiler', 'Combination Boiler', 'Hydronic Heating'],
   waterHeater: ['Heat Pump Water Heater', 'Tank Electric', 'Tank Gas', 'Tankless Gas', 'Solar Thermal', 'Combination Boiler'],
   roof: ['Architectural Shingle', 'Metal Roof', 'Tile Roof'],
   siding: ['Wood clapboard', 'Wood siding', 'Cedar shingles', 'Engineered wood', 'Vinyl', 'Fiber cement', 'Brick', 'Stucco', 'Metal', 'Other'],

@@ -85,11 +85,183 @@ export function permitCoverageSummary(evidence) {
   return `${parts.join(' · ')}.`;
 }
 
+const finalPermit = permit => permit?.status === 'FINAL' || permit?.status === 'INTERCONNECTED'
+  || (Boolean(permit?.dateCompleted) && !['EXPIRED','CANCELLED','REVOKED'].includes(permit?.status));
+const permitCopy = permit => `${permit?.category || ''} ${permit?.description || ''}`.toLowerCase();
+const permitYear = permit => String(permit?.dateCompleted || permit?.dateIssued || permit?.dateFiled || '').slice(0,4);
+const permitLabel = permit => permit?.permitNumber || permit?.id || 'permit';
+const installVerb=/\b(?:install(?:ation|ed|ing)?|replac(?:e|ed|ement|ing)|upgrade(?:d|s|ing)?|new|add(?:ed|ing)?|interconnect(?:ed|ion)?)\b/;
+const ambiguousVerb=/\b(?:remove|removal|relocat(?:e|ed|ion|ing)|mov(?:e|ed|ing)|repair(?:ed|s|ing)?|service(?:d|s|ing)?|maintenance|inspect(?:ed|ion)?|disconnect(?:ed|ion)?|tak(?:e|ing) down)\b/;
+const permitClauses = permit => String(permit?.description || '').toLowerCase().split(/[.;\n]+/).map(value=>value.trim()).filter(Boolean);
+const equipmentClause = (permit,equipment) => permitClauses(permit).find(clause=>equipment.test(clause)) || '';
+const installationActionFor = item => Boolean(item.clause && installVerb.test(item.clause) && !ambiguousVerb.test(item.clause));
+
+function candidatesForPermit(permit) {
+  const copy=permitCopy(permit), year=permitYear(permit), candidates=[];
+  const add=(field,value,label,equipment,clause)=>candidates.push({field,value,label,permit,equipment,clause});
+  const solar=/\b(?:solar|photovoltaic|pv)\b/, heatPump=/\b(?:heat[ -]?pumps?|mini[ -]?splits?)\b/;
+  const furnace=/\b(?:gas furnace|natural gas furnace)\b/, boiler=/\bboilers?\b/, waterHeater=/\bwater heater\b/;
+  const battery=/\b(?:battery|energy storage)\b/, roof=/\broofs?|shingles?\b/;
+  const solarClause=equipmentClause(permit,solar), heatPumpClause=equipmentClause(permit,heatPump);
+  const furnaceClause=equipmentClause(permit,furnace), boilerClause=equipmentClause(permit,boiler);
+  const waterHeaterClause=equipmentClause(permit,waterHeater), batteryClause=equipmentClause(permit,battery), roofClause=equipmentClause(permit,roof);
+  if (solar.test(copy)) add('solar',/\bbatter(?:y|ies)\b|energy storage/.test(solarClause) ? 'Solar PV + Battery' : 'Solar PV','Solar / battery',solar,solarClause);
+  if (/\b(?:heat[ -]?pumps?|mini[ -]?splits?)\b/.test(copy)) {
+    add('hvac','Heat Pump (Electric)','Heating / cooling',heatPump,heatPumpClause);
+    if (/^\d{4}$/.test(year)) add('hvacAge',`Installed ${year} (permit)`,'HVAC age',heatPump,heatPumpClause);
+  }
+  if (/\b(?:gas furnace|natural gas furnace)\b/.test(copy)) {
+    add('hvac','Gas Furnace','Heating / cooling',furnace,furnaceClause);
+    if (/^\d{4}$/.test(year)) add('hvacAge',`Installed ${year} (permit)`,'HVAC age',furnace,furnaceClause);
+  }
+  if (/\bboilers?\b/.test(copy)) {
+    add('hvac',/\bcondensing\b/.test(boilerClause) ? 'Condensing Boiler (AFUE 90%+)' : 'Boiler','Heating / cooling',boiler,boilerClause);
+    if (/^\d{4}$/.test(year)) add('hvacAge',`Installed ${year} (permit)`,'HVAC age',boiler,boilerClause);
+  }
+  if (/\bwater heater\b/.test(copy)) {
+    const value=/heat[ -]?pump/.test(waterHeaterClause) ? 'Heat Pump Water Heater' : /tankless.*gas|gas.*tankless/.test(waterHeaterClause) ? 'Tankless Gas' : /electric/.test(waterHeaterClause) ? 'Tank Electric' : /gas/.test(waterHeaterClause) ? 'Tank Gas' : null;
+    if (value) add('waterHeater',value,'Water heating',waterHeater,waterHeaterClause);
+    if (value && /^\d{4}$/.test(year)) add('waterHeaterAge',`Installed ${year} (permit)`,'Water-heater age',waterHeater,waterHeaterClause);
+  }
+  if (battery.test(copy)) add('backup','Battery Backup','Backup power',battery,batteryClause);
+  if (/\b(?:roof replacement|replace(?:ment|d)?[^.]{0,30}roof|new roof)\b/.test(copy)) {
+    const material=/\bmetal\b/.test(roofClause) ? 'Metal' : /\b(?:asphalt|shingle)\b/.test(roofClause) ? 'Asphalt shingles' : /\b(?:clay|concrete) tile\b/.test(roofClause) ? 'Tile Roof' : null;
+    if (material) add('roof',material,'Roof material',roof,roofClause);
+    if (/^\d{4}$/.test(year)) add('roofAge',`Installed ${year} (permit)`,'Roof age',roof,roofClause);
+  }
+  return candidates;
+}
+
+/**
+ * Convert narrowly stated, completed permit work into source-labelled form facts.
+ * Issued-only work and conflicting completed records remain confirmation prompts.
+ */
+export function permitFactsFromEvidence(evidence) {
+  if (!object(evidence) || !Array.isArray(evidence.permits)) return {patch:{},provenance:{},confirmations:[]};
+  const completed=[], pending=[];
+  for (const permit of evidence.permits) {
+    const candidates=candidatesForPermit(permit);
+    const installed=[], review=[];
+    for (const candidate of candidates) (finalPermit(permit) && installationActionFor(candidate) ? installed : review).push(candidate);
+    const installedHvac=installed.filter(item=>item.field === 'hvac');
+    if (installedHvac.some(item=>item.value === 'Heat Pump (Electric)') && installedHvac.some(item=>/Boiler/.test(item.value))) {
+      const first=installedHvac[0];
+      completed.push(...installed.filter(item=>item.field !== 'hvac'),{...first,value:'Heat Pump (Electric) + Boiler'});
+    } else completed.push(...installed);
+    pending.push(...review);
+  }
+  const patch={}, provenance={}, confirmations=[];
+  const fields=new Set(completed.map(item=>item.field));
+  for (const field of fields) {
+    const rows=completed.filter(item=>item.field === field);
+    const values=[...new Set(rows.map(item=>item.value))];
+    if (values.length !== 1) {
+      for (const item of rows) confirmations.push({field:item.field,value:item.value,
+        summary:item.permit.description || `${item.label}: ${item.value}`,
+        reason:'Conflicting completed permits need homeowner confirmation.',permitNumber:permitLabel(item.permit)});
+      continue;
+    }
+    const selected=[...rows].sort((a,b)=>String(b.permit.dateCompleted || b.permit.dateIssued || '').localeCompare(String(a.permit.dateCompleted || a.permit.dateIssued || '')))[0];
+    patch[field]=selected.value;
+    provenance[field]={origin:'imported',source:`Permit records: ${selected.permit.status} ${permitLabel(selected.permit)}`,date:selected.permit.dateCompleted || selected.permit.dateIssued || evidence.fetchedAt};
+  }
+  const pendingPermits=new Map();
+  for (const item of pending) {
+    if (patch[item.field] === item.value) continue;
+    const key=permitLabel(item.permit);
+    if (!pendingPermits.has(key)) pendingPermits.set(key,item);
+  }
+  for (const item of pendingPermits.values()) {
+    confirmations.push({field:item.field,value:item.value,summary:item.permit.description || `${item.label}: ${item.value}`,
+      reason:`${String(item.permit.status || 'Permit').replaceAll('_',' ')} permit; confirm the work was completed and remains installed.`,permitNumber:permitLabel(item.permit)});
+  }
+  return {patch,provenance,confirmations};
+}
+
+function applyPermitFacts(home, evidence) {
+  const facts=permitFactsFromEvidence(evidence), next={...home,permitEvidence:evidence,provenance:{...home.provenance}};
+  const rejected=new Set(), dependencies={hvacAge:'hvac',waterHeaterAge:'waterHeater'};
+  for (const [field,value] of Object.entries(facts.patch)) {
+    if (dependencies[field] && rejected.has(dependencies[field])) continue;
+    const origin=next.provenance?.[field]?.origin;
+    if (origin && origin !== 'unknown' && !String(next.provenance[field].source || '').startsWith('Permit records:')) {
+      rejected.add(field);
+      continue;
+    }
+    next[field]=value;
+    next.provenance[field]=facts.provenance[field];
+  }
+  return next;
+}
+
+export function appliedPermitFacts(home, evidence) {
+  const facts=permitFactsFromEvidence(evidence), applied={};
+  for (const [field,value] of Object.entries(facts.patch)) {
+    const provenance=home?.provenance?.[field];
+    if (home?.[field] === value && provenance?.origin === 'imported'
+        && String(provenance.source || '').startsWith('Permit records:')) applied[field]=value;
+  }
+  return applied;
+}
+
+export function confirmedPermitNumbers(home) {
+  const raw=home?.extraInputs?.permitConfirmations;
+  if (Array.isArray(raw)) return new Set(raw.filter(value=>typeof value === 'string').slice(-100));
+  if (typeof raw !== 'string' || raw.length > 500) return new Set();
+  try {
+    const values=JSON.parse(raw);
+    return new Set(Array.isArray(values) ? values.filter(value=>typeof value === 'string').slice(-100) : []);
+  } catch { return new Set(); }
+}
+
+export function confirmPermitWork(home, permitNumber) {
+  const evidence=permitEvidenceForHome(home);
+  const permit=evidence?.permits.find(row=>permitLabel(row) === permitNumber);
+  if (!permit) return home;
+  const candidates=candidatesForPermit(permit);
+  if (!candidates.length) return home;
+  const next={...home,provenance:{...home.provenance},extraInputs:{...home.extraInputs}};
+  const copy=permitCopy(permit), year=permitYear(permit);
+  const rejected=new Set(), dependencies={hvacAge:'hvac',waterHeaterAge:'waterHeater'};
+  for (const candidate of candidates) {
+    if (dependencies[candidate.field] && rejected.has(dependencies[candidate.field])) continue;
+    let value=candidate.value;
+    const current=String(next[candidate.field] || '');
+    const origin=next.provenance?.[candidate.field]?.origin;
+    const stronger=origin && origin !== 'unknown' && !String(next.provenance[candidate.field]?.source || '').startsWith('Permit records:');
+    if (candidate.field === 'hvac') {
+      const currentHeatPump=/heat pump/i.test(current), currentBoiler=/boiler/i.test(current);
+      const permitHeatPump=/heat[ -]?pumps?/i.test(copy), permitBoiler=/boilers?/i.test(copy);
+      if ((currentHeatPump && permitBoiler) || (currentBoiler && permitHeatPump)) value='Heat Pump (Electric) + Boiler';
+      else if (stronger && current && current.toLowerCase() !== value.toLowerCase()) {
+        rejected.add(candidate.field);
+        continue;
+      }
+    }
+    if (candidate.field === 'hvacAge' && /heat pump/i.test(String(next.hvac || '')) && /boilers?/i.test(copy) && /^\d{4}$/.test(year)) {
+      const existingYear=String(next.hvacAge || '').match(/(?:19|20)\d{2}/)?.[0];
+      value=`Heat pumps: ${existingYear || 'year unknown'}; boiler: ${year} (permit + homeowner confirmation)`;
+    }
+    if (candidate.field === 'solar' && /solar pv \+ battery/i.test(current) && value === 'Solar PV') continue;
+    if (!['hvac','hvacAge','solar'].includes(candidate.field) && stronger && current && current.toLowerCase() !== value.toLowerCase()) {
+      rejected.add(candidate.field);
+      continue;
+    }
+    if (stronger && current.toLowerCase() === value.toLowerCase()) continue;
+    next[candidate.field]=value;
+    next.provenance[candidate.field]={origin:'user-confirmed',source:`Homeowner confirmation of permit ${permitLabel(permit)}`,date:new Date().toISOString()};
+  }
+  const confirmed=confirmedPermitNumbers(next);
+  confirmed.add(permitLabel(permit));
+  next.extraInputs.permitConfirmations=JSON.stringify([...confirmed].slice(-100));
+  return next;
+}
+
 export function attachPermitEvidence(current, requestedHome, evidence) {
   if (!permitRequest(current) || !sameProperty(current,requestedHome)
       || text(current.city,100).toLowerCase() !== text(requestedHome.city,100).toLowerCase()) return current;
   const clean=permitEvidenceForHome({...current,permitEvidence:evidence});
-  return clean ? {...current,permitEvidence:clean} : current;
+  return clean ? applyPermitFacts(current,clean) : current;
 }
 
 export async function fetchPermitEvidence(home, lookup) {
@@ -118,5 +290,6 @@ export function mergeArchivedPermitEvidence(current, archived, requestedHome) {
   if (identity(current) !== identity(requestedHome)) return current;
   const evidence=permitEvidenceForHome(current);
   if (!evidence) return archived;
-  return {...archived,permitEvidence:permitEvidenceForHome({...archived,permitEvidence:evidence})};
+  const clean=permitEvidenceForHome({...archived,permitEvidence:evidence});
+  return clean ? applyPermitFacts(archived,clean) : archived;
 }

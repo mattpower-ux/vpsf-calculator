@@ -1,0 +1,11 @@
+{
+  "22 dow street|portland|ME|04102": {
+    "source": "VPSF admin-verified property correction, 2026-11-25",
+    "facts": {
+      "homeType": "Multifamily",
+      "unitCount": "3",
+      "hvac": "Heat Pump (Electric) + Boiler",
+      "hvacAge": "Heat pumps: 2017; shared Viessmann boiler: 2018"
+    }
+  }
+}

@@ -20,7 +20,7 @@ export const analysisLabel = value => analysisLevelLabel(value);
 export const analysisRoute = routeAfterLookup;
 
 const LOCATION_FIELDS = ['address', 'city', 'state', 'zip'];
-const FACT_FIELDS = `squareFeet yearBuilt homeType stories bedrooms bathrooms garage lotSize climateZone occupancy
+const FACT_FIELDS = `squareFeet yearBuilt homeType unitCount stories bedrooms bathrooms garage lotSize climateZone occupancy
   hvac hvacAge heatingDistribution heatingControls hydronicSource waterHeater waterHeaterAge roof roofAge roofFireRating siding
   windows insulation solar hers evReady fortified flood wildfireMitigation temperatureProtection windProtection
   moisture backup healthCert ventilation materials iaq daylighting carbonStrategy carbonConcrete structure

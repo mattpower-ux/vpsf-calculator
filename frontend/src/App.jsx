@@ -5,7 +5,7 @@ import Certifications, { CertificationFindings } from './Certifications.jsx';
 import { fixtureFields, fixtureOptions, presentationInput } from './certifications.js';
 import { useCertificationCatalog, useCertificationPreview } from './useCertificationPreview.js';
 import PermitHistory from './PermitHistory.jsx';
-import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome } from './permitEvidence.js';
+import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome, confirmPermitWork } from './permitEvidence.js';
 import { lookupPermitHistory } from './api/client.js';
 import { ModerateReview, InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
@@ -304,6 +304,7 @@ const defaultHome = {
   squareFeet: "2450",
   yearBuilt: "2021",
   homeType: "Single Family Detached",
+  unitCount: "1",
   stories: "2",
   bedrooms: "4",
   bathrooms: "3.5",
@@ -357,7 +358,7 @@ const selectOptions = {
   homeType: ["Single Family Detached", "Townhome", "Condo", "Multifamily", "Manufactured Home"],
   stories: ["1", "1.5", "2", "3+"],
   occupancy: ["Owner Occupied", "Rental", "Builder Spec", "For Sale"],
-  hvac: ["Heat Pump (Electric)", "Geothermal", "Gas Furnace", "Electric Resistance", "Boiler", "Combination Boiler", "Condensing Boiler (AFUE 90%+)", "Condensing Combination Boiler (AFUE 90%+)", "Hydronic Heating", "Unknown"],
+  hvac: ["Heat Pump (Electric)", "Heat Pump (Electric) + Boiler", "Geothermal", "Gas Furnace", "Electric Resistance", "Boiler", "Combination Boiler", "Condensing Boiler (AFUE 90%+)", "Condensing Combination Boiler (AFUE 90%+)", "Hydronic Heating", "Unknown"],
   waterHeater: ["Heat Pump Water Heater", "Tank Electric", "Tank Gas", "Tankless Gas", "Solar Thermal", "Combination Boiler", "Condensing Combination Boiler (AFUE 90%+)", "Unknown"],
   solar: ["None", "Solar PV", "Solar PV + Battery"],
   evReady: ["None", "EV Ready", "EV Charger Installed"],
@@ -1053,13 +1054,19 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         try {
           const geocode = await geocodeProperty(formatSavedAddress(savedResult.property));
           if (!isCurrent()) return;
-          const risk = await enrichPropertyRisk({
-            state: geocode.state,
-            zip: geocode.zip,
-            county: geocode.county,
-            latitude: savedHome.latitude ?? geocode.latitude,
-            longitude: savedHome.longitude ?? geocode.longitude
-          });
+          const [riskResult,discoveryResult]=await Promise.allSettled([
+            enrichPropertyRisk({
+              state: geocode.state,
+              zip: geocode.zip,
+              county: geocode.county,
+              latitude: savedHome.latitude ?? geocode.latitude,
+              longitude: savedHome.longitude ?? geocode.longitude
+            }),
+            discoverPublicProperty(geocode.normalizedAddress || formatSavedAddress(savedResult.property)),
+          ]);
+          if (!isCurrent()) return;
+          const risk=riskResult.status === 'fulfilled' ? riskResult.value : {};
+          if (discoveryResult.status === 'fulfilled') savedHome=mergePropertyFacts(savedHome,discoveryResult.value);
           savedHome = {
             ...savedHome,
             climateZone: risk.climateZone !== "Unknown" ? risk.climateZone : savedHome.climateZone,
@@ -1304,14 +1311,14 @@ function DemoAnalyzingScreen({ setScreen, autoAdvance = true }) {
   );
 }
 
-function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect, certificationPreview, certificationCatalog }) {
+function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect, onConfirmPermit, certificationPreview, certificationCatalog }) {
   return (
     <div className="screen formScreen">
       <ProgressDots step={1} />
       <h2>Add Property Details</h2>
       <p className="subhead">Review the details we found and fill in what you know.</p>
       {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
-      <PermitHistory home={home}/>
+      <PermitHistory home={home} onConfirmPermit={onConfirmPermit}/>
       {Array.isArray(home.photoReview) && <section className="photoFindings formSection">
         <h3>Review photo findings</h3>
         <p className="photoReviewIntro">Check the suggested details below and correct anything that does not match your home. Then complete the remaining property details.</p>
@@ -1339,6 +1346,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
         <h3>Property Information</h3>
         <Field wide label="Property Address" value={home.address} onChange={(v) => update("address", v)} />
         <Field label="Home Type" value={home.homeType} onChange={(v) => update("homeType", v)} options={selectOptions.homeType} />
+        {(/multi|duplex|triplex|fourplex/i.test(home.homeType || '')) && <Field label="Number of Units" value={home.unitCount} onChange={(v) => update("unitCount", v)} />}
         <Field label="Year Built" value={home.yearBuilt} onChange={(v) => update("yearBuilt", v)} />
         <Field label="Square Footage" value={home.squareFeet} onChange={(v) => update("squareFeet", v)} />
         <Field label="Stories" value={home.stories} onChange={(v) => update("stories", v)} options={selectOptions.stories} />
@@ -3794,7 +3802,7 @@ export default function App() {
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
         {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
         {screen === 0 && <StartScreen lookupGeneration={lookupGeneration} onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={presentationAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
-        {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
+        {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onConfirmPermit={permitNumber=>setHome(current=>confirmPermitWork(current,permitNumber))} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}
         {screen === 30 && <ModerateReview home={home} update={update} Field={Field} options={depthOptions} onReview={()=>setScreen(3)} onInclusive={()=>{setHome(current=>({...current,analysisLevel:"inclusive"}));setScreen(29);}}/>}

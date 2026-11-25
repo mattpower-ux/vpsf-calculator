@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { permitRequest, permitEvidenceForHome, attachPermitEvidence, fetchPermitEvidence, schedulePermitLookup, mergeArchivedPermitEvidence, permitCoverageSummary } from './permitEvidence.js';
+import { permitRequest, permitEvidenceForHome, attachPermitEvidence, fetchPermitEvidence, schedulePermitLookup, mergeArchivedPermitEvidence, permitCoverageSummary, permitFactsFromEvidence, confirmPermitWork, appliedPermitFacts, confirmedPermitNumbers } from './permitEvidence.js';
 import { prepareAnalysisHome } from './analysisLevels.js';
 import { saveAnalysisDraft, loadAnalysisDraft } from './analysisDraft.js';
 import { confirmedEdit } from './homeAdvice.js';
@@ -53,6 +53,143 @@ test('permits persist through each preparation level and drafts without becoming
   const store={setItem:(_,value)=>{raw=value;},getItem:()=>raw};
   saveAnalysisDraft(input,store);
   assert.equal(loadAnalysisDraft(store).home.permitEvidence.permits[0].description,'Roof work');
+});
+
+test('final permits prefill specific home facts while issued work only asks for confirmation', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp',permitNumber:'201700251',status:'FINAL',category:'HVAC',
+      description:'Installation of 3 Mitsubishi heat pumps',dateIssued:'2017-03-13',dateCompleted:'2017-04-12'},
+    {...evidence().permits[0],id:'pv',permitNumber:'201700130',status:'FINAL',category:'SOLAR',
+      description:'For the installation of 26 solar panels onto the roof of the building.',dateIssued:'2017-02-23',dateCompleted:'2017-04-12'},
+    {...evidence().permits[0],id:'boiler',permitNumber:'HVAC2018-00100',status:'ISSUED',category:'HVAC',
+      description:'Replacement of 2 Baxi boilers with 1 Viessmann',dateIssued:'2018-09-07',dateCompleted:null},
+  ],searchedRecords:3};
+  const facts=permitFactsFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.deepEqual(facts.patch,{hvac:'Heat Pump (Electric)',hvacAge:'Installed 2017 (permit)',solar:'Solar PV'});
+  assert.equal(facts.provenance.hvac.origin,'imported');
+  assert.match(facts.provenance.hvac.source,/Permit records.*201700251/);
+  assert.equal(facts.confirmations.length,1);
+  assert.match(facts.confirmations[0].summary,/Viessmann/i);
+
+  const enriched=attachPermitEvidence(home(),home(),history);
+  assert.equal(enriched.hvac,'Heat Pump (Electric)');
+  assert.equal(enriched.hvacAge,'Installed 2017 (permit)');
+  assert.equal(enriched.solar,'Solar PV');
+  assert.equal(enriched.provenance.solar.origin,'imported');
+});
+
+test('permit autofill never overwrites stronger facts and conflicts remain review prompts', () => {
+  const base={...home(),hvac:'Geothermal',provenance:{hvac:{origin:'user-confirmed',source:'Home details'}}};
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp',status:'FINAL',category:'HVAC',description:'Install heat pump',dateCompleted:'2022-06-01'},
+    {...evidence().permits[0],id:'gas',status:'FINAL',category:'HVAC',description:'Install gas furnace',dateCompleted:'2023-06-01'},
+  ],searchedRecords:2};
+  const enriched=attachPermitEvidence(base,base,history);
+  assert.equal(enriched.hvac,'Geothermal');
+  const facts=permitFactsFromEvidence(enriched.permitEvidence);
+  assert.equal(facts.patch.hvac,undefined);
+  assert.ok(facts.confirmations.some(item=>/conflicting completed permits/i.test(item.reason)));
+  assert.ok(facts.confirmations.every(item=>item.permitNumber));
+});
+
+test('removal repair and relocation permits never become installed features', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'move',permitNumber:'MOVE-1',status:'FINAL',category:'HVAC',description:'Moving an outdoor heat pump unit from the side to the back',dateCompleted:'2018-10-01'},
+    {...evidence().permits[0],id:'remove',permitNumber:'PV-REMOVE',status:'FINAL',category:'SOLAR',description:'Remove 26 roof mounted solar panels for roof repair',dateCompleted:'2024-10-01'},
+    {...evidence().permits[0],id:'service',permitNumber:'SERVICE-1',status:'FINAL',category:'HVAC',description:'Repair existing boiler controls',dateCompleted:'2023-01-01'},
+  ],searchedRecords:3};
+  const facts=permitFactsFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.deepEqual(facts.patch,{});
+  assert.equal(facts.confirmations.length,3);
+  assert.deepEqual(new Set(facts.confirmations.map(item=>item.permitNumber)),new Set(['MOVE-1','PV-REMOVE','SERVICE-1']));
+});
+
+test('an installation verb for unrelated work cannot substantiate existing equipment', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'light',permitNumber:'ELEC-1',status:'FINAL',category:'Electrical',
+      description:'Install new exterior light. Existing gas furnace noted in basement.',dateCompleted:'2025-02-01'},
+  ]};
+  const facts=permitFactsFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.deepEqual(facts.patch,{});
+  assert.equal(facts.confirmations[0].permitNumber,'ELEC-1');
+});
+
+test('equipment subtype is derived only from its own installation clause', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'solar',permitNumber:'PV-1',status:'FINAL',category:'SOLAR',
+      description:'Install solar panels. Existing battery system remains unchanged.',dateCompleted:'2025-02-01'},
+    {...evidence().permits[0],id:'water',permitNumber:'WH-1',status:'FINAL',category:'PLUMBING',
+      description:'Install gas water heater. Upgrade electric panel.',dateCompleted:'2025-02-01'},
+    {...evidence().permits[0],id:'roof',permitNumber:'ROOF-1',status:'FINAL',category:'ROOFING',
+      description:'Replace roof with asphalt shingles. Existing metal awning remains.',dateCompleted:'2025-02-01'},
+  ],searchedRecords:3};
+  const facts=permitFactsFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.equal(facts.patch.solar,'Solar PV');
+  assert.equal(facts.patch.waterHeater,'Tank Gas');
+  assert.equal(facts.patch.roof,'Asphalt shingles');
+});
+
+test('each HVAC clause is classified independently and dual installations combine', () => {
+  const mixed={...evidence(),permits:[
+    {...evidence().permits[0],id:'mixed',permitNumber:'HVAC-1',status:'FINAL',category:'HVAC',
+      description:'Install new gas furnace. Remove existing heat pump.',dateCompleted:'2025-02-01'},
+  ]};
+  const mixedFacts=permitFactsFromEvidence(permitEvidenceForHome({...home(),permitEvidence:mixed}));
+  assert.equal(mixedFacts.patch.hvac,'Gas Furnace');
+  assert.ok(mixedFacts.confirmations.some(item=>item.value === 'Heat Pump (Electric)'));
+
+  const dual={...evidence(),permits:[
+    {...evidence().permits[0],id:'dual',permitNumber:'HVAC-2',status:'FINAL',category:'HVAC',
+      description:'Install air-source heat pumps. Install a shared boiler.',dateCompleted:'2025-02-01'},
+  ]};
+  const dualFacts=permitFactsFromEvidence(permitEvidenceForHome({...home(),permitEvidence:dual}));
+  assert.equal(dualFacts.patch.hvac,'Heat Pump (Electric) + Boiler');
+  assert.equal(dualFacts.confirmations.length,0);
+});
+
+test('applied permit summary contains only values actually accepted into the home', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp',permitNumber:'HP-1',status:'FINAL',category:'HVAC',description:'Install heat pump',dateCompleted:'2022-06-01'},
+    {...evidence().permits[0],id:'pv',permitNumber:'PV-1',status:'FINAL',category:'SOLAR',description:'Install solar panels',dateCompleted:'2022-06-01'},
+  ],searchedRecords:2};
+  const base={...home(),hvac:'Geothermal',provenance:{hvac:{origin:'user-confirmed',source:'Home details'}}};
+  const enriched=attachPermitEvidence(base,base,history);
+  assert.deepEqual(appliedPermitFacts(enriched,enriched.permitEvidence),{solar:'Solar PV'});
+});
+
+test('confirming a second heating system preserves both systems for multifamily homes', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp',permitNumber:'HP-1',status:'FINAL',category:'HVAC',description:'Installation of 3 Mitsubishi heat pumps',dateCompleted:'2017-04-12'},
+    {...evidence().permits[0],id:'boiler',permitNumber:'B-1',status:'ISSUED',category:'HVAC',description:'Replacement of 2 Baxi boilers with 1 Viessmann',dateIssued:'2018-09-07'},
+  ],searchedRecords:2};
+  const imported=attachPermitEvidence({...home(),homeType:'Multifamily'},home(),history);
+  const confirmed=confirmPermitWork(imported,'B-1');
+  assert.equal(confirmed.hvac,'Heat Pump (Electric) + Boiler');
+  assert.match(confirmed.hvacAge,/Heat pumps: 2017.*boiler: 2018/i);
+  assert.equal(confirmed.provenance.hvac.origin,'user-confirmed');
+  assert.equal(confirmed.extraInputs.permitConfirmations,'["B-1"]');
+  let raw;
+  const store={setItem:(_,value)=>{raw=value;},getItem:()=>raw};
+  saveAnalysisDraft(confirmed,store);
+  assert.equal(loadAnalysisDraft(store).home.extraInputs.permitConfirmations,'["B-1"]');
+});
+
+test('confirmation never downgrades stronger compatible or conflicting evidence', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'pv',permitNumber:'PV-1',status:'ISSUED',category:'SOLAR',description:'Install solar panels',dateIssued:'2024-01-01'},
+    {...evidence().permits[0],id:'hp',permitNumber:'HP-1',status:'ISSUED',category:'HVAC',description:'Install heat pump',dateIssued:'2024-01-01'},
+  ],searchedRecords:2};
+  const base={...home(),solar:'Solar PV + Battery',hvac:'Geothermal',hvacAge:'Installed 2020',provenance:{
+    solar:{origin:'user-confirmed',source:'Home details'},hvac:{origin:'user-confirmed',source:'Home details'},hvacAge:{origin:'user-confirmed',source:'Home details'},
+  },permitEvidence:history};
+  const solar=confirmPermitWork(base,'PV-1');
+  assert.equal(solar.solar,'Solar PV + Battery');
+  assert.equal(solar.provenance.solar.source,'Home details');
+  const hvac=confirmPermitWork(solar,'HP-1');
+  assert.equal(hvac.hvac,'Geothermal');
+  assert.equal(hvac.hvacAge,'Installed 2020');
+  assert.equal(hvac.provenance.hvac.source,'Home details');
+  assert.deepEqual([...confirmedPermitNumbers(hvac)],['PV-1','HP-1']);
 });
 
 test('changed identity, units, and demo never retain permits or late responses', () => {
@@ -155,6 +292,15 @@ test('fast cached permits survive a slow archive response and stale archives can
   assert.equal(mergeArchivedPermitEvidence(current,archived,requested).permitEvidence.permits[0].id,'p1');
   const edited={...current,address:'999 Other Street',permitEvidence:null};
   assert.equal(mergeArchivedPermitEvidence(edited,archived,requested),edited);
+});
+
+test('completed permit facts survive a slower archive merge', () => {
+  const finalHistory={...evidence(),permits:[{...evidence().permits[0],id:'pv',permitNumber:'PV-1',status:'FINAL',category:'SOLAR',description:'Install solar panels',dateCompleted:'2024-05-01'}]};
+  const requested=home(), current=attachPermitEvidence(requested,requested,finalHistory);
+  const archived=prepareAnalysisHome(requested,'inclusive');
+  const merged=mergeArchivedPermitEvidence(current,archived,requested);
+  assert.equal(merged.solar,'Solar PV');
+  assert.equal(merged.provenance.solar.origin,'imported');
 });
 
 test('manual fallback and completed corrections query after debounce; cancelled callbacks never apply', async () => {

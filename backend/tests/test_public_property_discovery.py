@@ -45,12 +45,28 @@ def test_extracts_only_exact_address_facts_with_field_provenance():
     assert home.yearBuilt == "1910"
     assert home.bedrooms == "6"
     assert home.bathrooms == "3"
-    assert home.homeType == "Multi-Family"
+    assert home.homeType == "Multifamily"
+    assert home.unitCount == "3"
+    assert home.hvac == "Heat Pump (Electric) + Boiler"
+    assert home.provenance["hvac"].origin == "imported"
+    assert home.provenance["hvac"].source.startswith("Public records:")
     assert home.provenance["squareFeet"].origin == "imported"
     assert "Zillow" in home.provenance["squareFeet"].source
     assert "Redfin" in home.provenance["squareFeet"].source
     assert "Municipal public record" in home.provenance["yearBuilt"].source
     assert "24 Dow" not in home.sourceNote
+
+
+def test_extracts_explicit_multifamily_unit_count_without_guessing_from_bedrooms():
+    results = {"rows": [{
+        "url": "https://www.zillow.com/homedetails/24-Dow-St-Portland-ME-04102/1_zpid/",
+        "title": "24 Dow St, Portland, ME 04102",
+        "snippet": "A 3-unit multifamily building with 6 bedrooms and 3 bathrooms.",
+    }]}
+    home = discovery.property_from_search_results("24 Dow St, Portland, ME 04102", results)
+    assert home.homeType == "Multifamily"
+    assert home.unitCount == "3"
+    assert home.provenance["unitCount"].origin == "imported"
 
 
 def test_rejects_unit_and_non_exact_results_for_whole_building_address():
@@ -165,6 +181,18 @@ def test_only_extracted_fields_receive_imported_provenance():
     assert home.provenance["pietim"].origin == "unknown"
 
 
+def test_exact_property_correction_is_available_without_search_results():
+    home = discovery.property_correction_for_address("22 Dow St, Portland, ME 04102")
+    assert home.homeType == "Multifamily"
+    assert home.unitCount == "3"
+    assert home.hvac == "Heat Pump (Electric) + Boiler"
+    assert home.provenance["hvac"].origin == "imported"
+    assert home.stories == ""
+    assert home.occupancy == ""
+    assert home.solar == "Unknown"
+    assert home.pietim == "Unknown"
+
+
 def test_crawl4ai_search_uses_exact_address_and_cloud_contract(monkeypatch):
     class Response:
         def raise_for_status(self):
@@ -228,8 +256,16 @@ def test_discovery_endpoint_queries_exact_address_and_returns_public_facts(clien
 
 def test_discovery_endpoint_is_optional_when_crawl4ai_is_not_configured(client, monkeypatch):
     client.app.dependency_overrides[properties.get_settings] = lambda: SimpleNamespace(crawl4ai_api_key="")
-    response = client.post("/api/properties/discover", json={"address": "22 Dow St, Portland, ME 04102"})
+    response = client.post("/api/properties/discover", json={"address": "24 Dow St, Portland, ME 04102"})
     assert response.status_code == 503
+
+
+def test_admin_verified_correction_remains_available_without_crawl4ai(client):
+    client.app.dependency_overrides[properties.get_settings] = lambda: SimpleNamespace(crawl4ai_api_key="")
+    response = client.post("/api/properties/discover", json={"address": "22 Dow St, Portland, ME 04102"})
+    assert response.status_code == 200
+    assert response.json()["unitCount"] == "3"
+    assert response.json()["hvac"] == "Heat Pump (Electric) + Boiler"
 
 
 def test_discovery_provider_calls_are_rate_limited(client, monkeypatch):

@@ -18,7 +18,7 @@ from app.config import get_settings
 # Deliberate subset of App.jsx selectOptions / PropertyInput. Absence, ratings,
 # ages, certifications and hidden construction cannot be established by a photo.
 OPTIONS = {
-    'hvac': ['Heat Pump (Electric)', 'Geothermal', 'Gas Furnace', 'Electric Resistance', 'Boiler', 'Combination Boiler', 'Hydronic Heating'],
+    'hvac': ['Heat Pump (Electric)', 'Heat Pump (Electric) + Boiler', 'Geothermal', 'Gas Furnace', 'Electric Resistance', 'Boiler', 'Combination Boiler', 'Hydronic Heating'],
     'waterHeater': ['Heat Pump Water Heater', 'Tank Electric', 'Tank Gas', 'Tankless Gas', 'Solar Thermal', 'Combination Boiler'],
     'roof': ['Architectural Shingle', 'Metal Roof', 'Tile Roof'],
     'siding': ['Wood clapboard', 'Wood siding', 'Cedar shingles', 'Engineered wood', 'Vinyl', 'Fiber cement', 'Brick', 'Stucco', 'Metal', 'Other'],

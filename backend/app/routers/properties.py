@@ -21,7 +21,7 @@ from app.integrations.mapbox import MapboxClient
 from app.integrations.rentcast import RentCastClient
 from app.integrations.wildfire import cached_wildfire_risk
 from app.integrations.permitstack import PermitStackRequest, PermitStackResponse, lookup_permits
-from app.integrations.public_property_discovery import property_from_search_results, search_public_property
+from app.integrations.public_property_discovery import property_correction_for_address, property_from_search_results, search_public_property
 from app.notifications import send_email
 from app.ocr import extract_property_from_upload
 from app.repositories import create_property, create_source_document, get_api_usage, mark_api_usage_limit_notified, reserve_api_call
@@ -101,7 +101,7 @@ def provider_provenance(home: PropertyInput, source: str) -> PropertyInput:
     # Explicit unknown entries prevent clients treating schema defaults as facts.
     mapped_fields = {
         "address", "city", "state", "zip", "parcelId", "squareFeet", "yearBuilt",
-        "homeType", "stories", "bedrooms", "bathrooms", "garage", "lotSize",
+        "homeType", "unitCount", "stories", "bedrooms", "bathrooms", "garage", "lotSize",
         "hvac", "roof", "waterHeater",
     }
     home.provenance = {
@@ -581,12 +581,17 @@ async def discover_public_property(
     request: GeocodeRequest,
     settings: Settings = Depends(get_settings),
 ) -> PropertyInput:
+    correction = property_correction_for_address(request.address)
     key = settings.crawl4ai_api_key.strip()
     if not key:
+        if correction:
+            return correction
         raise HTTPException(status_code=503, detail="CRAWL4AI_API_KEY is not configured")
     try:
         data = await search_public_property(request.address, key)
     except (HTTPError, ValueError, json.JSONDecodeError) as error:
+        if correction:
+            return correction
         raise HTTPException(status_code=502, detail="Public property discovery is temporarily unavailable") from error
     home = property_from_search_results(request.address, data)
     if not home:
@@ -595,6 +600,8 @@ async def discover_public_property(
         except (HTTPError, ValueError, json.JSONDecodeError):
             archived = {}
         home = property_from_search_results(request.address, archived)
+    if not home:
+        home = correction
     if not home:
         raise HTTPException(status_code=404, detail="No exact-address public property facts found")
     return home

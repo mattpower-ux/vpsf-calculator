@@ -7,6 +7,8 @@ unit listings as evidence for a whole-building address.
 """
 from collections import Counter, defaultdict
 import json
+from functools import lru_cache
+from pathlib import Path
 import re
 from urllib.parse import urlsplit
 
@@ -27,6 +29,7 @@ TRUSTED_PROPERTY_DOMAINS = {
     "movoto.com": "Movoto",
 }
 PROVIDER_PRIORITY = {name: index for index, name in enumerate(TRUSTED_PROPERTY_DOMAINS.values())}
+PROPERTY_CORRECTIONS_PATH = Path(__file__).resolve().parents[1] / "data" / "property_corrections.json"
 NORMALIZED_STREET_SUFFIX_PATTERN = "|".join(
     sorted((re.escape(suffix) for suffix in set(STREET_SUFFIXES.values())), key=len, reverse=True)
 )
@@ -116,7 +119,7 @@ def _exact_result(result: dict, address: str) -> tuple[str, str] | None:
     if not (zip_code and zip_code in text) and not (state and re.search(rf"\b{re.escape(state.lower())}\b", text)):
         return None
     entered_has_unit = bool(re.search(r"\b(?:apt|apartment|unit|suite)\b|#\s*\w+", street))
-    if not entered_has_unit and re.search(r"\b(?:apt|apartment|unit|suite)\s+\w+\b", text):
+    if not entered_has_unit and re.search(r"\b(?:apt|apartment|suite)\s+\w+\b|\b(?<!\d )(?<!-)unit\s+\w+\b", text):
         return None
     return provider, " ".join((str(result.get("title") or ""),
                                 str(result.get("snippet") or result.get("description") or ""),
@@ -142,9 +145,10 @@ def _facts(text: str) -> dict[str, str]:
         )),
         "bedrooms": _first_match(normalized, (r"\b(\d{1,2})\s*(?:bedrooms?|beds?|bd)\b",)),
         "bathrooms": _first_match(normalized, (r"\b(\d{1,2}(?:\.\d)?)\s*(?:bathrooms?|baths?|ba)\b",)),
+        "unitCount": _first_match(normalized, (r"\b(\d{1,2})[ -]unit\s+(?:multi[ -]?family|apartment|residential|building|property)\b",)),
     }
     types = (
-        (r"\bmulti[ -]?family\b", "Multi-Family"),
+        (r"\bmulti[ -]?family\b", "Multifamily"),
         (r"\bsingle[ -]?family\b", "Single Family Detached"),
         (r"\btown(?:home|house)\b", "Townhome"),
         (r"\bcondo(?:minium)?\b", "Condominium"),
@@ -162,6 +166,46 @@ def _selected_value(evidence: list[tuple[str, str]]) -> tuple[str, list[str]]:
     selected = next(value for _, value in ordered if value in tied)
     providers = list(dict.fromkeys(provider for provider, value in ordered if value == selected))
     return selected, providers
+
+
+@lru_cache(maxsize=1)
+def _property_corrections() -> dict:
+    try:
+        value = json.loads(PROPERTY_CORRECTIONS_PATH.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _apply_property_correction(home: PropertyInput, address: str) -> PropertyInput:
+    street, city, state, zip_code = _address_identity(address)
+    correction = _property_corrections().get("|".join((street, city, state, zip_code)))
+    if not isinstance(correction, dict) or not isinstance(correction.get("facts"), dict):
+        return home
+    source = "Public records: " + str(correction.get("source") or "VPSF admin-verified property correction")[:280]
+    allowed = {"homeType", "unitCount", "hvac", "hvacAge"}
+    for field, value in correction["facts"].items():
+        if field in allowed and isinstance(value, str) and value.strip() and len(value) <= 300:
+            setattr(home, field, value.strip())
+            home.provenance[field] = FieldProvenance(origin="imported", source=source)
+    return home
+
+
+def property_correction_for_address(address: str) -> PropertyInput | None:
+    street, city, state, zip_code = _address_identity(address)
+    if not _property_corrections().get("|".join((street, city, state, zip_code))):
+        return None
+    home = PropertyInput(
+        address=street.title(), city=city.title(), state=state, zip=zip_code,
+        homeType="Unknown", stories="", occupancy="", solar="Unknown", hers="Unknown",
+        evReady="Unknown", fortified="Unknown", backup="Unknown", healthCert="Unknown",
+        ventilation="Unknown", iaq="Unknown", daylighting="Unknown", carbonStrategy="Unknown",
+        waterStandard="Unknown", leak="Unknown", reuse="Unknown", landscape="Unknown",
+        pietim="Unknown", insurance="Unknown", maintenance="Unknown", transit="Unknown",
+        greenspace="Unknown", amenities="Unknown", bike="Unknown",
+        sourceNote="VPSF applied an admin-verified public-record correction for this exact property.",
+    )
+    return _apply_property_correction(home, address)
 
 
 def property_from_search_results(address: str, data: object) -> PropertyInput | None:
@@ -195,6 +239,7 @@ def property_from_search_results(address: str, data: object) -> PropertyInput | 
         yearBuilt=selected.get("yearBuilt", "Unknown"),
         bedrooms=selected.get("bedrooms", "Unknown"),
         bathrooms=selected.get("bathrooms", "Unknown"),
+        unitCount=selected.get("unitCount", "Unknown"),
         homeType=selected.get("homeType", "Unknown"),
         stories="Unknown", garage="Unknown", lotSize="Unknown", occupancy="Unknown",
         provenance=provenance,
@@ -205,7 +250,7 @@ def property_from_search_results(address: str, data: object) -> PropertyInput | 
         field: provenance.get(field, FieldProvenance())
         for field in PropertyInput.model_fields if field not in {"provenance", "sourceNote"}
     }
-    return home
+    return _apply_property_correction(home, address)
 
 
 async def search_public_property(address: str, key: str, *, archived: bool = False) -> dict:

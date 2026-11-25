@@ -29,6 +29,8 @@ from app.models import utc_now
 from app.permitstack_schemas import SOURCE_URL, PermitEvidence, PermitCoverage, PermitStackResponse
 
 SEARCH_URL = 'https://api.permit-stack.com/v1/permits/search'
+PROPERTY_HISTORY_URL = 'https://api.permit-stack.com/v1/property/history'
+PROPERTY_BY_PARCEL_URL = 'https://api.permit-stack.com/v1/property/by-parcel'
 PAGE_SIZE = 25
 MAX_RESPONSE_BYTES = 1_048_576
 CACHE_HOURS = 24
@@ -98,6 +100,35 @@ class SearchPage(BaseModel):
     coverage_confidence: dict | None = None
 
 
+class HistoryPage(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    query: dict
+    found: bool
+    total_matches: int = Field(ge=0, strict=True)
+    truncated: bool = False
+    distinct_addresses: list[str] = Field(default_factory=list, max_length=50)
+    distinct_jurisdictions: list[str] = Field(default_factory=list, max_length=50)
+    fan_out_warning: bool = False
+    summary: dict = Field(default_factory=dict)
+    coverage: dict = Field(default_factory=dict)
+    data_currency: dict = Field(default_factory=dict)
+    permits: list[dict] = Field(max_length=50)
+    page: int = Field(ge=1, le=10, strict=True)
+    per_page: int = Field(ge=1, le=50, strict=True)
+    has_more: bool = False
+
+
+class HistoryCollection(BaseModel):
+    records: list[dict] = Field(max_length=500)
+    lookup_mode: Literal['address-history','parcel-history']
+    coverage: dict = Field(default_factory=dict)
+    data_currency: dict = Field(default_factory=dict)
+    pages_checked: int = Field(ge=0, le=10)
+    records_checked: int = Field(ge=0, le=500)
+    completeness: Literal['complete','partial','ambiguous']
+    stop_reason: Literal['exhausted','page-budget','record-budget','provider-window','ambiguous']
+
+
 # Registered with Base when properties/integration-status routers are imported;
 # normal init_db/create_all provisions these additive tables.
 class PermitStackCacheRecord(Base):
@@ -140,13 +171,10 @@ class PermitStackClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
 
-    async def search(self, request: PermitStackRequest) -> dict:
-        # Single page, no retries/detail fan-out/redirects, fixed origin, no keys in URLs.
+    async def _get(self, url: str, params: dict) -> dict:
+        # No redirects, environment proxies, credentials in URLs, or unbounded bodies.
         async with httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client:
-            async with client.stream('GET', SEARCH_URL, headers={'X-API-Key':self.api_key}, params={
-                'address':search_address_prefix(request.address), 'state':request.state, 'zip_code':request.zip,
-                'fields':'summary', 'record_kind':'permit', 'page':1, 'per_page':PAGE_SIZE
-            }) as response:
+            async with client.stream('GET', url, headers={'X-API-Key':self.api_key}, params=params) as response:
                 response.raise_for_status()
                 body = bytearray()
                 async for chunk in response.aiter_bytes(chunk_size=65536):
@@ -154,6 +182,90 @@ class PermitStackClient:
                     if len(body) > MAX_RESPONSE_BYTES:
                         raise ValueError('Response exceeds limit')
                 return json.loads(body)
+
+    async def search(self, request: PermitStackRequest) -> dict:
+        return await self._get(SEARCH_URL, {
+            'address':search_address_prefix(request.address), 'state':request.state, 'zip_code':request.zip,
+            'fields':'summary', 'record_kind':'permit', 'page':1, 'per_page':PAGE_SIZE
+        })
+
+    async def property_history(self, request: PermitStackRequest, page: int, per_page: int) -> dict:
+        return await self._get(PROPERTY_HISTORY_URL, {
+            'address':request.address, 'city':request.city, 'state':request.state, 'zip':request.zip,
+            'page':page, 'per_page':per_page,
+        })
+
+    async def property_by_parcel(self, request: PermitStackRequest, page: int, per_page: int) -> dict:
+        if not request.parcel:
+            raise ValueError('Parcel lookup requires a parcel identifier')
+        return await self._get(PROPERTY_BY_PARCEL_URL, {
+            'parcel':request.parcel, 'state':request.state, 'page':page, 'per_page':per_page,
+        })
+
+
+def _history_row_matches(request: PermitStackRequest, row: dict) -> bool:
+    street, state = row.get('address_street'), row.get('address_state')
+    return (isinstance(street, str) and isinstance(state, str)
+            and normalize_street_address(street) == normalize_street_address(request.address)
+            and normalize_state(state) == request.state and _zip(row.get('address_zip')) == request.zip)
+
+
+async def collect_history(client: PermitStackClient, request: PermitStackRequest,
+                          settings: Settings, reserve_page) -> HistoryCollection:
+    lookup_mode = 'parcel-history' if request.parcel else 'address-history'
+    method = client.property_by_parcel if request.parcel else client.property_history
+    records: list[dict] = []
+    seen: set[str] = set()
+    records_checked = 0
+    coverage: dict = {}
+    data_currency: dict = {}
+    pages_checked = 0
+    for page_number in range(1, settings.permit_stack_max_pages + 1):
+        try:
+            reserve_page()
+        except HTTPException:
+            if not pages_checked:
+                raise
+            return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='partial', stop_reason='page-budget')
+        payload = await method(request, page_number, settings.permit_stack_page_size)
+        page = HistoryPage.model_validate(payload)
+        if page.page != page_number:
+            raise ValueError('Unexpected property-history page number')
+        pages_checked += 1
+        coverage = page.coverage
+        data_currency = page.data_currency
+        records_checked += len(page.permits)
+        if page.fan_out_warning or len(page.distinct_addresses) > 1:
+            return HistoryCollection(records=[], lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='ambiguous', stop_reason='ambiguous')
+        new_ids = 0
+        for row in page.permits:
+            identifier = str(UUID(row['id']))
+            if identifier in seen:
+                continue
+            seen.add(identifier)
+            new_ids += 1
+            if _history_row_matches(request, row):
+                records.append(row)
+                if len(records) >= settings.permit_stack_max_records:
+                    return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                        data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                        completeness='partial' if page.has_more or len(page.permits) > len(records) else 'complete',
+                        stop_reason='record-budget' if page.has_more or len(page.permits) > len(records) else 'exhausted')
+        if page.has_more and not new_ids:
+            raise ValueError('Provider repeated a property-history page')
+        if not page.has_more:
+            provider_limited = bool(coverage.get('tier_window_from') or coverage.get('tier_window_days'))
+            return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+                data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+                completeness='partial' if provider_limited else 'complete',
+                stop_reason='provider-window' if provider_limited else 'exhausted')
+    return HistoryCollection(records=records, lookup_mode=lookup_mode, coverage=coverage,
+        data_currency=data_currency, pages_checked=pages_checked, records_checked=records_checked,
+        completeness='partial', stop_reason='page-budget')
 
 
 def _text(value, limit=300):

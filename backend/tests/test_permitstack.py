@@ -20,11 +20,13 @@ ADDRESS = {'address': '123 Main St', 'state': 'CA', 'zip': '92549'}
 
 
 def permit(**overrides):
-    return dict(id='e185234d-49cb-4987-9daa-2f90eed6d791', permit_number='R-42',
-                address_street='123 MAIN STREET', address_state='CA', address_zip='92549',
-                address_city='Idyllwild', status='ISSUED', category='ROOFING',
-                description_raw='Replace roof', date_issued='2025-01-02',
-                owner_name='PRIVATE OWNER', contractor_name='PRIVATE CONTACT', **overrides)
+    row = dict(id='e185234d-49cb-4987-9daa-2f90eed6d791', permit_number='R-42',
+               address_street='123 MAIN STREET', address_state='CA', address_zip='92549',
+               address_city='Idyllwild', status='ISSUED', category='ROOFING',
+               description_raw='Replace roof', date_issued='2025-01-02',
+               owner_name='PRIVATE OWNER', contractor_name='PRIVATE CONTACT')
+    row.update(overrides)
+    return row
 
 
 @pytest.fixture
@@ -211,6 +213,122 @@ def test_client_uses_fixed_endpoint_header_and_single_bounded_page(monkeypatch):
     assert 'test-secret' not in str(request.url)
 
 
+def history_page(*rows, page=1, has_more=False, **overrides):
+    payload = {
+        'query': {'address': ADDRESS['address']}, 'found': bool(rows),
+        'total_matches': len(rows), 'truncated': False,
+        'distinct_addresses': [ADDRESS['address']] if rows else [],
+        'distinct_jurisdictions': ['Idyllwild'] if rows else [],
+        'fan_out_warning': False, 'summary': {}, 'coverage': {},
+        'data_currency': {}, 'permits': list(rows), 'page': page,
+        'per_page': 50, 'has_more': has_more,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_property_history_and_property_by_parcel_use_fixed_origins(monkeypatch):
+    requests = []
+    def reply(request):
+        requests.append(request)
+        return httpx.Response(200, json=history_page())
+    original = httpx.AsyncClient
+    monkeypatch.setattr(ps.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(reply), **kwargs))
+    client = ps.PermitStackClient('test-secret')
+    request = ps.PermitStackRequest(**ADDRESS, city='Idyllwild', parcel='12-34-567')
+    asyncio.run(client.property_history(request, 2, 50))
+    asyncio.run(client.property_by_parcel(request, 3, 40))
+    assert [str(item.url).split('?')[0] for item in requests] == [
+        'https://api.permit-stack.com/v1/property/history',
+        'https://api.permit-stack.com/v1/property/by-parcel',
+    ]
+    assert dict(requests[0].url.params) == {
+        'address': '123 Main St', 'city': 'Idyllwild', 'state': 'CA',
+        'zip': '92549', 'page': '2', 'per_page': '50',
+    }
+    assert dict(requests[1].url.params) == {
+        'parcel': '12-34-567', 'state': 'CA', 'page': '3', 'per_page': '40',
+    }
+    assert all(item.headers['X-API-Key'] == 'test-secret' for item in requests)
+    assert all('test-secret' not in str(item.url) for item in requests)
+
+
+def test_history_pagination_deduplicates_and_reports_complete():
+    first, duplicate, second = permit(), permit(), permit(
+        id='37d27b1f-c074-4ca5-848d-b8ef39a5c7b4', permit_number='R-43')
+    class Client:
+        async def property_history(self, request, page, per_page):
+            return history_page(first, page=1, has_more=True) if page == 1 else history_page(duplicate, second, page=2)
+    calls = []
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    result = asyncio.run(ps.collect_history(Client(), ps.PermitStackRequest(**ADDRESS), settings, lambda: calls.append(1)))
+    assert [row['id'] for row in result.records] == [first['id'], second['id']]
+    assert result.pages_checked == 2 and result.records_checked == 3
+    assert result.completeness == 'complete' and result.stop_reason == 'exhausted'
+    assert len(calls) == 2
+
+
+def test_history_pagination_reports_page_and_provider_window_limits():
+    row = permit()
+    class PageLimited:
+        async def property_history(self, request, page, per_page):
+            return history_page(row, page=page, has_more=True)
+    settings = Settings(); settings.permit_stack_max_pages=1; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    limited = asyncio.run(ps.collect_history(PageLimited(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert limited.completeness == 'partial' and limited.stop_reason == 'page-budget'
+    class WindowLimited:
+        async def property_history(self, request, page, per_page):
+            return history_page(row, coverage={'tier_window_from':'2026-01-01'})
+    settings.permit_stack_max_pages=3
+    window = asyncio.run(ps.collect_history(WindowLimited(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert window.completeness == 'partial' and window.stop_reason == 'provider-window'
+
+
+def test_history_fan_out_is_ambiguous_and_quota_exhaustion_is_partial():
+    from fastapi import HTTPException
+    row = permit()
+    class Ambiguous:
+        async def property_history(self, request, page, per_page):
+            return history_page(row, distinct_addresses=['123 Main St','123 Main St Apt 2'], fan_out_warning=True)
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    ambiguous = asyncio.run(ps.collect_history(Ambiguous(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert ambiguous.completeness == 'ambiguous' and ambiguous.records == []
+    class TwoPages:
+        async def property_history(self, request, page, per_page):
+            return history_page(row, page=page, has_more=True)
+    reservations = 0
+    def reserve():
+        nonlocal reservations
+        reservations += 1
+        if reservations == 2: raise HTTPException(429, 'cap')
+    partial = asyncio.run(ps.collect_history(TwoPages(), ps.PermitStackRequest(**ADDRESS), settings, reserve))
+    assert len(partial.records) == 1 and partial.completeness == 'partial'
+    assert partial.stop_reason == 'page-budget'
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(ps.collect_history(TwoPages(), ps.PermitStackRequest(**ADDRESS), settings,
+                                       lambda: (_ for _ in ()).throw(HTTPException(429, 'cap'))))
+    assert error.value.status_code == 429
+
+
+def test_history_rejects_repeated_pages_invalid_ids_and_unexpected_schema():
+    row = permit()
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    class Repeated:
+        async def property_history(self, request, page, per_page):
+            return history_page(row, page=page, has_more=True)
+    with pytest.raises(ValueError, match='repeated'):
+        asyncio.run(ps.collect_history(Repeated(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    class Invalid:
+        async def property_history(self, request, page, per_page):
+            return history_page(permit(id='not-a-uuid'))
+    with pytest.raises(ValueError):
+        asyncio.run(ps.collect_history(Invalid(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    class Malformed:
+        async def property_history(self, request, page, per_page): return {'permits': []}
+    with pytest.raises(ValueError):
+        asyncio.run(ps.collect_history(Malformed(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+
+
 @pytest.mark.parametrize('address,prefix', [
     ('123 Main St','123 Main'), ('123 Main Street','123 Main'),
     ('123 Main St. NW','123 Main'), ('123 Main Street Northwest','123 Main'),
@@ -317,7 +435,7 @@ def test_bounded_property_evidence_and_json_native_storage(setup):
     client, _, _, _, _ = setup
     evidence = client.post('/api/properties/permitstack',json=ADDRESS).json()
     json.dumps(PropertyInput(permitEvidence=evidence).model_dump())
-    for changed in [dict(evidence,permits=evidence['permits']*26),
+    for changed in [dict(evidence,permits=evidence['permits']*501),
                     dict(evidence,sourceNote='x'*1001),
                     dict(evidence,fetchedAt='2026-11-15'),
                     dict(evidence,permits=[dict(evidence['permits'][0],description='x'*2001)])]:

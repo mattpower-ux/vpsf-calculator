@@ -44,6 +44,12 @@ TRUSTED_LISTING_DOMAINS = {
     'realtor.com': 'Realtor.com',
 }
 PHOTO_PROVIDER_PRIORITY = {'Realtor.com': 0, 'Redfin': 1, 'Zillow': 2}
+LISTING_STREET_SUFFIXES = {
+    'alley': 'Aly', 'avenue': 'Ave', 'boulevard': 'Blvd', 'circle': 'Cir',
+    'court': 'Ct', 'drive': 'Dr', 'highway': 'Hwy', 'lane': 'Ln',
+    'parkway': 'Pkwy', 'place': 'Pl', 'road': 'Rd', 'square': 'Sq',
+    'street': 'St', 'terrace': 'Ter', 'trail': 'Trl', 'way': 'Way',
+}
 PER_MINUTE = 10
 PER_HOUR = 50
 MAX_CLIENTS = 4096
@@ -111,6 +117,19 @@ def address_identity(address):
     state = normalize_state(re.sub(r'\b\d{5}(?:-\d{4})?\b', '', region).strip())
     zip_code = normalize_zip(region)
     return street, city, state, zip_code
+
+
+def listing_search_address(address):
+    """Use the compact street form commonly indexed by listing providers."""
+    parts = [part.strip() for part in address.split(',')]
+    if not parts:
+        return address.strip()
+    words = normalize_street_address(parts[0]).split()
+    if words and words[-1] in LISTING_STREET_SUFFIXES:
+        suffix = LISTING_STREET_SUFFIXES[words.pop()]
+        street_words = [word if re.fullmatch(r'\d+(?:st|nd|rd|th)', word) else word.title() for word in words]
+        parts[0] = ' '.join((*street_words, suffix))
+    return ', '.join(part for part in parts if part)
 
 
 def normalized_candidate_text(value):
@@ -289,9 +308,10 @@ async def crawl4ai_listing_photo(address, key=''):
         return None
     headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
                'Authorization': 'Bearer ' + key}
+    search_address = listing_search_address(address)
     async with httpx.AsyncClient(timeout=httpx.Timeout(12, connect=4), follow_redirects=False, trust_env=False) as client:
         search = await _crawl4ai_json(client, CRAWL4AI_SEARCH_URL, headers, {
-            'q': f'"{address}" exterior home', 'rich': False, 'deep': False,
+            'q': f'"{search_address}" exterior home', 'rich': False, 'deep': False,
         })
         for candidate in crawl4ai_listing_pages(search, address):
             try:

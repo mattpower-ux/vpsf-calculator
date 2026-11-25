@@ -124,6 +124,19 @@ def test_crawl4ai_listing_page_requires_exact_address_and_excludes_units():
     assert candidate['provider'] == 'Realtor.com'
 
 
+def test_listing_photo_search_uses_common_abbreviated_street_suffix():
+    assert photo.listing_search_address('22 Dow Street, Portland, ME 04102') == '22 Dow St, Portland, ME 04102'
+
+
+def test_listing_photo_match_does_not_require_a_zip_code():
+    results = {'rows': [{
+        'title': '22 Dow St, Portland, ME 04102',
+        'url': 'https://www.realtor.com/realestateandhomes-detail/22-Dow-St_Portland_ME_04102',
+    }]}
+    candidate = photo.select_crawl4ai_listing_page(results, '22 Dow Str., Portland, ME')
+    assert candidate['provider'] == 'Realtor.com'
+
+
 def test_crawl4ai_listing_page_rejects_untrusted_result():
     results = {'rows': [
         {'title': '22 Dow St, Portland, ME 04102', 'url': 'https://example.com/property'},

@@ -29,7 +29,7 @@ async def integration_status(settings: Settings = Depends(get_settings), db: Ses
             "missing": [] if settings.configured_integrations["permitstack"] else ["PERMIT_STACK_API_KEY"],
             **usage_status(db),
             "monthlyLimit": settings.permit_stack_monthly_limit,
-            "maxRequestsPerLookup": 1,
+            "maxRequestsPerLookup": settings.permit_stack_max_pages + 1 if settings.permit_stack_history_enabled else 1,
             "maxRecordsPerLookup": settings.permit_stack_max_records,
             "historyEnabled": settings.permit_stack_history_enabled,
             "maxPagesPerLookup": settings.permit_stack_max_pages,

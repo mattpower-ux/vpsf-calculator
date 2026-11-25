@@ -8,6 +8,7 @@ from app.scoring.wildfire import wildfire_adjustment
 
 PILLARS = ("energy", "water", "health", "resilience", "carbon", "financial", "community")
 Mode = Literal["lookup", "contains", "contains_any", "equals", "not_equals", "wildfire", "number_range", "epa_range"]
+NON_SCORING_PROPERTY_FIELDS = {"permitEvidence", "parcelId"}
 
 
 class CustomField(BaseModel):
@@ -60,7 +61,7 @@ class ScoreModel(BaseModel):
         ids = [factor.id for factor in self.factors]
         if len(ids) != len(set(ids)):
             raise ValueError("Factor IDs must be unique")
-        fields = (set(PropertyInput.model_fields) - {"permitEvidence"}) | {field.id for field in self.customFields}
+        fields = (set(PropertyInput.model_fields) - NON_SCORING_PROPERTY_FIELDS) | {field.id for field in self.customFields}
         custom = {field.id: field for field in self.customFields}
         if len({field.id for field in self.customFields}) != len(self.customFields) or any(field.id in PropertyInput.model_fields for field in self.customFields):
             raise ValueError("Custom field IDs must be unique and cannot replace built-in facts")

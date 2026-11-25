@@ -161,6 +161,9 @@ def test_history_settings_are_bounded_and_status_is_nonsecret(setup, monkeypatch
     assert body['maxPagesPerLookup'] == 3
     assert body['pageSize'] == 50
     assert body['maxRecordsPerLookup'] == 150
+    assert body['maxRequestsPerLookup'] == 1
+    settings.permit_stack_history_enabled = True
+    assert client.get('/api/integrations/status').json()['permitstack']['maxRequestsPerLookup'] == 4
     assert 'test-secret' not in str(body)
 
 
@@ -285,6 +288,67 @@ def test_history_pagination_reports_page_and_provider_window_limits():
     assert window.completeness == 'partial' and window.stop_reason == 'provider-window'
 
 
+def test_history_record_budget_bounds_requested_and_inspected_rows():
+    wrong = permit(address_street='999 Other St')
+    requested = []
+    class Client:
+        async def property_history(self, request, page, per_page):
+            requested.append(per_page)
+            return history_page(wrong, page=page, has_more=True, per_page=per_page)
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=1
+    result = asyncio.run(ps.collect_history(Client(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert requested == [1]
+    assert result.records == [] and result.records_checked == 1
+    assert result.completeness == 'partial' and result.stop_reason == 'record-budget'
+
+
+@pytest.mark.parametrize('overrides', [
+    {'truncated': True},
+    {'total_matches': 2},
+])
+def test_history_provider_truncation_is_never_complete(overrides):
+    class Client:
+        async def property_history(self, request, page, per_page):
+            return history_page(permit(), **overrides)
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    result = asyncio.run(ps.collect_history(Client(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert result.completeness == 'partial'
+    assert result.stop_reason == 'provider-window'
+
+
+def test_history_derives_multi_address_ambiguity_from_rows():
+    class Client:
+        async def property_history(self, request, page, per_page):
+            return history_page(permit(), permit(id=str(uuid4()), address_street='999 Other St'),
+                                distinct_addresses=[])
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    result = asyncio.run(ps.collect_history(Client(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert result.completeness == 'ambiguous' and result.records == []
+
+
+def test_history_preserves_safe_partial_results_when_a_later_page_fails():
+    class Client:
+        async def property_history(self, request, page, per_page):
+            if page == 1:
+                return history_page(permit(), page=1, has_more=True)
+            raise httpx.ConnectError('unavailable', request=httpx.Request('GET', ps.PROPERTY_HISTORY_URL))
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    result = asyncio.run(ps.collect_history(Client(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert len(result.records) == 1
+    assert result.completeness == 'partial' and result.stop_reason == 'fallback'
+
+
+def test_history_deduplicates_permit_number_within_jurisdiction():
+    first = permit(jurisdiction_name='Example County')
+    duplicate = permit(id=str(uuid4()), jurisdiction_name='Example County')
+    class Client:
+        async def property_history(self, request, page, per_page):
+            return history_page(first, duplicate)
+    settings = Settings(); settings.permit_stack_max_pages=3; settings.permit_stack_page_size=50; settings.permit_stack_max_records=150
+    result = asyncio.run(ps.collect_history(Client(), ps.PermitStackRequest(**ADDRESS), settings, lambda: None))
+    assert len(result.records) == 1 and result.records_checked == 2
+
+
 def test_history_fan_out_is_ambiguous_and_quota_exhaustion_is_partial():
     from fastapi import HTTPException
     row = permit()
@@ -390,6 +454,26 @@ def test_cache_key_preserves_legacy_and_varies_for_history_identity_and_limits()
     assert len(set(variants)) == len(variants)
 
 
+@pytest.mark.parametrize('matched', [False, True])
+def test_shared_parcel_never_shares_cached_evidence_between_addresses(setup, monkeypatch, matched):
+    client, _, settings, search_calls, _ = setup
+    settings.permit_stack_history_enabled = True
+    settings.permit_stack_monthly_limit = 4
+    calls = []
+    async def property_by_parcel(self, request, page, per_page):
+        calls.append(request.address)
+        rows = [permit(address_street=request.address, id=str(uuid4()))] if matched else []
+        return history_page(*rows, query={'parcel': request.parcel})
+    monkeypatch.setattr(ps.PermitStackClient, 'property_by_parcel', property_by_parcel)
+    first = client.post('/api/properties/permitstack', json={**ADDRESS, 'parcel':'12-34-567'})
+    second = client.post('/api/properties/permitstack', json={**ADDRESS, 'address':'125 Main St', 'parcel':'12-34-567'})
+    assert first.status_code == second.status_code == 200
+    assert calls == ['123 Main St', '125 Main St'] and not search_calls
+    assert second.json()['cacheHit'] is False
+    if matched:
+        assert second.json()['permits'][0]['address'] == '125 Main St'
+
+
 def test_history_mode_uses_property_history_and_caches_normalized_evidence(setup, monkeypatch):
     client, _, settings, search_calls, _ = setup
     settings.permit_stack_history_enabled = True
@@ -407,6 +491,21 @@ def test_history_mode_uses_property_history_and_caches_normalized_evidence(setup
     assert first.json()['coverage']['dataThrough'] == '2026-11-18'
     assert second.json()['cacheHit'] is True
     assert len(history_calls) == 1 and not search_calls
+
+
+def test_unavailable_history_falls_back_to_exact_search(setup, monkeypatch):
+    client, _, settings, search_calls, _ = setup
+    settings.permit_stack_history_enabled = True
+    settings.permit_stack_monthly_limit = 3
+    async def unavailable(self, request, page, per_page):
+        raise httpx.ConnectError('unavailable', request=httpx.Request('GET', ps.PROPERTY_HISTORY_URL))
+    monkeypatch.setattr(ps.PermitStackClient, 'property_history', unavailable)
+    response = client.post('/api/properties/permitstack', json=ADDRESS)
+    assert response.status_code == 200
+    assert response.json()['lookupMode'] == 'search'
+    assert response.json()['completeness'] == 'partial'
+    assert response.json()['stopReason'] == 'fallback'
+    assert len(search_calls) == 1
 
 
 @pytest.mark.parametrize('address,prefix', [
@@ -459,9 +558,13 @@ def test_permit_metadata_cannot_become_a_scoring_factor():
     from app.scoring.seed import seed_model_v1
     from app.scoring.catalog import ScoreModel
     model = seed_model_v1().model_dump()
-    model['factors'][0].update(field='permitEvidence')
-    with pytest.raises(ValidationError):
-        ScoreModel.model_validate(model)
+    from app.routers.admin import scoring_available_fields
+    for field in ['permitEvidence','parcelId']:
+        changed = {**model, 'factors':[dict(item) for item in model['factors']]}
+        changed['factors'][0].update(field=field)
+        with pytest.raises(ValidationError):
+            ScoreModel.model_validate(changed)
+        assert field not in scoring_available_fields()
 
 
 def test_atomic_cap_with_concurrent_sessions(tmp_path):

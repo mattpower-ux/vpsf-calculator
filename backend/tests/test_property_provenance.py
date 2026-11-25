@@ -74,3 +74,14 @@ def test_rentcast_maps_parcel_identity_without_scoring_provenance():
     assert home.provenance["parcelId"].origin == "imported"
     assert evaluate_model(home, seed_model_v1()) == evaluate_model(
         home.model_copy(update={"parcelId": ""}), seed_model_v1())
+
+
+@pytest.mark.parametrize("parcel", ["bad:parcel", "x" * 101, {"nested": "value"}])
+def test_rentcast_ignores_unsupported_parcel_identity(parcel):
+    home = property_input_from_rentcast({
+        "addressLine1": "123 Main St", "state": "CO", "zipCode": "80202",
+        "assessorID": parcel, "yearBuilt": 1999,
+    })
+    assert home.parcelId == ""
+    assert home.yearBuilt == "1999"
+    assert home.provenance["yearBuilt"].origin == "imported"

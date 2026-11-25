@@ -124,6 +124,7 @@ test('coverage summary is concise and never claims every public record was searc
   const partial={...complete,completeness:'partial'};
   assert.match(permitCoverageSummary(partial),/^Partial available history/);
   assert.match(permitCoverageSummary({...complete,completeness:'unknown'}),/^Coverage unknown/);
+  assert.match(permitCoverageSummary({...complete,completeness:'ambiguous'}),/^Property-history match ambiguous/);
   for (const item of [complete,partial]) assert.doesNotMatch(permitCoverageSummary(item),/all public records/i);
 });
 

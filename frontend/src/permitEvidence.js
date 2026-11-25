@@ -75,7 +75,8 @@ export function permitEvidenceForHome(home) {
 export function permitCoverageSummary(evidence) {
   if (!object(evidence)) return '';
   const label={complete:'Complete available history',partial:'Partial available history',
-    unknown:'Coverage unknown',unavailable:'Coverage unavailable',ambiguous:'Partial available history'}[evidence.completeness] || 'Coverage unknown';
+    unknown:'Coverage unknown',unavailable:'Coverage unavailable',
+    ambiguous:'Property-history match ambiguous; exact-address records shown'}[evidence.completeness] || 'Coverage unknown';
   const parts=[label,`${evidence.permits?.length || 0} permit${evidence.permits?.length === 1 ? '' : 's'}`];
   if (evidence.pagesChecked) parts.push(`${evidence.pagesChecked} page${evidence.pagesChecked === 1 ? '' : 's'} checked`);
   if (evidence.coverage?.dataThrough) parts.push(`data through ${evidence.coverage.dataThrough.slice(0,10)}`);

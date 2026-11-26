@@ -46,3 +46,4 @@
   html[data-phone-preview] .app .analyzingScreen { min-height: 0; }
 }
 .analysisContextLine{margin:-.2rem auto .65rem;max-width:92%;padding:0 .5rem;color:#5b7180;font-size:.75rem;line-height:1.25;text-align:center;overflow-wrap:anywhere}
+.analysisTradeoffs h4{margin:.65rem 0 .2rem;color:#1d2a3b;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}.analysisTradeoffs ul{margin:.2rem 0 .65rem;padding-left:1.25rem}.analysisTradeoffs li+li{margin-top:.2rem}

@@ -37,6 +37,10 @@ test('every scoring depth has a concrete result description', () => {
 
 test('Basic explains that it needs only limited additional entry', () => {
   assert.ok(analysisLevelDetails.broad.results.includes('Limited additional entry from you'));
+  assert.deepEqual(analysisLevelDetails.broad.cons, [
+    'Many home records lack substantial data.',
+    'Results likely to be incomplete, with weak accuracy.',
+  ]);
 });
 
 test('only Superior asks for more information from the homeowner', () => {

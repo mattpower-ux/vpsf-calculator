@@ -5,6 +5,8 @@ export const analysisEntryInitialState = Object.freeze({page:'address', expanded
 export const analysisLevelDetails = Object.freeze({
   broad: {
     summary: 'A fast baseline built from available public records, permits, and regional context.',
+    pros: ['Seven-pillar VPSF score', 'Initial strengths and priority upgrades', 'Limited additional entry from you'],
+    cons: ['Many home records lack substantial data.', 'Results likely to be incomplete, with weak accuracy.'],
     results: ['Seven-pillar VPSF score', 'Initial strengths and priority upgrades', 'Limited additional entry from you'],
   },
   moderate: {

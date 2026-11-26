@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Public image bytes are transient and must never be written to the database, filesystem, CDN, archive, or backups.
-- Homeowner images are stored only beneath `/var/data/vpsf-photos`; database rows store metadata and hashed capability tokens, never image bytes.
+- The Render disk is mounted at `/var/data`; homeowner images are stored only beneath `/var/data/vpsf-photos`, while other durable data uses separate named subdirectories. Database rows store metadata and hashed capability tokens, never image bytes.
 - Accept HTTPS public sources only; never bypass login, CAPTCHA, paywall, or robots restrictions.
 - Require exact house number, normalized street, city plus state or ZIP, and unit identity when supplied.
 - Show no more than 12 candidates and analyze no more than 12 selected images.
@@ -180,7 +180,7 @@
 - [ ] **Step 2: Implement the help/privacy copy and aggregate logging** for discovery success, rejection reason, selected count, fetch failure, disk upload failure, and analysis completion without logging image data, capabilities, or source URLs.
 - [ ] **Step 3: Run** `python -m pytest -q` in `backend`, `npm test`, and `npm run build` in `frontend`; require zero failures.
 - [ ] **Step 4: Test locally with `PHOTO_STORAGE_PATH` set to a temporary directory**, then test phone and laptop flows for Basic, Informed, and Superior with automatic-only, homeowner-only, and mixed evidence; verify exclusion, PROCESS, review, archive reopening, replacement, deletion, and the persistent context line. Record results in the QA README.
-- [ ] **Step 5: Verify the Render disk is mounted at `/var/data/vpsf-photos` on the VPSF API service and `PHOTO_STORAGE_PATH` matches**, then deploy through GitHub main and Render. Expect a brief API interruption because disk-backed services do not use zero-downtime deploys.
+- [ ] **Step 5: Verify the 1 GB Render disk is mounted at `/var/data` on the VPSF API service and set `PHOTO_STORAGE_PATH=/var/data/vpsf-photos`**, then deploy through GitHub main and Render. Expect a brief API interruption because disk-backed services do not use zero-downtime deploys.
 - [ ] **Step 6: After deployment, verify runtime write/read/delete beneath the mount**, exact-address candidates, and analysis on at least three properties in different states; confirm no upload is written outside the mount and review disk-usage monitoring.
 - [ ] **Step 7: Commit** `docs: verify automatic property photo evidence`.
 

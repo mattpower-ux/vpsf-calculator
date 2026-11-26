@@ -133,7 +133,7 @@ It must not store the public remote image URL as a durable substitute for an own
 
 Homeowner uploads are validated, stripped of unnecessary metadata, normalized, and stored beneath the VPSF API service's Render persistent-disk mount. The database stores an opaque asset identifier, hashed capability token, normalized property identity, relative disk path, category, upload time, MIME type, dimensions, checksum, byte count, last-access time, and analysis provenance. The browser-local property archive stores only the asset identifier, unguessable access token, and safe display metadata.
 
-The configured mount path is `/var/data/vpsf-photos`, exposed to the application as `PHOTO_STORAGE_PATH`. No code may write durable photos outside that directory. Files use generated names and sharded subdirectories; user filenames never become filesystem paths.
+The Render disk is mounted at `/var/data`. Photos use the dedicated `/var/data/vpsf-photos` subdirectory, exposed to the application as `PHOTO_STORAGE_PATH`. No code may write durable photos outside that subdirectory. Files use generated names and sharded subdirectories; user filenames never become filesystem paths. Other persistent VPSF data must use separate named subdirectories beneath `/var/data`.
 
 Images remain attached to the archived property until the user deletes the image or removes the linked property archive. Deletion removes the database record and disk file. Replacing an image retains the earlier asset only while another archived evaluation still references it. Because clearing browser data cannot notify the server, unreferenced or inactive assets expire after the configurable retention period; the first-version default is 365 days after last authorized access.
 
@@ -245,10 +245,10 @@ Do not record the photographs themselves in diagnostics. After live verification
 
 ## Render Disk Operations
 
-The disk is attached only to the paid VPSF API web service at `/var/data/vpsf-photos`. Render disks are single-service, single-instance storage and disable horizontal scaling and zero-downtime deploys. A deployment will briefly stop the API before the replacement instance starts. Builds, pre-deploy commands, one-off jobs, and the frontend service cannot access the disk.
+The 1 GB disk is attached only to the paid VPSF API web service at `/var/data`. Render disks are single-service, single-instance storage and disable horizontal scaling and zero-downtime deploys. A deployment will briefly stop the API before the replacement instance starts. Builds, pre-deploy commands, one-off jobs, and the frontend service cannot access the disk.
 
 Start with the smallest practical capacity and monitor usage; Render permits increasing disk size but not decreasing it. Render currently creates encrypted daily snapshots retained for seven days, but snapshots restore the entire disk rather than individual files. Database metadata and disk files therefore require a reconciliation command that runs inside the API process, not during build or pre-deploy.
 
 ## Implementation Preconditions
 
-Before enabling durable uploads, attach the disk to the VPSF API service, set its mount path to `/var/data/vpsf-photos`, and configure `PHOTO_STORAGE_PATH` to the same value. Verify runtime write/read/delete behavior after the deployment becomes live. The interface must disclose that photos are stored privately with the property archive and retained according to the configured policy.
+Before enabling durable uploads, confirm the disk remains attached to the VPSF API service at `/var/data` and configure `PHOTO_STORAGE_PATH=/var/data/vpsf-photos`. Verify runtime creation of the photo subdirectory plus write/read/delete behavior after the deployment becomes live. The interface must disclose that photos are stored privately with the property archive and retained according to the configured policy.

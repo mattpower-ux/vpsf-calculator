@@ -295,6 +295,20 @@ def search_result_image_urls(candidate):
     return urls
 
 
+def crawl4ai_search_image_candidates(data, address):
+    """Return exact-address images emitted separately from Crawl4AI web rows."""
+    if not isinstance(data, dict) or not isinstance(data.get('images'), list):
+        return []
+    matches = crawl4ai_listing_pages({'rows': data['images']}, address)
+    results = []
+    for candidate in matches:
+        for image_url in search_result_image_urls(candidate):
+            results.append((image_url, candidate))
+            if len(results) >= MAX_SEARCH_IMAGE_ATTEMPTS:
+                return results
+    return results
+
+
 def zillow_property_photo_urls(data):
     """Return bounded full-size photos from Crawl4AI's verified Zillow tool."""
     if not isinstance(data, dict):
@@ -502,6 +516,12 @@ async def crawl4ai_listing_photo(address, key=''):
                 accepted = await accepted_photo(image_url, zillow_candidate)
                 if accepted:
                     return accepted
+        top_level_images = crawl4ai_search_image_candidates(search, address)
+        logger.warning('property_photo.crawl4ai top_level_images=%s', len(top_level_images))
+        for image_url, candidate in top_level_images:
+            accepted = await accepted_photo(image_url, candidate)
+            if accepted:
+                return accepted
         for candidate in listing_pages:
             if loop.time() >= deadline:
                 break

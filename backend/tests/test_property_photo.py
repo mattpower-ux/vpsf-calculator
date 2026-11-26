@@ -402,6 +402,47 @@ def test_search_result_images_are_last_resort_after_listing_page_media(monkeypat
     assert data['attribution'] == 'Exterior photo · Redfin'
 
 
+def test_crawl4ai_photo_uses_exact_address_top_level_image_result(monkeypatch):
+    attempted = []
+    listing_url = (
+        'https://www.zillow.com/homedetails/'
+        '2256-Fallen-Tree-Dr-E-Jacksonville-FL-32246/44605347_zpid/'
+    )
+
+    async def fake_json(*args, **kwargs):
+        if args[1] == photo.CRAWL4AI_SEARCH_URL:
+            return {
+                'rows': [{
+                    'title': '2256 Fallen Tree Dr E, Jacksonville, FL 32246',
+                    'url': listing_url,
+                    'snippet': '4 beds, 3 baths in Jacksonville, FL 32246',
+                }],
+                'images': [{
+                    'title': '2256 Fallen Tree Dr E, Jacksonville, FL 32246 | Zillow',
+                    'url': listing_url,
+                    'imageUrl': 'https://photos.zillowstatic.com/fp/exterior-cc_ft_1536.jpg',
+                    'imageWidth': 1536,
+                    'imageHeight': 1152,
+                }],
+            }
+        if args[1] == photo.CRAWL4AI_ZILLOW_URL:
+            return {'rows': []}
+        return {'data': {'metadata': {}}}
+
+    def download(url, *_):
+        attempted.append(url)
+        return 'image/jpeg', JPEG
+
+    monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
+    monkeypatch.setattr(photo, '_download_public_image', download)
+    monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (1536, 1152))
+    data = asyncio.run(photo.crawl4ai_listing_photo(
+        '2256 FALLEN TREE Drive E, Jacksonville, FL 32246', 'c4-test'))
+    assert attempted == ['https://photos.zillowstatic.com/fp/exterior-cc_ft_1536.jpg']
+    assert data['attribution'] == 'Exterior photo · Zillow'
+    assert data['sourceUrl'] == listing_url
+
+
 def test_generic_page_images_are_not_accepted_as_property_exteriors():
     payload={'data':{'html':(
         '<img src="https://images.example/banner.jpg">'

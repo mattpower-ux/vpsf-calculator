@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { permitRequest, permitEvidenceForHome, attachPermitEvidence, fetchPermitEvidence, schedulePermitLookup, mergeArchivedPermitEvidence, permitCoverageSummary, permitFactsFromEvidence, confirmPermitWork, appliedPermitFacts, confirmedPermitNumbers } from './permitEvidence.js';
+import { permitRequest, permitEvidenceForHome, attachPermitEvidence, fetchPermitEvidence, schedulePermitLookup, mergeArchivedPermitEvidence, permitCoverageSummary, permitFactsFromEvidence, permitDiscoveriesFromEvidence, confirmPermitWork, appliedPermitFacts, confirmedPermitNumbers } from './permitEvidence.js';
 import { prepareAnalysisHome } from './analysisLevels.js';
 import { saveAnalysisDraft, loadAnalysisDraft } from './analysisDraft.js';
 import { confirmedEdit } from './homeAdvice.js';
@@ -76,6 +76,49 @@ test('final permits prefill specific home facts while issued work only asks for 
   assert.equal(enriched.hvacAge,'Installed 2017 (permit)');
   assert.equal(enriched.solar,'Solar PV');
   assert.equal(enriched.provenance.solar.origin,'imported');
+});
+
+test('permit discoveries expose equipment quantity year and completion confidence', () => {
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp',permitNumber:'201700251',status:'FINAL',category:'HVAC',
+      description:'Installation of 3 Mitsubishi heat pumps',dateIssued:'2017-03-13',dateCompleted:'2017-04-12'},
+    {...evidence().permits[0],id:'pv',permitNumber:'201700130',status:'FINAL',category:'SOLAR',
+      description:'For the installation of 26 solar panels onto the roof of the building.',dateIssued:'2017-02-23',dateCompleted:'2017-04-12'},
+    {...evidence().permits[0],id:'boiler',permitNumber:'HVAC2018-00100',status:'ISSUED',category:'HVAC',
+      description:'Replacement of 2 Baxi boilers with 1 Viessmann',dateIssued:'2018-09-07',dateCompleted:null},
+  ],searchedRecords:3};
+  const discoveries=permitDiscoveriesFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.deepEqual(discoveries.map(({field,value,quantity,year,evidenceStatus,permitNumber})=>
+    ({field,value,quantity,year,evidenceStatus,permitNumber})),[
+      {field:'hvac',value:'Heat Pump (Electric)',quantity:3,year:'2017',evidenceStatus:'verified',permitNumber:'201700251'},
+      {field:'solar',value:'Solar PV',quantity:26,year:'2017',evidenceStatus:'verified',permitNumber:'201700130'},
+      {field:'hvac',value:'Boiler',quantity:1,year:null,evidenceStatus:'review',permitNumber:'HVAC2018-00100'},
+    ]);
+});
+
+test('permit discoveries use installed replacement quantity and completion year only',()=>{
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp-replace',permitNumber:'HVAC2024-00022',status:'FINAL',category:'HVAC',
+      description:'Replace 3 old heat pumps with 2 new heat pumps',dateFiled:'2023-12-20',dateIssued:'2024-01-05',dateCompleted:'2025-02-14'},
+    {...evidence().permits[0],id:'issued',permitNumber:'SOLAR2024-00023',status:'ISSUED',category:'SOLAR',
+      description:'Install 18 solar panels',dateFiled:'2024-02-01',dateIssued:'2024-03-01',dateCompleted:null},
+  ],searchedRecords:2};
+  const discoveries=permitDiscoveriesFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.deepEqual(discoveries.map(({quantity,year,evidenceStatus})=>({quantity,year,evidenceStatus})),[
+    {quantity:2,year:'2025',evidenceStatus:'verified'},
+    {quantity:18,year:null,evidenceStatus:'review'},
+  ]);
+});
+
+test('replacement quantity ignores unrelated electrical counts',()=>{
+  const history={...evidence(),permits:[
+    {...evidence().permits[0],id:'hp-service',permitNumber:'HVAC2025-10',status:'FINAL',category:'HVAC',
+      description:'Replace 3 old heat pumps and upgrade service to 200 amps',dateCompleted:'2025-06-01'},
+    {...evidence().permits[0],id:'hp-circuits',permitNumber:'HVAC2025-11',status:'FINAL',category:'HVAC',
+      description:'Replace 3 heat pumps and upgrade service with 2 new circuits',dateCompleted:'2025-06-01'},
+  ]};
+  const discoveries=permitDiscoveriesFromEvidence(permitEvidenceForHome({...home(),permitEvidence:history}));
+  assert.deepEqual(discoveries.map(item=>item.quantity),[null,null]);
 });
 
 test('permit autofill never overwrites stronger facts and conflicts remain review prompts', () => {
@@ -165,7 +208,7 @@ test('confirming a second heating system preserves both systems for multifamily 
   const imported=attachPermitEvidence({...home(),homeType:'Multifamily'},home(),history);
   const confirmed=confirmPermitWork(imported,'B-1');
   assert.equal(confirmed.hvac,'Heat Pump (Electric) + Boiler');
-  assert.match(confirmed.hvacAge,/Heat pumps: 2017.*boiler: 2018/i);
+  assert.match(confirmed.hvacAge,/Heat pumps: 2017.*boiler: year unknown/i);
   assert.equal(confirmed.provenance.hvac.origin,'user-confirmed');
   assert.equal(confirmed.extraInputs.permitConfirmations,'["B-1"]');
   let raw;

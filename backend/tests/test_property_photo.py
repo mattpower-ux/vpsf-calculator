@@ -228,7 +228,7 @@ def test_crawl4ai_search_then_scrape_uses_exact_listing_and_returns_bounded_imag
             assert method == 'POST'
             assert headers['Authorization'] == 'Bearer c4-test'
             if url == photo.CRAWL4AI_SEARCH_URL:
-                assert json == {'q': '"22 Dow St, Portland, ME 04102" exterior home', 'rich': False, 'deep': False}
+                assert json == {'q': '"22 Dow St, Portland, ME 04102" exterior home', 'rich': True, 'deep': False}
                 calls.append((url, search_payload))
             else:
                 assert url == photo.CRAWL4AI_SCRAPE_URL
@@ -274,6 +274,111 @@ def test_crawl4ai_photo_tries_next_exact_listing_when_first_has_no_image(monkeyp
     assert len(scraped) == 2
 
 
+def test_listing_image_urls_collect_metadata_media_and_html_candidates():
+    payload = {'data': {
+        'metadata': {'og:image': 'https://images.example/metadata.jpg'},
+        'media': {'images': [
+            {'src': 'https://images.example/hero.jpg', 'score': 9, 'alt': 'Front exterior of the home'},
+            {'url': 'https://images.example/side.jpg', 'alt': 'House exterior'},
+            {'src': 'http://images.example/insecure.jpg'},
+        ]},
+        'html': (
+            '<html><body>'
+            '<img data-src="https://images.example/lazy.jpg" alt="Front exterior of property">'
+            '<img src="https://images.example/hero.jpg">'
+            '<img src="https://images.example/floor-plan.jpg" alt="Floor plan">'
+            '</body></html>'
+        ),
+    }}
+    assert photo.listing_image_urls(payload) == [
+        'https://images.example/metadata.jpg',
+        'https://images.example/hero.jpg',
+        'https://images.example/side.jpg',
+        'https://images.example/lazy.jpg',
+    ]
+
+
+def test_crawl4ai_photo_tries_multiple_images_from_one_exact_listing(monkeypatch):
+    attempted = []
+
+    async def fake_json(*args, **kwargs):
+        if args[1] == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows': [{
+                'title': '18 Merrill Road, Freeport, ME 04032',
+                'url': 'https://www.zillow.com/homedetails/18-Merrill-Rd/1_zpid/',
+            }]}
+        return {'data': {'media': {'images': [
+            {'src': 'https://images.example/blocked.jpg', 'score': 8, 'alt': 'Front exterior'},
+            {'src': 'https://images.example/exterior.jpg', 'score': 7, 'alt': 'House exterior'},
+        ]}}}
+
+    def download(url):
+        attempted.append(url)
+        return None if url.endswith('blocked.jpg') else ('image/jpeg', JPEG)
+
+    monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
+    monkeypatch.setattr(photo, '_download_public_image', download)
+    monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (1200, 800))
+    data = asyncio.run(photo.crawl4ai_listing_photo('18 Merrill Road, Freeport, ME 04032', 'c4-test'))
+    assert attempted == [
+        'https://images.example/blocked.jpg',
+        'https://images.example/exterior.jpg',
+    ]
+    assert data['sourceUrl'].startswith('https://www.zillow.com/')
+
+
+def test_search_result_images_are_last_resort_after_listing_page_media(monkeypatch):
+    attempted = []
+
+    async def fake_json(*args, **kwargs):
+        if args[1] == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows': [{
+                'title': '18 Merrill Road, Freeport, ME 04032',
+                'url': 'https://www.redfin.com/ME/Freeport/18-Merrill-Rd/home/1',
+                'image': 'https://images.example/search-result.jpg',
+            }]}
+        return {'data': {'metadata': {}}}
+
+    def download(url):
+        attempted.append(url)
+        return 'image/jpeg', JPEG
+
+    monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
+    monkeypatch.setattr(photo, '_download_public_image', download)
+    monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (1200, 800))
+    data = asyncio.run(photo.crawl4ai_listing_photo('18 Merrill Road, Freeport, ME 04032', 'c4-test'))
+    assert attempted == ['https://images.example/search-result.jpg']
+    assert data['attribution'] == 'Exterior photo · Redfin'
+
+
+def test_generic_page_images_are_not_accepted_as_property_exteriors():
+    payload={'data':{'html':(
+        '<img src="https://images.example/banner.jpg">'
+        '<img src="https://images.example/agent.jpg" alt="Listing agent portrait">'
+        '<img src="https://images.example/floor.jpg" alt="Floor plan">'
+    )}}
+    assert photo.listing_image_urls(payload) == []
+
+
+def test_crawl4ai_photo_caps_aggregate_download_attempts(monkeypatch):
+    attempted=[]
+    async def fake_json(*args, **kwargs):
+        if args[1] == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows':[
+              {'title':'18 Merrill Road, Freeport, ME 04032','url':'https://www.realtor.com/realestateandhomes-detail/18-Merrill-Rd_Freeport_ME_04032'},
+              {'title':'18 Merrill Road, Freeport, ME 04032','url':'https://www.redfin.com/ME/Freeport/18-Merrill-Rd/home/1'},
+              {'title':'18 Merrill Road, Freeport, ME 04032','url':'https://www.zillow.com/homedetails/18-Merrill-Rd/1_zpid/'},
+            ]}
+        return {'data':{'media':{'images':[
+            {'src':f'https://images.example/{index}.jpg','score':10-index,'alt':'House exterior'}
+            for index in range(12)
+        ]}}}
+    monkeypatch.setattr(photo,'_crawl4ai_json',fake_json)
+    monkeypatch.setattr(photo,'_download_public_image',lambda url: attempted.append(url))
+    assert asyncio.run(photo.crawl4ai_listing_photo('18 Merrill Road, Freeport, ME 04032','c4-test')) is None
+    assert len(attempted) == photo.MAX_LISTING_IMAGE_ATTEMPTS - photo.MAX_SEARCH_IMAGE_ATTEMPTS
+
+
 def test_crawl4ai_photo_rejects_small_or_portrait_download(monkeypatch):
     async def fake_json(*args, **kwargs):
         if args[1] == photo.CRAWL4AI_SEARCH_URL:
@@ -303,6 +408,13 @@ def test_crawl4ai_photo_degrades_safely_for_non_public_image(monkeypatch):
 
 def test_listing_image_url_requires_https():
     assert photo.listing_image_url({'data': {'metadata': {'og:image': 'http://images.example/home.jpg'}}}) is None
+
+
+def test_listing_image_dimensions_support_webp_variants():
+    vp8x=b'RIFF'+(22).to_bytes(4,'little')+b'WEBPVP8X'+(10).to_bytes(4,'little')+b'\x00\x00\x00\x00'+(899).to_bytes(3,'little')+(599).to_bytes(3,'little')
+    vp8=b'RIFF'+(22).to_bytes(4,'little')+b'WEBPVP8 '+(10).to_bytes(4,'little')+b'\x00\x00\x00\x9d\x01\x2a'+(900).to_bytes(2,'little')+(600).to_bytes(2,'little')
+    assert photo.image_dimensions('image/webp',vp8x) == (900,600)
+    assert photo.image_dimensions('image/webp',vp8) == (900,600)
 
 
 @pytest.mark.parametrize('status', ['ZERO_RESULTS', 'NOT_FOUND', 'REQUEST_DENIED', 'OVER_QUERY_LIMIT', 'UNKNOWN_ERROR'])

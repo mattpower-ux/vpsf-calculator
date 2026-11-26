@@ -1,0 +1,12 @@
+.evidenceSummary { margin: 16px 0; padding: 18px; }
+.evidenceSummary h3 { margin: 0 0 4px; }
+.evidenceIntro { margin: 0 0 14px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.evidenceGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.evidenceGroup { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: color-mix(in srgb,var(--teal) 4%,white); min-width: 0; }
+.evidenceGroup h4 { margin: 0 0 8px; font-size: 14px; }
+.evidenceGroup h4 span { color: var(--teal); font-weight: 700; }
+.evidenceGroup ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.evidenceGroup li { display: grid; gap: 1px; min-width: 0; }
+.evidenceGroup li strong { font-size: 13px; }
+.evidenceGroup li span,.evidenceGroup p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+@media (max-width:600px) { .evidenceSummary { padding: 14px; } .evidenceGrid { grid-template-columns: 1fr; } }

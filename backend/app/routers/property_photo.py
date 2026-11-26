@@ -36,6 +36,9 @@ IMAGE_URL = 'https://maps.googleapis.com/maps/api/streetview'
 MAX_METADATA_BYTES = 64 * 1024
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
 MAX_CRAWL4AI_BYTES = 512 * 1024
+MAX_LISTING_IMAGE_ATTEMPTS = 8
+MAX_SEARCH_IMAGE_ATTEMPTS = 2
+MAX_LISTING_PHOTO_SECONDS = 20
 CRAWL4AI_SEARCH_URL = 'https://api.crawl4ai.com/tools/search'
 CRAWL4AI_SCRAPE_URL = 'https://api.crawl4ai.com/tools/scrape'
 TRUSTED_LISTING_DOMAINS = {
@@ -180,27 +183,91 @@ def select_crawl4ai_listing_page(data, address):
     return matches[0] if matches else None
 
 
-def listing_image_url(data):
-    """Read an Open Graph image from Crawl4AI's parsed metadata or returned HTML."""
-    payload = data.get('data') if isinstance(data, dict) else None
-    if not isinstance(payload, dict):
+def _https_image_url(value, base_url=''):
+    if not isinstance(value, str) or not value.strip():
         return None
+    resolved = urljoin(base_url, value.strip()) if base_url else value.strip()
+    return resolved if resolved.startswith('https://') else None
+
+
+def _append_image_url(urls, seen, value, base_url=''):
+    image_url = _https_image_url(value, base_url)
+    if image_url and image_url not in seen and len(urls) < 12:
+        seen.add(image_url)
+        urls.append(image_url)
+
+
+def _exterior_image_evidence(item):
+    if not isinstance(item, dict):
+        return False
+    copy = ' '.join(str(item.get(key) or '') for key in ('alt', 'title', 'description', 'desc')).lower()
+    if re.search(r'\b(?:floor ?plan|map|logo|agent|avatar|advert|nearby|recommended|icon)\b', copy):
+        return False
+    score = item.get('score')
+    return (isinstance(score, (int, float)) and score >= 3) or bool(
+        re.search(r'\b(?:exterior|front|facade|house|home|property|residence)\b', copy))
+
+
+def listing_image_urls(data, base_url=''):
+    """Collect a bounded candidate pool from Crawl4AI metadata, media and HTML."""
+    if not isinstance(data, dict):
+        return []
+    payload = data.get('data') if isinstance(data.get('data'), dict) else data
+    urls, seen = [], set()
     metadata = payload.get('metadata')
     if isinstance(metadata, dict):
         for key in ('og:image', 'ogImage', 'og_image', 'twitter:image', 'twitterImage', 'image'):
-            value = metadata.get(key)
-            if isinstance(value, str) and value.startswith('https://'):
-                return value
+            _append_image_url(urls, seen, metadata.get(key), base_url)
+    media = payload.get('media')
+    images = media.get('images') if isinstance(media, dict) else None
+    if isinstance(images, list):
+        ranked = sorted(images, key=lambda image: image.get('score', 0) if isinstance(image, dict) else 0, reverse=True)
+        for image in ranked:
+            if isinstance(image, str):
+                continue
+            elif _exterior_image_evidence(image):
+                for key in ('src', 'url', 'href', 'data-src'):
+                    _append_image_url(urls, seen, image.get(key), base_url)
     html = payload.get('html')
     if not isinstance(html, str) or len(html) > MAX_CRAWL4AI_BYTES:
-        return None
+        return urls
     soup = BeautifulSoup(html, 'html.parser')
     for attribute, value in (('property', 'og:image'), ('name', 'twitter:image')):
         tag = soup.find('meta', attrs={attribute: value})
-        image_url = tag.get('content') if tag else None
-        if isinstance(image_url, str) and image_url.startswith('https://'):
-            return image_url
-    return None
+        _append_image_url(urls, seen, tag.get('content') if tag else None, base_url)
+    for tag in soup.find_all('img', limit=30):
+        if not _exterior_image_evidence({'alt':tag.get('alt'),'title':tag.get('title')}):
+            continue
+        for attribute in ('data-src', 'data-lazy-src', 'src'):
+            _append_image_url(urls, seen, tag.get(attribute), base_url)
+    return urls
+
+
+def listing_image_url(data):
+    """Compatibility helper for callers that need only the first candidate."""
+    urls = listing_image_urls(data)
+    return urls[0] if urls else None
+
+
+def search_result_image_urls(candidate):
+    """Collect image URLs surfaced directly by exact-address search results."""
+    if not isinstance(candidate, dict):
+        return []
+    urls, seen = [], set()
+    for key in ('image', 'thumbnail', 'thumbnailUrl', 'imageUrl'):
+        value = candidate.get(key)
+        if isinstance(value, dict):
+            value = value.get('src') or value.get('url')
+        _append_image_url(urls, seen, value)
+    for key in ('images', 'thumbnails'):
+        values = candidate.get(key)
+        if not isinstance(values, list):
+            continue
+        for value in values:
+            if isinstance(value, dict):
+                value = value.get('src') or value.get('url')
+            _append_image_url(urls, seen, value)
+    return urls
 
 
 def image_dimensions(mime, data):
@@ -231,6 +298,15 @@ def image_dimensions(mime, data):
                 return (int.from_bytes(data[index + 5:index + 7], 'big'),
                         int.from_bytes(data[index + 3:index + 5], 'big'))
             index += length
+    if mime == 'image/webp' and len(data) >= 30 and data.startswith(b'RIFF') and data[8:12] == b'WEBP':
+        kind = data[12:16]
+        if kind == b'VP8X':
+            return 1 + int.from_bytes(data[24:27], 'little'), 1 + int.from_bytes(data[27:30], 'little')
+        if kind == b'VP8 ' and data[23:26] == b'\x9d\x01\x2a':
+            return int.from_bytes(data[26:28], 'little') & 0x3fff, int.from_bytes(data[28:30], 'little') & 0x3fff
+        if kind == b'VP8L' and data[20] == 0x2f:
+            bits = int.from_bytes(data[21:25], 'little')
+            return 1 + (bits & 0x3fff), 1 + ((bits >> 14) & 0x3fff)
     return None
 
 
@@ -310,39 +386,76 @@ async def crawl4ai_listing_photo(address, key=''):
                'Authorization': 'Bearer ' + key}
     search_address = listing_search_address(address)
     async with httpx.AsyncClient(timeout=httpx.Timeout(12, connect=4), follow_redirects=False, trust_env=False) as client:
-        search = await _crawl4ai_json(client, CRAWL4AI_SEARCH_URL, headers, {
-            'q': f'"{search_address}" exterior home', 'rich': False, 'deep': False,
-        })
-        for candidate in crawl4ai_listing_pages(search, address):
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + MAX_LISTING_PHOTO_SECONDS
+        attempts = 0
+
+        async def crawl_with_deadline(url, body):
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                return None
+            return await asyncio.wait_for(
+                _crawl4ai_json(client, url, headers, body),
+                timeout=max(0.1, min(12, remaining)),
+            )
+
+        async def accepted_photo(image_url, candidate):
+            nonlocal attempts
+            if attempts >= MAX_LISTING_IMAGE_ATTEMPTS or loop.time() >= deadline:
+                return None
+            attempts += 1
             try:
-                page = await _crawl4ai_json(client, CRAWL4AI_SCRAPE_URL, headers, {
-                    'url': candidate['url'], 'format': 'html', 'parse': ['metadata'], 'timeout': 8,
-                })
-            except (httpx.HTTPError, ValueError, json.JSONDecodeError):
-                continue
-            image_url = listing_image_url(page)
-            if not image_url:
-                continue
-            try:
-                downloaded = await asyncio.get_running_loop().run_in_executor(
-                    _image_executor, _download_public_image, image_url)
-            except (HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
-                continue
+                downloaded = await asyncio.wait_for(
+                    loop.run_in_executor(_image_executor, _download_public_image, image_url),
+                    timeout=max(0.1, min(12, deadline - loop.time())))
+            except (asyncio.TimeoutError, HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
+                return None
             if not downloaded:
-                continue
+                return None
             mime, image = downloaded
             dimensions = image_dimensions(mime, image)
             if not dimensions:
-                continue
+                return None
             width, height = dimensions
             if width < 400 or height < 250 or width < height * 1.1:
-                continue
+                return None
             return {
                 'image': f'data:{mime};base64,' + base64.b64encode(image).decode('ascii'),
                 'attribution': f"Exterior photo · {candidate['provider']}",
                 'date': None,
                 'sourceUrl': candidate['url'],
             }
+
+        try:
+            search = await crawl_with_deadline(CRAWL4AI_SEARCH_URL, {
+                'q': f'"{search_address}" exterior home', 'rich': True, 'deep': False,
+            })
+        except (asyncio.TimeoutError, httpx.HTTPError, ValueError, json.JSONDecodeError):
+            return None
+        search_fallbacks = []
+        for candidate in crawl4ai_listing_pages(search, address):
+            if loop.time() >= deadline:
+                break
+            search_fallbacks.extend((image_url, candidate) for image_url in search_result_image_urls(candidate))
+            try:
+                page = await crawl_with_deadline(CRAWL4AI_SCRAPE_URL, {
+                    'url': candidate['url'], 'format': 'html', 'parse': ['metadata'], 'timeout': 8,
+                })
+            except (asyncio.TimeoutError, httpx.HTTPError, ValueError, json.JSONDecodeError):
+                continue
+            page_budget = MAX_LISTING_IMAGE_ATTEMPTS - MAX_SEARCH_IMAGE_ATTEMPTS
+            for image_url in listing_image_urls(page, candidate['url'])[:3]:
+                if attempts >= page_budget:
+                    break
+                accepted = await accepted_photo(image_url, candidate)
+                if accepted:
+                    return accepted
+        for image_url, candidate in search_fallbacks[:MAX_SEARCH_IMAGE_ATTEMPTS]:
+            if loop.time() >= deadline:
+                break
+            accepted = await accepted_photo(image_url, candidate)
+            if accepted:
+                return accepted
     return None
 
 

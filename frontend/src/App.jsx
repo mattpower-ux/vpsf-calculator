@@ -5,6 +5,7 @@ import Certifications, { CertificationFindings } from './Certifications.jsx';
 import { fixtureFields, fixtureOptions, presentationInput } from './certifications.js';
 import { useCertificationCatalog, useCertificationPreview } from './useCertificationPreview.js';
 import PermitHistory from './PermitHistory.jsx';
+import EvidenceSummary from './EvidenceSummary.jsx';
 import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome, confirmPermitWork } from './permitEvidence.js';
 import { lookupPermitHistory } from './api/client.js';
 import { ModerateReview, InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
@@ -1318,6 +1319,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
       <h2>Add Property Details</h2>
       <p className="subhead">Review the details we found and fill in what you know.</p>
       {home.analysisLevel !== "broad" && <AnalysisEvidence home={home} onApply={onEvidence} onListingSelect={onListingSelect}/>}
+      <EvidenceSummary home={home}/>
       <PermitHistory home={home} onConfirmPermit={onConfirmPermit}/>
       {Array.isArray(home.photoReview) && <section className="photoFindings formSection">
         <h3>Review photo findings</h3>

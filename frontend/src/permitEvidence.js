@@ -89,6 +89,7 @@ const finalPermit = permit => permit?.status === 'FINAL' || permit?.status === '
   || (Boolean(permit?.dateCompleted) && !['EXPIRED','CANCELLED','REVOKED'].includes(permit?.status));
 const permitCopy = permit => `${permit?.category || ''} ${permit?.description || ''}`.toLowerCase();
 const permitYear = permit => String(permit?.dateCompleted || permit?.dateIssued || permit?.dateFiled || '').slice(0,4);
+const completionYear = permit => String(permit?.dateCompleted || '').slice(0,4);
 const permitLabel = permit => permit?.permitNumber || permit?.id || 'permit';
 const installVerb=/\b(?:install(?:ation|ed|ing)?|replac(?:e|ed|ement|ing)|upgrade(?:d|s|ing)?|new|add(?:ed|ing)?|interconnect(?:ed|ion)?)\b/;
 const ambiguousVerb=/\b(?:remove|removal|relocat(?:e|ed|ion|ing)|mov(?:e|ed|ing)|repair(?:ed|s|ing)?|service(?:d|s|ing)?|maintenance|inspect(?:ed|ion)?|disconnect(?:ed|ion)?|tak(?:e|ing) down)\b/;
@@ -97,7 +98,7 @@ const equipmentClause = (permit,equipment) => permitClauses(permit).find(clause=
 const installationActionFor = item => Boolean(item.clause && installVerb.test(item.clause) && !ambiguousVerb.test(item.clause));
 
 function candidatesForPermit(permit) {
-  const copy=permitCopy(permit), year=permitYear(permit), candidates=[];
+  const copy=permitCopy(permit), year=completionYear(permit), candidates=[];
   const add=(field,value,label,equipment,clause)=>candidates.push({field,value,label,permit,equipment,clause});
   const solar=/\b(?:solar|photovoltaic|pv)\b/, heatPump=/\b(?:heat[ -]?pumps?|mini[ -]?splits?)\b/;
   const furnace=/\b(?:gas furnace|natural gas furnace)\b/, boiler=/\bboilers?\b/, waterHeater=/\bwater heater\b/;
@@ -130,6 +131,60 @@ function candidatesForPermit(permit) {
     if (/^\d{4}$/.test(year)) add('roofAge',`Installed ${year} (permit)`,'Roof age',roof,roofClause);
   }
   return candidates;
+}
+
+const discoveryFields = new Set(['hvac','solar','waterHeater','backup','roof']);
+
+function permitQuantity(candidate) {
+  const clause=String(candidate.clause || '');
+  if (!clause) return null;
+  const patterns={
+    hvac:/\b(\d{1,3})\s+(?:(?:[a-z0-9-]+)\s+){0,3}(?:heat[ -]?pumps?|mini[ -]?splits?|furnaces?|boilers?)\b/i,
+    solar:/\b(\d{1,4})\s+(?:roof[ -]?mounted\s+)?(?:solar\s+)?panels?\b/i,
+    waterHeater:/\b(\d{1,3})\s+(?:(?:[a-z0-9-]+)\s+){0,2}water heaters?\b/i,
+    backup:/\b(\d{1,3})\s+(?:(?:[a-z0-9-]+)\s+){0,2}(?:batter(?:y|ies)|energy storage units?)\b/i,
+  };
+  const pattern=patterns[candidate.field];
+  if (!pattern) return null;
+  if (/\breplac(?:e|ed|ement|ing)\b/i.test(clause)) {
+    const equipmentNames={
+      hvac:'(?:heat[ -]?pumps?|mini[ -]?splits?|furnaces?|boilers?)',
+      solar:'(?:solar\\s+)?panels?',
+      waterHeater:'water heaters?',
+      backup:'(?:batter(?:y|ies)|energy storage units?)',
+    };
+    const sameEquipmentResult=clause.match(new RegExp(`\\bwith\\s+(\\d{1,4})\\s+(?:(?:[a-z0-9-]+)\\s+){0,3}${equipmentNames[candidate.field]}\\b`,'i'));
+    if (sameEquipmentResult) return Number(sameEquipmentResult[1]);
+    const brandedResult=clause.match(/\bwith\s+(\d{1,4})\s+(?!amps?\b|circuits?\b|outlets?\b|switches?\b|panels?\b|service\b|new\b)[a-z][a-z0-9-]*\s*(?:[.;]|$)/i);
+    if (brandedResult) return Number(brandedResult[1]);
+    const counts=[...clause.matchAll(new RegExp(pattern.source,'gi'))];
+    if (counts.length >= 1) return null;
+  }
+  const match=pattern.exec(clause);
+  return match ? Number(match[1]) : null;
+}
+
+/** Reviewable equipment facts interpreted from permit descriptions. */
+export function permitDiscoveriesFromEvidence(evidence) {
+  if (!object(evidence) || !Array.isArray(evidence.permits)) return [];
+  const discoveries=[];
+  for (const permit of evidence.permits) {
+    const seen=new Set();
+    for (const candidate of candidatesForPermit(permit)) {
+      if (!discoveryFields.has(candidate.field)) continue;
+      const key=`${candidate.field}|${candidate.value}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const verified=finalPermit(permit) && installationActionFor(candidate);
+      discoveries.push({
+        field:candidate.field,value:candidate.value,label:candidate.label,
+        quantity:permitQuantity(candidate),year:/^\d{4}$/.test(completionYear(permit)) ? completionYear(permit) : null,
+        evidenceStatus:verified ? 'verified' : 'review',completed:verified,
+        permitStatus:permit.status || 'UNKNOWN',permitNumber:permitLabel(permit),
+      });
+    }
+  }
+  return discoveries;
 }
 
 /**
@@ -221,7 +276,7 @@ export function confirmPermitWork(home, permitNumber) {
   const candidates=candidatesForPermit(permit);
   if (!candidates.length) return home;
   const next={...home,provenance:{...home.provenance},extraInputs:{...home.extraInputs}};
-  const copy=permitCopy(permit), year=permitYear(permit);
+  const copy=permitCopy(permit), year=completionYear(permit);
   const rejected=new Set(), dependencies={hvacAge:'hvac',waterHeaterAge:'waterHeater'};
   for (const candidate of candidates) {
     if (dependencies[candidate.field] && rejected.has(dependencies[candidate.field])) continue;
@@ -250,6 +305,11 @@ export function confirmPermitWork(home, permitNumber) {
     if (stronger && current.toLowerCase() === value.toLowerCase()) continue;
     next[candidate.field]=value;
     next.provenance[candidate.field]={origin:'user-confirmed',source:`Homeowner confirmation of permit ${permitLabel(permit)}`,date:new Date().toISOString()};
+  }
+  if (/boilers?/i.test(copy) && /heat pump/i.test(String(next.hvac || '')) && !/^\d{4}$/.test(year)) {
+    const existingYear=String(next.hvacAge || '').match(/(?:19|20)\d{2}/)?.[0];
+    next.hvacAge=`Heat pumps: ${existingYear || 'year unknown'}; boiler: year unknown (completion date unavailable)`;
+    next.provenance.hvacAge={origin:'user-confirmed',source:`Homeowner confirmation of permit ${permitLabel(permit)}`,date:new Date().toISOString()};
   }
   const confirmed=confirmedPermitNumbers(next);
   confirmed.add(permitLabel(permit));

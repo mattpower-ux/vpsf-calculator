@@ -153,6 +153,21 @@ def test_crawl4ai_listing_page_accepts_exact_address_from_curated_brokerage():
     assert candidate['provider'] == "Sotheby's International Realty"
 
 
+def test_crawl4ai_listing_pages_diversify_duplicate_providers():
+    results = {'rows': [
+        {'title': '18 Merrill Road, Freeport, ME 04032',
+         'url': f'https://www.redfin.com/ME/Freeport/18-Merrill-Rd/home/{index}'}
+        for index in range(4)
+    ] + [{
+        'title': '18 Merrill Road, Freeport, Maine 04032 United States',
+        'url': 'https://www.sothebysrealty.com/eng/sales/detail/18-merrill-road-freeport-me-04032',
+    }]}
+    candidates = photo.crawl4ai_listing_pages(results, '18 Merrill Road, Freeport, ME 04032')
+    assert [candidate['provider'] for candidate in candidates] == [
+        'Redfin', "Sotheby's International Realty",
+    ]
+
+
 def test_crawl4ai_listing_page_rejects_house_number_prefix():
     results = {'rows': [
         {'title': '122 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/122-Dow-St/home/1'},

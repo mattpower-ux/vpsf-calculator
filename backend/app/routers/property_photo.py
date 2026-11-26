@@ -187,7 +187,15 @@ def crawl4ai_listing_pages(data, address):
             continue
         matches.append({**candidate, 'provider': provider})
     matches.sort(key=lambda candidate: PHOTO_PROVIDER_PRIORITY.get(candidate['provider'], 99))
-    return matches[:3]
+    diverse, providers = [], set()
+    for candidate in matches:
+        if candidate['provider'] in providers:
+            continue
+        providers.add(candidate['provider'])
+        diverse.append(candidate)
+        if len(diverse) >= 5:
+            break
+    return diverse
 
 
 def select_crawl4ai_listing_page(data, address):

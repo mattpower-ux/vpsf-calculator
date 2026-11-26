@@ -23,6 +23,7 @@ import AddressPhoto from "./AddressPhoto.jsx";
 import { analysisEntryInitialState, analysisEntryReducer } from "./analysisEntryFlow.js";
 import CaptureDialog from "./CaptureDialog.jsx";
 import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
+import AnalysisContextLine from "./AnalysisContextLine.jsx";
 import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
 import { applyAnalysisEvidence, applyReviewedPhotoValue, photoFindingConflictText } from "./captureFacts.js";
 import { getHardieDemo, cacheEducationContent, discoverPublicProperty, enrichPropertyRisk, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
@@ -3801,7 +3802,7 @@ export default function App() {
     <main className="app" data-theme={themeFromSearch(window.location.search)}>
       <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
-        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}
+        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <><div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div><AnalysisContextLine home={home}/></>}
         {screen === 0 && <StartScreen lookupGeneration={lookupGeneration} onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={presentationAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onConfirmPermit={permitNumber=>setHome(current=>confirmPermitWork(current,permitNumber))} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}

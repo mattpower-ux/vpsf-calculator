@@ -45,3 +45,4 @@
   html[data-phone-preview] .app .formSection > * { grid-column: auto; min-width: 0; }
   html[data-phone-preview] .app .analyzingScreen { min-height: 0; }
 }
+.analysisContextLine{margin:-.2rem auto .65rem;max-width:92%;padding:0 .5rem;color:#5b7180;font-size:.75rem;line-height:1.25;text-align:center;overflow-wrap:anywhere}

@@ -222,19 +222,23 @@
     "id": "evidence-and-documents",
     "title": "What counts as evidence",
     "category": "Property Data",
-    "body": "Documents and photos suggest home details for you to review and correct.",
+    "body": "Documents and photos suggest details for your review.",
     "sections": [
       {
         "heading": "Photo PROCESS",
-        "text": "In Guided Home Walk, choose images and select PROCESS. Review the resulting home details before scoring; images cannot prove hidden features."
+        "text": "Exact-address public photos are reviewed transiently and not saved. Remove unwanted results before PROCESS."
+      },
+      {
+        "heading": "Your photos",
+        "text": "Added photos are sanitized, privately archived, and expire 365 days after authorized access. Capabilities are credentials, not share links."
       },
       {
         "heading": "Documents",
-        "text": "Upload files or public document links, select Read documents, then check extracted values. Resolve conflicts and select Apply reviewed details."
+        "text": "Upload files or public links, read documents, resolve conflicts, and apply reviewed details."
       },
       {
         "heading": "Privacy",
-        "text": "Selected images use Mistral for review; original walk video stays on your device. Original document files are not saved."
+        "text": "Homeowner photos take priority. Photo quantity never adds points. Selected images may use Mistral; original videos stay on your device."
       }
     ],
     "keywords": [
@@ -537,19 +541,23 @@
     "id": "privacy-and-limitations",
     "title": "Data, privacy, and limits",
     "category": "Getting Started",
-    "body": "VPSF combines your entries with available public or partner data and saves reviewed property details for later assessments.",
+    "body": "VPSF combines your entries with available property data and saves reviewed details.",
     "sections": [
       {
         "heading": "Uploads",
-        "text": "Photos and scanned documents may use Mistral for reading. Choose only evidence you are comfortable processing."
+        "text": "Public photos are processed transiently and not saved. Selected evidence may use Mistral."
+      },
+      {
+        "heading": "Private photo storage",
+        "text": "Added photos are sanitized, privately archived, and expire 365 days after authorized access. Capabilities are credentials, not share links."
       },
       {
         "heading": "Your choice",
-        "text": "Manufacturer inquiries require your submission and consent; administrator-controlled sharing is separate from scoring."
+        "text": "Manufacturer inquiries require your submission. Administrator-controlled sharing is separate from scoring."
       },
       {
         "heading": "Limits",
-        "text": "Public records can be incomplete. A score does not replace an inspection, audit, underwriting, or appraisal."
+        "text": "Public records can be incomplete. Scores do not replace inspections, audits, underwriting, or appraisals."
       }
     ],
     "keywords": [

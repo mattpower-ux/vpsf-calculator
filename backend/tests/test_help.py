@@ -44,6 +44,14 @@ def test_help_search_indexes_scannable_point_text():
     assert search_guide("recheck")[0]["id"] == "recommendations"
 
 
+def test_help_explains_automatic_and_homeowner_photo_storage():
+    entries = {entry['id']: entry for entry in guide_entries()}
+    content = str(entries['evidence-and-documents']) + str(entries['privacy-and-limitations'])
+    for term in ['transiently', 'not saved', '365 days', 'capability', 'not a share link',
+                 'take priority', 'photo quantity never adds points']:
+        assert term.lower() in content.lower()
+
+
 def test_help_api_exposes_certification_faq_and_separate_manual_chapter():
     response = get_help_response("/api/help/guide")
     assert response.status_code == 200

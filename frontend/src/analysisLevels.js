@@ -4,14 +4,14 @@ import { boundedCertificationFields } from './certifications.js';
 
 const LEVELS = {
   broad: {label: '1. Basic', route: 3},
-  moderate: {label: '2. Informed', route: 1},
-  inclusive: {label: '3. Superior', route: 29}
+  inclusive: {label: '2. Superior', route: 29}
 };
 
-/** Unknown/non-string input preserves the legacy full-form flow, Moderate. */
+/** Legacy Informed analyses migrate to the full Superior workflow. */
 export function normalizeAnalysisLevel(value) {
   const level = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return Object.hasOwn(LEVELS, level) ? level : 'moderate';
+  if (level === 'moderate' || level === 'informed') return 'inclusive';
+  return Object.hasOwn(LEVELS, level) ? level : 'inclusive';
 }
 
 export const analysisLevelLabel = value => LEVELS[normalizeAnalysisLevel(value)].label;
@@ -62,8 +62,8 @@ function matchedWalkability(home) {
 /**
  * Return a detached, form-ready home for the explicit level (never the saved
  * home's level). Unanswered fact fields are ''. Only retained facts keep their
- * provenance. Broad requires imported public-record provenance; Moderate and
- * Inclusive also retain homeowner-confirmed/inferred facts. Climate additionally
+ * provenance. Broad requires imported public-record provenance; Superior also
+ * retains homeowner-confirmed/inferred facts. Climate additionally
  * accepts imported PNNL/IECC sources; flood accepts FEMA. Both accept Geographic
  * risk, Location risk, or Public geographic risk sources. These source labels
  * are provenance supplied by the caller, not independent verification.

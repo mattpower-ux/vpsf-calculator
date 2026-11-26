@@ -66,7 +66,7 @@ def test_help_api_exposes_certification_faq_and_separate_manual_chapter():
 
 def test_help_api_search_discovers_current_workflow_and_certification_limits():
     cases = [
-        ("Basic Informed Superior", "analysis-levels", ["Basic", "Informed", "Superior"]),
+        ("Basic Superior", "analysis-levels", ["Basic", "Superior"]),
         ("PermitStack", "address-and-records", ["completed work", "equipment age"]),
         ("PROCESS", "evidence-and-documents", ["PROCESS", "review", "Read documents"]),
         ("certification points", "certification-scoring", ["missing", "ordinary", "blanket"]),

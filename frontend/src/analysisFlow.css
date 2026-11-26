@@ -1,12 +1,12 @@
 .analysisChoices { margin-top: 6px; }
 .analysisChoices h2 { font-size: 20px; text-align: center; margin: 0 0 12px; }
 .sketchFilters { position: absolute; pointer-events: none; }
-.analysisChoiceGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
-.analysisChoice { min-width: 0; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #fff; color: var(--ink,#232c3b); padding: 6px 6px 10px; text-align: center; cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; transition: border-color .15s, box-shadow .15s; }
+.analysisChoiceGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; max-width: 430px; margin-inline: auto; }
+.analysisChoice { min-width: 0; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #fff; color: var(--ink,#232c3b); padding: 8px 8px 14px; text-align: center; cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; transition: border-color .15s, box-shadow .15s, background-color .15s; }
 .analysisChoice:hover:not(:disabled), .analysisChoice:focus-visible { border-color: var(--blue,#14778b); box-shadow: 0 0 0 2px var(--blue,#14778b); outline: 0; }
 .analysisChoice.selected { border-color: var(--blue,#14778b); box-shadow: 0 0 0 2px rgba(20,119,139,.18); background: #f7fbfb; }
 .analysisChoice:disabled { opacity: .55; cursor: default; }
-.analysisChoiceImage { display: flex; width: 100%; aspect-ratio: 1.6; border-radius: 10px; overflow: hidden; background: #f2f8f9; align-items: center; justify-content: center; }
+.analysisChoiceImage { display: flex; width: 100%; aspect-ratio: 1.55; border-radius: 10px; overflow: hidden; background: #f2f8f9; align-items: center; justify-content: center; }
 .analysisChoiceImage img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; }
 .analysisChoice strong { font-size: 17px; line-height: 1.3; margin-top: 6px; }
 .analysisChoice small { font-size: 13px; color: var(--muted,#526d78); margin-top: 4px; line-height: 1.3; }
@@ -16,7 +16,8 @@
 .addressPhotoStart { margin-top: 14px; width: 100%; }
 .analysisDepthHeader { position: relative; padding-top: 48px; text-align: center; }
 .analysisDepthHeader > p { margin: -4px auto 16px; max-width: 34ch; color: var(--muted,#526d78); line-height: 1.45; }
-.analysisDepthBack { position: absolute; top: 0; left: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 4px; border: 0; background: transparent; color: var(--blue,#14778b); font: inherit; font-weight: 700; cursor: pointer; }
+.analysisDepthBack { position: absolute; top: 4px; left: 0; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--blue,#14778b); color: #fff; cursor: pointer; box-shadow: 0 5px 14px rgba(20,119,139,.2); }
+.analysisDepthBack:hover:not(:disabled){background:#0f6575}.analysisDepthBack:focus-visible{outline:3px solid rgba(20,119,139,.28);outline-offset:3px}
 .analysisLevelResult { margin-top: 14px; padding: 16px; border: 1px solid var(--accent-line,var(--line,#d7e6e8)); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(9,33,59,.07); }
 .analysisLevelResult h3 { margin: 0 0 6px; font-size: 18px; }
 .analysisLevelResult p { margin: 0; color: var(--body-copy,var(--muted,#526d78)); line-height: 1.5; }
@@ -83,7 +84,7 @@
 .analysisChoiceImage { position: relative; }
 .analysisChoiceNumber { position: absolute; z-index: 1; top: 5px; left: 5px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--blue,#14778b); color: #fff; font-size: 12px; font-weight: 700; line-height: 1; }
 .analysisChoice strong { white-space: nowrap; font-size: 16px; margin-top: 8px; }
-.analysisChoice small { display: block; min-height: 2.6em; max-width: 12ch; margin-top: 4px; }
+.analysisChoice small { display: block; min-height: 2.6em; max-width: 17ch; margin-top: 4px; }
 @media (max-width: 640px) {
   .analysisChoiceGrid { gap: 8px; }
   .analysisChoice strong { font-size: 14px; }

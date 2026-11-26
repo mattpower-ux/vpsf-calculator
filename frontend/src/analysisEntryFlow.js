@@ -1,4 +1,4 @@
-const LEVELS = new Set(['broad', 'moderate', 'inclusive']);
+const LEVELS = new Set(['broad', 'inclusive']);
 
 export const analysisEntryInitialState = Object.freeze({page:'address', expanded:null, confirmed:null});
 
@@ -9,12 +9,10 @@ export const analysisLevelDetails = Object.freeze({
     cons: ['Many home records lack substantial data.', 'Results likely to be incomplete, with weak accuracy.'],
     results: ['Seven-pillar VPSF score', 'Initial strengths and priority upgrades', 'Limited additional entry from you'],
   },
-  moderate: {
-    summary: 'A more informed score that asks you to confirm the home’s most important systems and features.',
-    results: ['Critical roof, HVAC, water-heating, and resilience details', 'More targeted recommendations'],
-  },
   inclusive: {
     summary: 'The most complete review, using documented features, photos, and detailed home information.',
+    pros: ['Highest-confidence VPSF score', 'Detailed findings and improvement opportunities', 'Documents and photos can fill information gaps'],
+    cons: ['More info from you', 'Takes longer to complete than Basic'],
     results: ['Highest-confidence VPSF score', 'Detailed findings and improvement opportunities', 'More info from you'],
   },
 });

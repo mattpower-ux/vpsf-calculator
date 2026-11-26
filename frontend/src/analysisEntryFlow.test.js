@@ -11,8 +11,9 @@ test('selecting a level reveals only that description without confirming it', ()
   const opened = analysisEntryReducer(analysisEntryInitialState, {type:'open-depth'});
   const basic = analysisEntryReducer(opened, {type:'toggle-level', level:'broad'});
   assert.deepEqual(basic, {page:'depth', expanded:'broad', confirmed:null});
-  const informed = analysisEntryReducer(basic, {type:'toggle-level', level:'moderate'});
-  assert.deepEqual(informed, {page:'depth', expanded:'moderate', confirmed:null});
+  assert.deepEqual(analysisEntryReducer(basic, {type:'toggle-level', level:'moderate'}), basic);
+  const superior = analysisEntryReducer(basic, {type:'toggle-level', level:'inclusive'});
+  assert.deepEqual(superior, {page:'depth', expanded:'inclusive', confirmed:null});
 });
 
 test('DO IT confirms only the currently expanded level', () => {
@@ -23,12 +24,12 @@ test('DO IT confirms only the currently expanded level', () => {
 });
 
 test('returning to the address page clears selection but keeps flow reusable', () => {
-  const selected = {page:'depth', expanded:'moderate', confirmed:null};
+  const selected = {page:'depth', expanded:'inclusive', confirmed:null};
   assert.deepEqual(analysisEntryReducer(selected, {type:'back'}), analysisEntryInitialState);
 });
 
 test('every scoring depth has a concrete result description', () => {
-  assert.deepEqual(Object.keys(analysisLevelDetails).sort(), ['broad','inclusive','moderate']);
+  assert.deepEqual(Object.keys(analysisLevelDetails).sort(), ['broad','inclusive']);
   for (const detail of Object.values(analysisLevelDetails)) {
     assert.ok(detail.summary.length >= 40);
     assert.ok(detail.results.length >= 2);
@@ -43,8 +44,7 @@ test('Basic explains that it needs only limited additional entry', () => {
   ]);
 });
 
-test('only Superior asks for more information from the homeowner', () => {
+test('Superior asks for more information from the homeowner', () => {
   assert.ok(analysisLevelDetails.inclusive.results.includes('More info from you'));
   assert.equal(analysisLevelDetails.broad.results.includes('More info from you'), false);
-  assert.equal(analysisLevelDetails.moderate.results.includes('More info from you'), false);
 });

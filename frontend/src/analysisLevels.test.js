@@ -4,14 +4,14 @@ import { normalizeAnalysisLevel, analysisLevelLabel, routeAfterLookup, prepareHo
 import { importedHome } from './homeAdvice.js';
 
 test('levels normalize safely and route independently of saved home state', () => {
-  for (const [input, level, label, route] of [[' BROAD ', 'broad', '1. Basic', 3], ['Moderate', 'moderate', '2. Informed', 1], ['inclusive', 'inclusive', '3. Superior', 29]]) {
+  for (const [input, level, label, route] of [[' BROAD ', 'broad', '1. Basic', 3], ['Moderate', 'inclusive', '2. Superior', 29], ['inclusive', 'inclusive', '2. Superior', 29]]) {
     assert.equal(normalizeAnalysisLevel(input), level);
     assert.equal(analysisLevelLabel(input), label);
     assert.equal(routeAfterLookup(input), route);
   }
   for (const input of [undefined, null, '', 'advanced', {}, 1]) {
-    assert.equal(normalizeAnalysisLevel(input), 'moderate');
-    assert.equal(routeAfterLookup(input), 1);
+    assert.equal(normalizeAnalysisLevel(input), 'inclusive');
+    assert.equal(routeAfterLookup(input), 29);
   }
 });
 
@@ -30,14 +30,14 @@ test('Broad retains public facts but blanks unknown and private saved equipment'
   assert.equal(result.analysisLevel, 'broad');
 });
 
-test('Moderate and Inclusive keep evidenced additions and preserve explicit None', () => {
+test('legacy Moderate migrates to Superior while retaining evidenced additions', () => {
   for (const level of ['moderate','inclusive']) {
     const result = prepareHomeForLevel(sample(), level);
     assert.equal(result.solar, 'Solar PV'); assert.equal(result.waterHeater, 'Heat Pump Water Heater');
     assert.equal(result.backup, 'None'); assert.equal(result.hvac, ''); assert.equal(result.fortified, '');
     assert.deepEqual(result.extraInputs,{bonus:true}); assert.equal(result.photoReview[0].field,'roof');
     assert.equal(result.provenance.waterHeater.origin,'inferred');
-    assert.equal(result.analysisLevel, level);
+    assert.equal(result.analysisLevel, 'inclusive');
   }
 });
 
@@ -68,16 +68,16 @@ test('preparation is detached, idempotent, and cannot inherit a saved analysis l
   assert.deepEqual(prepareHomeForLevel(result,'moderate'),result);
   result.provenance.roof.source='changed'; result.photoReview[0].field='changed'; result.extraInputs.bonus=false;
   assert.deepEqual(home,original);
-  assert.equal(prepareHomeForLevel(home).analysisLevel,'moderate');
+  assert.equal(prepareHomeForLevel(home).analysisLevel,'inclusive');
 });
 
 test('parent-facing aliases preserve contracts and provide full analysis labels', () => {
   assert.equal(prepareAnalysisHome, prepareHomeForLevel);
   assert.equal(analysisRoute, routeAfterLookup);
   assert.equal(analysisLabel('broad'), '1. Basic');
-  assert.equal(analysisLabel('moderate'), '2. Informed');
-  assert.equal(analysisLabel('inclusive'), '3. Superior');
-  assert.equal(analysisLabel(undefined), '2. Informed');
+  assert.equal(analysisLabel('moderate'), '2. Superior');
+  assert.equal(analysisLabel('inclusive'), '2. Superior');
+  assert.equal(analysisLabel(undefined), '2. Superior');
   assert.equal(analysisRoute('inclusive'), 29);
 });
 

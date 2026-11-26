@@ -26,8 +26,8 @@ test('explicit save round trips version, timestamp, facts and demo provenance', 
   assert.equal(loadAnalysisDraft(store), null);
 });
 
-test('only moderate and inclusive drafts with a known address are accepted', () => {
-  for (const level of ['moderate', 'inclusive']) assert.equal(saveAnalysisDraft({ ...home(), analysisLevel: level }, storage()).home.analysisLevel, level);
+test('Superior drafts save and legacy Informed drafts migrate to Superior', () => {
+  for (const level of ['moderate', 'inclusive']) assert.equal(saveAnalysisDraft({ ...home(), analysisLevel: level }, storage()).home.analysisLevel, 'inclusive');
   for (const input of [null, [], {}, { ...home(), analysisLevel: 'broad' }, { ...home(), address: ' ' },
     { ...home(), address: {} }, { ...home(), provenance: { address: { origin: 'unknown' } } }]) {
     assert.throws(() => saveAnalysisDraft(input, storage()));

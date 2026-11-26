@@ -35,7 +35,7 @@
     "sections": [
       {
         "heading": "Choose depth",
-        "text": "Basic uses available records; Informed adds a quick homeowner review; Superior supports a fuller review with documents and photos."
+        "text": "Basic uses available records. Superior supports a fuller review with documents, photos, and homeowner-confirmed details."
       },
       {
         "heading": "Confirm",
@@ -572,17 +572,13 @@
   },
   {
     "id": "analysis-levels",
-    "title": "Basic, Informed, and Superior",
+    "title": "Basic and Superior",
     "category": "Getting Started",
     "body": "Analysis labels describe how much information you review, not the homeâ€™s performance rating.",
     "sections": [
       {
         "heading": "Basic",
         "text": "Basic starts with available property records and regional context; review them before generating an analysis."
-      },
-      {
-        "heading": "Informed",
-        "text": "Informed adds a quick homeowner review of key features. Leave uncertain answers unanswered."
       },
       {
         "heading": "Superior",
@@ -595,7 +591,6 @@
     ],
     "keywords": [
       "Basic",
-      "Informed",
       "Superior",
       "analysis level",
       "completeness"

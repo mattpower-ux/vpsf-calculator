@@ -31,7 +31,7 @@ export default function AddressPhoto({ address, searchRequest, flow, onFlowActio
   const found = remote?.address === address.trim() ? remote : null;
   const image = imported?.image || (demo ? demoExterior : found?.image);
   const canSketch = Boolean(imported || demo || found?.derivativesAllowed);
-  const options = [['broad',analysisLevelLabel('broad'),'Quick Score from Public Records'],['moderate',analysisLevelLabel('moderate'),'Critical Systems Confirmed'],['inclusive',analysisLevelLabel('inclusive'),'Fully Documented Features']];
+  const options = [['broad',analysisLevelLabel('broad'),'Quick Score from Public Records'],['inclusive',analysisLevelLabel('inclusive'),'Fully Documented Features']];
   const selected = options.find(([level]) => level === flow.expanded);
   const imageFailed = () => { setRemote(null); setLocal(null); setError('This photo could not be displayed. Please choose another.'); };
   const confirmLevel = level => {
@@ -66,24 +66,23 @@ export default function AddressPhoto({ address, searchRequest, flow, onFlowActio
       <button type="button" className="primaryButton addressPhotoStart" disabled={busy || address.trim().length < 5} onClick={() => onFlowAction({type:'open-depth'})}>Start the Calculation! <ArrowRight size={18}/></button>
     </> : <>
       <header className="analysisDepthHeader">
-        <button type="button" className="analysisDepthBack" onClick={() => onFlowAction({type:'back'})}><ArrowLeft size={18}/> Back</button>
+        <button type="button" className="analysisDepthBack" aria-label="Back" title="Back" onClick={() => onFlowAction({type:'back'})}><ArrowLeft size={17} strokeWidth={4}/></button>
         <h2>Depth of Scoring Desired</h2>
         <p>Choose a level to see what your calculation will include.</p>
       </header>
       <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className={`analysisChoice ${flow.expanded === level ? 'selected' : ''}`} type="button" disabled={busy} onClick={() => onFlowAction({type:'toggle-level', level})} aria-expanded={flow.expanded === level} aria-controls={`analysis-${level}-details`} aria-label={`${label}: ${caption}`}>
         <span className="analysisChoiceImage">
           <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
-          {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : level === 'moderate' ? 'Shaded view' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : level === 'moderate' ? `url(#${filterId}-shade)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
+          {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
         </span>
         <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
       </button>)}</div>
       {selected && <section className="analysisLevelResult" id={`analysis-${selected[0]}-details`} aria-live="polite">
-        {selected[0] !== 'broad' && <h3>{selected[1]}</h3>}
         <p>{analysisLevelDetails[selected[0]].summary}</p>
-        {selected[0] === 'broad' ? <div className="analysisTradeoffs">
-          <h4>Pros</h4><ul>{analysisLevelDetails.broad.pros.map(result => <li key={result}>{result}</li>)}</ul>
-          <h4>Cons</h4><ul>{analysisLevelDetails.broad.cons.map(result => <li key={result}>{result}</li>)}</ul>
-        </div> : <ul>{analysisLevelDetails[selected[0]].results.map(result => <li key={result}>{result}</li>)}</ul>}
+        <div className="analysisTradeoffs">
+          <h4>Pros</h4><ul>{analysisLevelDetails[selected[0]].pros.map(result => <li key={result}>{result}</li>)}</ul>
+          <h4>Cons</h4><ul>{analysisLevelDetails[selected[0]].cons.map(result => <li key={result}>{result}</li>)}</ul>
+        </div>
         <button type="button" className="primaryButton" disabled={busy} onClick={() => confirmLevel(selected[0])}>{busy ? 'Loading…' : 'DO IT!'} <ArrowRight size={18}/></button>
       </section>}
       {busy && <p role="status">Loading the available property information…</p>}

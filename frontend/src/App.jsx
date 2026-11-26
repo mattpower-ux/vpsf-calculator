@@ -8,9 +8,9 @@ import PermitHistory from './PermitHistory.jsx';
 import EvidenceSummary from './EvidenceSummary.jsx';
 import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome, confirmPermitWork } from './permitEvidence.js';
 import { lookupPermitHistory } from './api/client.js';
-import { ModerateReview, InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
+import { InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
-import { AnalysisEvidence, InclusiveIntroduction, BroadReview } from './AnalysisFlow.jsx';
+import { AnalysisEvidence, BroadReview } from './AnalysisFlow.jsx';
 import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLevels.js';
 import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
 import ProductRequestForm from "./ProductRequestForm.jsx";
@@ -1370,8 +1370,8 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
 
       {home.analysisLevel !== "broad" && <Certifications catalogState={certificationCatalog} home={home} update={update} preview={certificationPreview} Field={Field} options={depthOptions}/>}
 
-      <button className="primaryButton stickyButton" onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>
-        {home.analysisLevel === "moderate" ? "Next: Key Features" : "Next: Home Specs"} <ArrowRight size={18} />
+      <button className="primaryButton stickyButton" onClick={() => setScreen(2)}>
+        Next: Home Specs <ArrowRight size={18} />
       </button>
     </div>
   );
@@ -1494,7 +1494,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError,
       </section>
 
       <section className="summaryCard">
-        <div className="summaryHeader"><h3>KEY SYSTEMS</h3><button onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>Edit/Add Details</button></div>
+        <div className="summaryHeader"><h3>KEY SYSTEMS</h3><button onClick={() => setScreen(2)}>Edit/Add Details</button></div>
         {specRows.map(([Icon, a, b]) => (
           <div className="summaryRow compact" key={a}>
             <Icon size={17} />
@@ -1502,7 +1502,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError,
             <span>{b}</span>
           </div>
         ))}
-        <button className="textLink" onClick={() => setScreen(home.analysisLevel === "moderate" ? 30 : 2)}>View all specs</button>
+        <button className="textLink" onClick={() => setScreen(2)}>View all specs</button>
       </section>
 
       <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>
@@ -3649,7 +3649,7 @@ export default function App() {
     if (screen === 26 && pillarAboutReturnRef.current !== null) {setScreen(pillarAboutReturnRef.current);pillarAboutReturnRef.current=null;return;}
     if (screen === 30) { setScreen(1); return; }
     if (screen === 14) { setScreen(2); return; }
-    if (screen === 3 && home.analysisLevel && home.analysisLevel !== "broad") { setScreen(home.analysisLevel === "moderate" ? 30 : 14); return; }
+    if (screen === 3 && home.analysisLevel && home.analysisLevel !== "broad") { setScreen(14); return; }
     if (screen === 29 || screen === 1 || (screen === 3 && home.analysisLevel === "broad")) { setScreen(screen === 1 && home.analysisLevel === "inclusive" ? 29 : 0); return; }
     if (screen === 11) { setScreen(listingReturnRef.current); return; }
     if (screen === 27) {
@@ -3807,7 +3807,6 @@ export default function App() {
         {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onConfirmPermit={permitNumber=>setHome(current=>confirmPermitWork(current,permitNumber))} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
         {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}
-        {screen === 30 && <ModerateReview home={home} update={update} Field={Field} options={depthOptions} onReview={()=>setScreen(3)} onInclusive={()=>{setHome(current=>({...current,analysisLevel:"inclusive"}));setScreen(29);}}/>}
         {screen === 3 && home.analysisLevel === "broad" && <BroadReview home={home} onSubmit={handleGenerateScore} onBack={()=>setScreen(0)} busy={isScoring} error={scoreError}/>}
         {screen === 3 && home.analysisLevel !== "broad" && (
           <ReviewScreen

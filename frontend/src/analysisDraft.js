@@ -5,7 +5,7 @@ import { draftCertifications } from './certifications.js';
 export const DRAFT_KEY = 'vpsf.analysisDraft.v1';
 export const MAX_DRAFT_BYTES = 64 * 1024;
 const ORIGINS = new Set(['user-confirmed', 'imported', 'inferred', 'unknown', 'demo-assumption']);
-const BASE_FIELDS = Object.keys(prepareAnalysisHome({}, 'moderate'));
+const BASE_FIELDS = Object.keys(prepareAnalysisHome({}, 'inclusive'));
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value, max = 500) => typeof value === 'string' && value.length <= max
   && !/(?:data:|blob:)/i.test(value) ? value : '';
@@ -34,7 +34,7 @@ function customInputs(value) {
 export function prepareDraftHome(input) {
   if (!object(input) || !['moderate', 'inclusive'].includes(input.analysisLevel)
       || !text(input.address).trim()) {
-    throw new Error('Choose Informed or Superior and enter an address before saving a draft.');
+    throw new Error('Choose Superior and enter an address before saving a draft.');
   }
   const home = Object.fromEntries(BASE_FIELDS.map(key => [key, scalar(input[key])]));
   home.provenance = {};
@@ -61,7 +61,7 @@ export function prepareDraftHome(input) {
       }
     }
   }
-  const prepared = prepareAnalysisHome(home, home.analysisLevel);
+  const prepared = prepareAnalysisHome(home, input.analysisLevel);
   if (!prepared.address.trim()) throw new Error('A known property address is required to save this draft.');
   return prepared;
 }

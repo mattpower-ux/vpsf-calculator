@@ -191,6 +191,23 @@ class ArticleCacheRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class PropertyPhotoCandidateRecord(Base):
+    __tablename__ = "property_photo_candidates"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    property_identity: Mapped[str] = mapped_column(String(500), index=True)
+    provider: Mapped[str] = mapped_column(String(80))
+    source_page_url: Mapped[str] = mapped_column(String(1000))
+    remote_image_url: Mapped[str] = mapped_column(String(1000))
+    photo_kind_hint: Mapped[str] = mapped_column(String(60), default="")
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    match_confidence: Mapped[int] = mapped_column(Integer, default=0)
+    match_evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
 class LeadRecord(Base):
     __tablename__ = "leads"
 

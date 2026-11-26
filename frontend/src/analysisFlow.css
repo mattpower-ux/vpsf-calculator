@@ -90,9 +90,16 @@
 .analysisChoice small { display: block; min-height: 2.6em; max-width: 17ch; margin-top: 4px; }
 @media (max-width: 640px) {
   .analysisChoiceGrid { gap: 8px; }
+  .analysisChoices h2 { margin-bottom: 6px; }
+  .analysisDepthHeader > p { margin-bottom: 8px; font-size: 13px; }
   .analysisChoice strong { font-size: 14px; }
-  .analysisChoiceImage { aspect-ratio: 1.8; }
+  .analysisChoiceImage { aspect-ratio: 2.1; }
   .analysisChoiceNumber { width: 20px; height: 20px; font-size: 11px; top: 4px; left: 4px; }
+  .analysisLevelResult p { font-size: 13px; line-height: 1.35; }
+  .analysisTradeoffs { gap: 8px; }
+  .analysisTradeoffs h4 { margin-top: 6px; font-size: 12px; }
+  .analysisTradeoffs ul { margin-top: 4px; padding-left: 16px; font-size: 13px; line-height: 1.3; }
+  .analysisLevelResult .primaryButton { min-height: 44px; padding-block: 8px; }
 }
 @media (max-width: 480px) {
   .analysisChoices .mainExteriorPhoto img { max-height: 150px; object-fit: cover; }

@@ -266,7 +266,7 @@ def test_crawl4ai_search_then_scrape_uses_exact_listing_and_returns_bounded_imag
             return Stream()
 
     monkeypatch.setattr(photo.httpx, 'AsyncClient', lambda **kwargs: Client())
-    monkeypatch.setattr(photo, '_download_public_image', lambda url: ('image/jpeg', JPEG))
+    monkeypatch.setattr(photo, '_download_public_image', lambda url, *_: ('image/jpeg', JPEG))
     monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (900, 600))
     data = asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test'))
     assert data['attribution'] == 'Exterior photo · Redfin'
@@ -291,7 +291,7 @@ def test_crawl4ai_photo_tries_next_exact_listing_when_first_has_no_image(monkeyp
         return {'data': {'metadata': {'og:image': 'https://img.example/home.jpg'}}}
 
     monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
-    monkeypatch.setattr(photo, '_download_public_image', lambda url: ('image/jpeg', JPEG))
+    monkeypatch.setattr(photo, '_download_public_image', lambda url, *_: ('image/jpeg', JPEG))
     monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (900, 600))
     data = asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test'))
     assert data['sourceUrl'].startswith('https://www.redfin.com/')
@@ -336,7 +336,7 @@ def test_crawl4ai_photo_tries_multiple_images_from_one_exact_listing(monkeypatch
             {'src': 'https://images.example/exterior.jpg', 'score': 7, 'alt': 'House exterior'},
         ]}}}
 
-    def download(url):
+    def download(url, *_):
         attempted.append(url)
         return None if url.endswith('blocked.jpg') else ('image/jpeg', JPEG)
 
@@ -363,7 +363,7 @@ def test_search_result_images_are_last_resort_after_listing_page_media(monkeypat
             }]}
         return {'data': {'metadata': {}}}
 
-    def download(url):
+    def download(url, *_):
         attempted.append(url)
         return 'image/jpeg', JPEG
 
@@ -398,7 +398,7 @@ def test_crawl4ai_photo_caps_aggregate_download_attempts(monkeypatch):
             for index in range(12)
         ]}}}
     monkeypatch.setattr(photo,'_crawl4ai_json',fake_json)
-    monkeypatch.setattr(photo,'_download_public_image',lambda url: attempted.append(url))
+    monkeypatch.setattr(photo,'_download_public_image',lambda url, *_: attempted.append(url))
     assert asyncio.run(photo.crawl4ai_listing_photo('18 Merrill Road, Freeport, ME 04032','c4-test')) is None
     assert len(attempted) == photo.MAX_LISTING_IMAGE_ATTEMPTS - photo.MAX_SEARCH_IMAGE_ATTEMPTS
 
@@ -411,7 +411,7 @@ def test_crawl4ai_photo_rejects_small_or_portrait_download(monkeypatch):
         return {'data': {'metadata': {'og:image': 'https://img.example/portrait.jpg'}}}
 
     monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
-    monkeypatch.setattr(photo, '_download_public_image', lambda url: ('image/jpeg', JPEG))
+    monkeypatch.setattr(photo, '_download_public_image', lambda url, *_: ('image/jpeg', JPEG))
     monkeypatch.setattr(photo, 'image_dimensions', lambda mime, data: (300, 900))
     assert asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test')) is None
 
@@ -424,7 +424,7 @@ def test_crawl4ai_photo_degrades_safely_for_non_public_image(monkeypatch):
         return {'data': {'metadata': {'og:image': 'https://127.0.0.1/private.jpg'}}}
 
     monkeypatch.setattr(photo, '_crawl4ai_json', fake_json)
-    def blocked(_url):
+    def blocked(_url, *_):
         raise photo.HTTPException(status_code=400, detail='Private destination')
     monkeypatch.setattr(photo, '_download_public_image', blocked)
     assert asyncio.run(photo.crawl4ai_listing_photo('22 Dow St, Portland, ME 04102', 'c4-test')) is None

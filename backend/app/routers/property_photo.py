@@ -334,7 +334,7 @@ def image_dimensions(mime, data):
     return None
 
 
-def _download_public_image(url):
+def _download_public_image(url, referer=''):
     """Fetch one public image with DNS pinning, bounded redirects and no cookies."""
     deadline = time.monotonic() + 12
     for _ in range(4):
@@ -345,14 +345,18 @@ def _download_public_image(url):
         connection = PinnedHTTPSConnection(host, ip, min(6, remaining))
         try:
             connection.connect()
-            connection.request('GET', path, headers={
+            headers = {
                 'Accept': 'image/jpeg,image/png,image/webp',
                 'Accept-Encoding': 'identity',
                 'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                                'AppleWebKit/537.36 (KHTML, like Gecko) '
                                'Chrome/130.0.0.0 Safari/537.36'),
                 'Sec-Fetch-Dest': 'image',
-            })
+            }
+            if (isinstance(referer, str) and referer.startswith('https://')
+                    and not any(ord(char) < 32 for char in referer)):
+                headers['Referer'] = referer
+            connection.request('GET', path, headers=headers)
             response = connection.getresponse()
             if response.status in (301, 302, 303, 307, 308):
                 location = response.getheader('Location')
@@ -361,6 +365,7 @@ def _download_public_image(url):
                 url = urljoin(url, location)
                 continue
             if response.status != 200:
+                logger.warning('property_photo.image_http_status=%s', response.status)
                 return None
             mime = response.getheader('Content-Type', '').split(';')[0].strip().lower()
             if mime not in {'image/jpeg', 'image/png', 'image/webp'}:
@@ -434,7 +439,7 @@ async def crawl4ai_listing_photo(address, key=''):
             attempts += 1
             try:
                 downloaded = await asyncio.wait_for(
-                    loop.run_in_executor(_image_executor, _download_public_image, image_url),
+                    loop.run_in_executor(_image_executor, _download_public_image, image_url, candidate['url']),
                     timeout=max(0.1, min(12, deadline - loop.time())))
             except (asyncio.TimeoutError, HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
                 logger.warning('property_photo.crawl4ai provider=%s image_download=error', candidate['provider'])

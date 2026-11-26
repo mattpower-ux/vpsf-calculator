@@ -4,6 +4,7 @@ import './GuidedHomeWalk.css';
 import { Camera, X, RotateCcw } from 'lucide-react';
 import cognitionIcon from './assets/cognition-icon.png';
 import {preparePhotoReview} from './photoReview.js';
+import {discoverPropertyPhotos, uploadHomeownerPhoto} from './photoEvidence.js';
 import kitchenPhoto from './assets/demo-walk/kitchen.png';
 import roofPhoto from './assets/demo-walk/roof.png';
 import sidingPhoto from './assets/demo-walk/siding.png';
@@ -22,13 +23,14 @@ const SHORT_PROMPTS = {
 };
 const DEMO_IMAGES = [['kitchen',kitchenPhoto],['roof',roofPhoto],['siding',sidingPhoto],['landscaping',landscapingPhoto],['bath',bathPhoto],['hvac',hvacPhoto]];
 
-export default function GuidedHomeWalk({ onApply, demo = false }) {
+export default function GuidedHomeWalk({ onApply, demo = false, home = {} }) {
   const [step, setStep] = useState(0);
   const [images, setImages] = useState([]);
   const [rows, setRows] = useState(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [automatic, setAutomatic] = useState([]);
   const photoInput = useRef(null);
   const retake = useRef(null);
   const operation = useRef(null);
@@ -59,6 +61,14 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
     }).catch(err=>{if (!cancelled) setError(err.message);}).finally(()=>{if (!cancelled) setBusy('');});
     return ()=>{cancelled=true;controller.abort();};
   },[demo]);
+  useEffect(()=>{
+    if(demo || !home.address) return;
+    const controller=new AbortController();
+    discoverPropertyPhotos([home.address,home.city,home.state,home.zip].filter(Boolean).join(', '),controller.signal)
+      .then(rows=>setAutomatic(rows.slice(0,Math.max(0,MAX_PHOTOS-images.length)).map(row=>({...row,candidateId:row.id,topic:row.kind || 'siding'}))))
+      .catch(()=>setAutomatic([]));
+    return ()=>controller.abort();
+  },[demo,home.address,home.city,home.state,home.zip]);
   function updateImages(next) {
     imageRef.current = next;
     setImages(next);
@@ -80,7 +90,7 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
     const controller = new AbortController();
     operation.current = controller;
     try {
-      const capacity = MAX_PHOTOS - images.length + (replaceId ? 1 : 0);
+      const capacity = MAX_PHOTOS - images.length - automatic.length + (replaceId ? 1 : 0);
       if (capacity <= 0) throw new Error('The walk holds up to 12 images. Remove an image to add another.');
       const selected = video ? await extractVideoFrames(files[0], Math.min(6, capacity), controller.signal) : files;
       if (selected.length > capacity) throw new Error(`Only ${capacity} more images fit in this walk.`);
@@ -89,7 +99,12 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
       }
       if (!mounted.current || controller.signal.aborted) return;
       const previous = images.find(item => item.id === replaceId);
-      const additions = selected.map(file => ({ id: crypto.randomUUID(), file, topic: previous?.topic || topic, url: URL.createObjectURL(file) }));
+      const additions=[];
+      for(const file of selected){
+        const item={ id: crypto.randomUUID(), file, topic: previous?.topic || topic, url: URL.createObjectURL(file) };
+        if(home.address) item.asset=await uploadHomeownerPhoto(file,[home.address,home.city,home.state,home.zip].filter(Boolean).join(', '),item.topic,controller.signal);
+        additions.push(item);
+      }
       if (previous) URL.revokeObjectURL(previous.url);
       updateImages([...images.filter(item => item.id !== replaceId), ...additions]);
     } catch (err) {
@@ -106,7 +121,7 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
     const timer = setTimeout(() => controller.abort(), 240000);
     try {
       const results = [];
-      const batches=imageBatches(images);
+      const batches=imageBatches([...images,...automatic].slice(0,MAX_PHOTOS));
       for (const [index,batch] of batches.entries()) {
         if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
         setBusy(batches.length>1 ? `Reviewing photo group ${index+1} of ${batches.length}…` : 'Finding useful home details…');
@@ -131,7 +146,7 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
     <button type="button" className="secondaryButton" onClick={()=>operation.current?.abort()}>Cancel review</button>
   </section>;
   return <section className="guidedWalk formScreen" aria-label="Guided Home Walk">
-    <div className="walkAreaRow"><label htmlFor="walk-area">Recommended photos for analysis</label><span>{images.length}/{MAX_PHOTOS} photos</span></div>
+    <div className="walkAreaRow"><label htmlFor="walk-area">Recommended photos for analysis</label><span>{images.length + automatic.length}/{MAX_PHOTOS} photos</span></div>
     <select id="walk-area" className="walkAreaSelect" value={Math.min(step,7)} disabled={!!busy} onChange={event=>setStep(Number(event.target.value))}>{STEPS.map((item,index)=><option value={index} key={item[0]}>{item[1]}</option>)}</select>
     <p className="walkPrompt">{SHORT_PROMPTS[topic]}</p>
     <details className="walkCaptureDetails"><summary>Take/Upload Photos</summary><div className="walkCapture">
@@ -143,11 +158,13 @@ export default function GuidedHomeWalk({ onApply, demo = false }) {
       <small>On phones, Take photo opens the native camera when supported. If the camera is unavailable or blocked, use Upload photos. Videos: up to 60 seconds / 100 MB; up to 6 frames per clip.</small>
     </div></details>
     <input ref={photoInput} className="walkHidden" type="file" accept="image/jpeg,image/png" capture="environment" onChange={capture} />
+    {!!automatic.length && <section className="walkAutomatic"><h3>Photos found for this property</h3><p>Public photos are reviewed temporarily and are not saved.</p><div className="walkThumbnails">{automatic.map(item=><figure key={item.id}><img src={item.previewUrl.startsWith('http')?item.previewUrl:`${(import.meta.env?.VITE_API_BASE_URL||'https://vpsf-api.onrender.com').replace(/\/$/,'')}${item.previewUrl}`} alt={`Property photo from ${item.provider}`}/><figcaption>{item.provider}{item.kind?` · ${item.kind}`:''}</figcaption><div><a href={item.sourcePageUrl} target="_blank" rel="noreferrer">Source</a><button type="button" aria-label={`Remove ${item.provider} photo`} onClick={()=>setAutomatic(rows=>rows.filter(row=>row.id!==item.id))}><X size={16}/></button></div></figure>)}</div></section>}
+    {!!visible.length && <h3 className="walkYourPhotos">Your photos</h3>}
     <div className="walkThumbnails">{visible.map(item => <figure key={item.id}><img src={item.url} alt={`${STEPS.find(s => s[0] === item.topic)[1]}: ${item.file.name}`} /><figcaption>{STEPS.find(s => s[0] === item.topic)[1]}</figcaption><div><button type="button" aria-label={`Remove ${STEPS.find(s => s[0] === item.topic)[1]} photo`} title="Remove photo" disabled={!!busy} onClick={() => remove(item.id)}><X size={16}/></button><button type="button" aria-label={`Retake ${STEPS.find(s => s[0] === item.topic)[1]} photo`} title="Retake photo" disabled={!!busy} onClick={() => { retake.current = item.id; photoInput.current.click(); }}><RotateCcw size={16}/></button></div></figure>)}</div>
     {error && <p role="alert" className="walkError">{error}</p>}
     {busy && <p role="status">{busy} <button type="button" onClick={() => operation.current?.abort()}>Cancel</button></p>}
     <p className="walkDisclosure">PROCESS reviews your selected images with Mistral and opens your home details to check and correct the findings. The original video stays on your device.</p>
-    <button type="button" className="primaryButton walkProcessButton" disabled={!!busy || !images.length} onClick={analyze}>PROCESS</button>
+    <button type="button" className="primaryButton walkProcessButton" disabled={!!busy || !(images.length+automatic.length)} onClick={analyze}>PROCESS</button>
 
   </section>;
 }

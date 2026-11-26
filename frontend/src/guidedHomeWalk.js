@@ -113,7 +113,13 @@ export async function extractVideoFrames(file, count = 6, signal) {
 export async function analyzeWalkImages(images, topic, signal) {
   const body = new FormData();
   body.append('topic', topic);
-  images.forEach(({ file }) => body.append('images', file));
+  const assets=[];
+  images.forEach(item => {
+    if (item.asset?.id && item.asset.capability) assets.push({id:item.asset.id, capability:item.asset.capability});
+    else if (item.candidateId) body.append('candidate_ids', item.candidateId);
+    else if (item.file) body.append('images', item.file);
+  });
+  if (assets.length) body.append('asset_capabilities', JSON.stringify(assets));
   const base = import.meta.env?.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname.endsWith('.onrender.com') ? 'https://vpsf-api.onrender.com' : 'http://localhost:8000');
   const response = await fetch(`${base.replace(/\/$/, '')}/api/home-walk/analyze`, { method: 'POST', body, signal });
   let data;
@@ -127,10 +133,11 @@ export function imageBatches(images) {
   const batches = [];
   let batch = [], bytes = 0;
   for (const image of images) {
-    if (batch.length === 6 || bytes + image.file.size > 23 * 1024 * 1024) {
+    const size=image.file?.size || 0;
+    if (batch.length === 6 || bytes + size > 23 * 1024 * 1024) {
       batches.push(batch); batch = []; bytes = 0;
     }
-    batch.push(image); bytes += image.file.size;
+    batch.push(image); bytes += size;
   }
   if (batch.length) batches.push(batch);
   return batches;

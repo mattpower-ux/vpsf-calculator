@@ -70,3 +70,4 @@
 @keyframes walkPulse { 50% { transform:scale(1.08); opacity:.7; } }
 @keyframes walkSpin { to { transform:rotate(360deg); } }
 @media (prefers-reduced-motion:reduce) { .walkCognition img,.walkCognition span {animation:none;} }
+.walkAutomatic{margin:1rem 0}.walkAutomatic h3,.walkYourPhotos{font-size:1rem;margin:.5rem 0}.walkAutomatic>p{font-size:.82rem;color:#536b78;margin:.25rem 0 .75rem}.walkAutomatic a{font-size:.78rem;color:#08798c}.walkAutomatic figure div{align-items:center;justify-content:space-between}

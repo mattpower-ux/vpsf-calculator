@@ -58,7 +58,11 @@ TRUSTED_LISTING_DOMAINS = {
     'land.com': 'Land.com',
     'xome.com': 'Xome',
 }
-PHOTO_PROVIDER_PRIORITY = {'Realtor.com': 0, 'Redfin': 1, 'Zillow': 2, 'Homes.com': 3, 'Trulia': 4}
+PHOTO_PROVIDER_PRIORITY = {
+    "Sotheby's International Realty": 0, 'Coldwell Banker': 1, 'RE/MAX': 2,
+    'Century 21': 3, 'Compass': 4, 'Xome': 5, 'Homes.com': 6,
+    'Realtor.com': 7, 'Redfin': 8, 'Zillow': 9, 'Trulia': 10,
+}
 LISTING_STREET_SUFFIXES = {
     'alley': 'Aly', 'avenue': 'Ave', 'boulevard': 'Blvd', 'circle': 'Cir',
     'court': 'Ct', 'drive': 'Dr', 'highway': 'Hwy', 'lane': 'Ln',
@@ -344,7 +348,10 @@ def _download_public_image(url):
             connection.request('GET', path, headers={
                 'Accept': 'image/jpeg,image/png,image/webp',
                 'Accept-Encoding': 'identity',
-                'User-Agent': 'VPSF-Property-Photo/1.0',
+                'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                               'AppleWebKit/537.36 (KHTML, like Gecko) '
+                               'Chrome/130.0.0.0 Safari/537.36'),
+                'Sec-Fetch-Dest': 'image',
             })
             response = connection.getresponse()
             if response.status in (301, 302, 303, 307, 308):
@@ -430,15 +437,19 @@ async def crawl4ai_listing_photo(address, key=''):
                     loop.run_in_executor(_image_executor, _download_public_image, image_url),
                     timeout=max(0.1, min(12, deadline - loop.time())))
             except (asyncio.TimeoutError, HTTPException, OSError, http.client.HTTPException, TimeoutError, ValueError):
+                logger.warning('property_photo.crawl4ai provider=%s image_download=error', candidate['provider'])
                 return None
             if not downloaded:
+                logger.warning('property_photo.crawl4ai provider=%s image_download=empty', candidate['provider'])
                 return None
             mime, image = downloaded
             dimensions = image_dimensions(mime, image)
             if not dimensions:
+                logger.warning('property_photo.crawl4ai provider=%s image_dimensions=invalid', candidate['provider'])
                 return None
             width, height = dimensions
             if width < 400 or height < 250 or width < height * 1.1:
+                logger.warning('property_photo.crawl4ai provider=%s image_dimensions=rejected', candidate['provider'])
                 return None
             return {
                 'image': f'data:{mime};base64,' + base64.b64encode(image).decode('ascii'),
@@ -505,7 +516,7 @@ async def property_photo(request: Request, address: str = ''):
         return result('unavailable', code=429, retry=retry)
     params = {'location': address, 'key': key, 'source': 'outdoor', 'radius': '50'}
     try:
-        async with asyncio.timeout(15):
+        async with asyncio.timeout(26):
             if key:
                 async with httpx.AsyncClient(timeout=httpx.Timeout(8, connect=3), follow_redirects=False, trust_env=False) as client:
                     metadata = json.loads(await bounded_get(client, METADATA_URL, params, MAX_METADATA_BYTES))

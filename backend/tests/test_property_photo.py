@@ -164,7 +164,7 @@ def test_crawl4ai_listing_pages_diversify_duplicate_providers():
     }]}
     candidates = photo.crawl4ai_listing_pages(results, '18 Merrill Road, Freeport, ME 04032')
     assert [candidate['provider'] for candidate in candidates] == [
-        'Redfin', "Sotheby's International Realty",
+        "Sotheby's International Realty", 'Redfin',
     ]
 
 

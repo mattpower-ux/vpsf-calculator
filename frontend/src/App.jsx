@@ -23,7 +23,7 @@ import { analysisEntryInitialState, analysisEntryReducer } from "./analysisEntry
 import CaptureDialog from "./CaptureDialog.jsx";
 import GuidedHomeWalk from "./GuidedHomeWalk.jsx";
 import { FIELD_LABELS, FIELD_META, OPTIONS as WALK_OPTIONS } from "./guidedHomeWalk.js";
-import { applyAnalysisEvidence } from "./captureFacts.js";
+import { applyAnalysisEvidence, applyReviewedPhotoValue, photoFindingConflictText } from "./captureFacts.js";
 import { getHardieDemo, cacheEducationContent, discoverPublicProperty, enrichPropertyRisk, enrichPropertyWithRentCast, findSavedProperty, geocodeProperty, getArticleReaderUrl, getEducationContent, getHelpGuide, getProductRecommendations, getScoringFormFields, scoreProperty, searchHelpGuide, submitLead, trackProductClick, trackProgress, trackPropertyQuery } from "./api/client";
 import { presentationAddress, isPresentationAddress } from "./presentationHome";
 import { wildfireAdjustment, wildfireExplanation } from "./wildfire";
@@ -1326,7 +1326,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
         {home.photoReview.filter(row=>FIELD_META[row.field]).map(row=>{
           const meta=FIELD_META[row.field], isNote=meta.target==='photoObservations';
           const value=(isNote ? home.photoObservations?.[row.field] : home[row.field]) || '';
-          const change=value=>isNote ? update('photoObservations',{...home.photoObservations,[row.field]:value}) : update(row.field,value);
+          const change=value=>isNote ? update('photoObservations',{...home.photoObservations,[row.field]:value},{photoReview:true}) : update(row.field,value,{photoReview:true});
           return <div className="photoFinding" key={row.field}>
             <label>{FIELD_LABELS[row.field] || row.field}
               {meta.input==='text' ? <input value={value} maxLength={300} onChange={event=>change(event.target.value)}/> : <select value={value} onChange={event=>change(event.target.value)}>
@@ -1335,7 +1335,7 @@ function PropertyDetails({ home, update, setScreen, onEvidence, onListingSelect,
                 {WALK_OPTIONS[row.field].map(option=><option key={option}>{option}</option>)}
               </select>}
             </label>
-            {row.conflict && <p>Photos suggest different values. Choose the correct detail above.</p>}
+            {photoFindingConflictText(row,value) && <p>{photoFindingConflictText(row,value)}</p>}
             <details><summary>What the photos show</summary><p>{row.evidence}</p><p>{row.uncertainty}</p></details>
           </div>;
         })}
@@ -3448,15 +3448,14 @@ export default function App() {
     }
     setScreen(target);
   };
-  const update = (key, value) => {
+  const update = (key, value, {photoReview = false} = {}) => {
     if (["address", "city", "state", "zip"].includes(key) && home[key] !== value) permitCancelRef.current?.();
     setApiResult(null);
     setScoreError("");
     setHome((current) => {
       const locationChanged = ["address", "city", "state", "zip"].includes(key) && current[key] !== value;
       return {
-        ...confirmedEdit(current, key, value),
-        ...heatingSelectionPatch(current, key, value),
+        ...(photoReview ? applyReviewedPhotoValue(current,key,value) : {...confirmedEdit(current, key, value),...heatingSelectionPatch(current, key, value)}),
         ...(locationChanged ? {
           latitude: null, longitude: null, wildfire: null,
           sourceNote: "Location changed. Previous location risk is no longer used; verify the updated address before scoring."

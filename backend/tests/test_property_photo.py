@@ -144,6 +144,15 @@ def test_crawl4ai_listing_page_rejects_untrusted_result():
     assert photo.select_crawl4ai_listing_page(results, '22 Dow St, Portland, ME 04102') is None
 
 
+def test_crawl4ai_listing_page_accepts_exact_address_from_curated_brokerage():
+    results = {'rows': [{
+        'title': '18 Merrill Road, Freeport, Maine 04032 United States',
+        'url': 'https://www.sothebysrealty.com/eng/sales/detail/18-merrill-road-freeport-me-04032',
+    }]}
+    candidate = photo.select_crawl4ai_listing_page(results, '18 Merrill Road, Freeport, ME 04032')
+    assert candidate['provider'] == "Sotheby's International Realty"
+
+
 def test_crawl4ai_listing_page_rejects_house_number_prefix():
     results = {'rows': [
         {'title': '122 Dow St, Portland, ME 04102', 'url': 'https://www.redfin.com/ME/Portland/122-Dow-St/home/1'},
@@ -228,7 +237,7 @@ def test_crawl4ai_search_then_scrape_uses_exact_listing_and_returns_bounded_imag
             assert method == 'POST'
             assert headers['Authorization'] == 'Bearer c4-test'
             if url == photo.CRAWL4AI_SEARCH_URL:
-                assert json == {'q': '"22 Dow St, Portland, ME 04102" exterior home', 'rich': True, 'deep': False}
+                assert json == {'q': '"22 Dow St, Portland, ME 04102" real estate listing exterior photo', 'rich': True, 'deep': False}
                 calls.append((url, search_payload))
             else:
                 assert url == photo.CRAWL4AI_SCRAPE_URL

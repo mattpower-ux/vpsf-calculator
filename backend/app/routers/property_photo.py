@@ -45,8 +45,18 @@ TRUSTED_LISTING_DOMAINS = {
     'zillow.com': 'Zillow',
     'redfin.com': 'Redfin',
     'realtor.com': 'Realtor.com',
+    'homes.com': 'Homes.com',
+    'trulia.com': 'Trulia',
+    'movoto.com': 'Movoto',
+    'coldwellbankerhomes.com': 'Coldwell Banker',
+    'century21.com': 'Century 21',
+    'remax.com': 'RE/MAX',
+    'compass.com': 'Compass',
+    'sothebysrealty.com': "Sotheby's International Realty",
+    'land.com': 'Land.com',
+    'xome.com': 'Xome',
 }
-PHOTO_PROVIDER_PRIORITY = {'Realtor.com': 0, 'Redfin': 1, 'Zillow': 2}
+PHOTO_PROVIDER_PRIORITY = {'Realtor.com': 0, 'Redfin': 1, 'Zillow': 2, 'Homes.com': 3, 'Trulia': 4}
 LISTING_STREET_SUFFIXES = {
     'alley': 'Aly', 'avenue': 'Ave', 'boulevard': 'Blvd', 'circle': 'Cir',
     'court': 'Ct', 'drive': 'Dr', 'highway': 'Hwy', 'lane': 'Ln',
@@ -428,7 +438,7 @@ async def crawl4ai_listing_photo(address, key=''):
 
         try:
             search = await crawl_with_deadline(CRAWL4AI_SEARCH_URL, {
-                'q': f'"{search_address}" exterior home', 'rich': True, 'deep': False,
+                'q': f'"{search_address}" real estate listing exterior photo', 'rich': True, 'deep': False,
             })
         except (asyncio.TimeoutError, httpx.HTTPError, ValueError, json.JSONDecodeError):
             return None

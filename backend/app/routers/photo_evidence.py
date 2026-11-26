@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import json
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import delete
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db
 from app.models import PropertyPhotoCandidateRecord
+from app.photo_assets import delete_photo_asset, read_photo_asset, store_photo_asset, MAX_UPLOAD_BYTES
 from app.photo_evidence import PhotoCandidate, candidates_from_search
 from app.routers.property_photo import (
     CRAWL4AI_SEARCH_URL,
@@ -117,3 +118,35 @@ def preview_candidate(candidate_id: str, db: Session = Depends(get_db)):
         'Pragma': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
     })
+
+
+@router.post('/assets')
+async def upload_asset(
+    property_identity: str = Form(min_length=3, max_length=500),
+    category: str = Form(default='', max_length=80),
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    data = await photo.read(MAX_UPLOAD_BYTES + 1)
+    capability = store_photo_asset(data, photo.content_type or '', property_identity, category, db)
+    return JSONResponse({
+        'id': capability.asset_id,
+        'capability': capability.token,
+        'mime': capability.mime,
+        'width': capability.width,
+        'height': capability.height,
+        'previewUrl': f'/api/photo-evidence/assets/{capability.asset_id}',
+    }, headers={'Cache-Control': 'private, no-store'})
+
+
+@router.get('/assets/{asset_id}')
+def read_asset(asset_id: str, capability: str, db: Session = Depends(get_db)):
+    mime, data = read_photo_asset(asset_id, capability, db)
+    return Response(data, media_type=mime, headers={
+        'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff'})
+
+
+@router.delete('/assets/{asset_id}', status_code=204)
+def delete_asset(asset_id: str, capability: str, db: Session = Depends(get_db)):
+    delete_photo_asset(asset_id, capability, db)
+    return Response(status_code=204, headers={'Cache-Control': 'private, no-store'})

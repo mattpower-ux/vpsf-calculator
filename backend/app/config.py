@@ -31,6 +31,7 @@ class Settings:
     mapbox_access_token = os.getenv("MAPBOX_ACCESS_TOKEN", "")
     google_street_view_api_key = os.getenv("GOOGLE_STREET_VIEW_API_KEY", "")
     crawl4ai_api_key = os.getenv("CRAWL4AI_API_KEY", "")
+    photo_storage_path = os.getenv("PHOTO_STORAGE_PATH", "/var/data/vpsf-photos" if os.getenv("RENDER") else "./data/vpsf-photos")
     attom_api_key = os.getenv("ATTOM_API_KEY", "")
     attom_monthly_limit = int(os.getenv("ATTOM_MONTHLY_LIMIT", "100"))
     permit_stack_api_key = os.getenv("PERMIT_STACK_API_KEY", "")

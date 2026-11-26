@@ -208,6 +208,22 @@ class PropertyPhotoCandidateRecord(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
+class PropertyPhotoAssetRecord(Base):
+    __tablename__ = "property_photo_assets"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), index=True)
+    property_identity: Mapped[str] = mapped_column(String(500), index=True)
+    category: Mapped[str] = mapped_column(String(80), default="")
+    relative_path: Mapped[str] = mapped_column(String(255), unique=True)
+    mime: Mapped[str] = mapped_column(String(40))
+    byte_size: Mapped[int] = mapped_column(Integer)
+    width: Mapped[int] = mapped_column(Integer)
+    height: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+
+
 class LeadRecord(Base):
     __tablename__ = "leads"
 

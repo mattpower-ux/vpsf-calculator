@@ -14,14 +14,16 @@
 .analysisChoices .addressPhotoUpload { margin-top: 8px; min-height: 44px; }
 .analysisChoices .photoAttribution, .analysisChoices .photoAvailability { font-size: 12px; color: var(--muted,#526d78); }
 .addressPhotoStart { margin-top: 14px; width: 100%; }
-.analysisDepthHeader { position: relative; padding-top: 48px; text-align: center; }
-.analysisDepthHeader > p { margin: -4px auto 16px; max-width: 34ch; color: var(--muted,#526d78); line-height: 1.45; }
-.analysisDepthBack { position: absolute; top: 4px; left: 0; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--blue,#14778b); color: #fff; cursor: pointer; box-shadow: 0 5px 14px rgba(20,119,139,.2); }
+.analysisDepthHeader { position: relative; padding-top: 8px; text-align: center; }
+.analysisDepthHeader > p { margin: -4px auto 10px; max-width: 34ch; color: var(--muted,#526d78); line-height: 1.4; }
+.analysisDepthBack { position: absolute; top: 0; left: 0; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--blue,#14778b); color: #fff; cursor: pointer; box-shadow: 0 5px 14px rgba(20,119,139,.2); }
 .analysisDepthBack:hover:not(:disabled){background:#0f6575}.analysisDepthBack:focus-visible{outline:3px solid rgba(20,119,139,.28);outline-offset:3px}
-.analysisLevelResult { margin-top: 14px; padding: 16px; border: 1px solid var(--accent-line,var(--line,#d7e6e8)); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(9,33,59,.07); }
+.analysisLevelResult { margin-top: 10px; padding: 12px; border: 1px solid var(--accent-line,var(--line,#d7e6e8)); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(9,33,59,.07); }
 .analysisLevelResult h3 { margin: 0 0 6px; font-size: 18px; }
 .analysisLevelResult p { margin: 0; color: var(--body-copy,var(--muted,#526d78)); line-height: 1.5; }
 .analysisLevelResult ul { margin: 12px 0 16px; padding-left: 20px; color: var(--body-copy,var(--muted,#526d78)); font-size: 14px; line-height: 1.5; }
+.analysisTradeoffs h4 { margin: 8px 0 2px; }
+.analysisTradeoffs ul { margin: 6px 0 10px; }
 .analysisLevelResult .primaryButton { margin: 0; width: 100%; }
 .analysisLevelBadge { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--blue,#14778b); text-align: center; padding: 8px 60px 0; letter-spacing: .02em; }
 .analysisEvidence { margin: 20px 0; padding: 16px; border: 1px solid var(--line,#d7e6e8); border-radius: 16px; background: #f5f9f9; }

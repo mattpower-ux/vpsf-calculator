@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.db import get_db, init_db
 from app.scoring.store import ModelUnavailableError, load_published
-from app.routers import listing_import, property_photo, home_walk, eco_tips, admin, articles, help, integrations, leads, products, properties, scoring, tracking
+from app.routers import listing_import, property_photo, photo_evidence, home_walk, eco_tips, admin, articles, help, integrations, leads, products, properties, scoring, tracking
 
 settings = get_settings()
 default_cors_origins = [
@@ -39,6 +39,7 @@ app.add_middleware(
 
 app.include_router(listing_import.router)
 app.include_router(property_photo.router)
+app.include_router(photo_evidence.router)
 app.include_router(home_walk.router)
 app.include_router(properties.router)
 app.include_router(scoring.router)

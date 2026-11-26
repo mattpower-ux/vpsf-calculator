@@ -145,10 +145,14 @@ def listing_search_address(address):
     if not parts:
         return address.strip()
     words = normalize_street_address(parts[0]).split()
+    direction = ''
+    if words and words[-1] in {'n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw',
+                              'north', 'south', 'east', 'west'}:
+        direction = words.pop().title()
     if words and words[-1] in LISTING_STREET_SUFFIXES:
         suffix = LISTING_STREET_SUFFIXES[words.pop()]
         street_words = [word if re.fullmatch(r'\d+(?:st|nd|rd|th)', word) else word.title() for word in words]
-        parts[0] = ' '.join((*street_words, suffix))
+        parts[0] = ' '.join(part for part in (*street_words, suffix, direction) if part)
     return ', '.join(part for part in parts if part)
 
 

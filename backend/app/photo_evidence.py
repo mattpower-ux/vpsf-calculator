@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
+from uuid import uuid4
 
 from app.routers.property_photo import (
     PHOTO_PROVIDER_PRIORITY,
@@ -85,3 +86,19 @@ def rank_photo_candidates(candidates: list[PhotoCandidate], limit: int = 12) -> 
             providers.add(candidate.provider)
             diverse.append(candidate)
     return (diverse + remaining)[:bounded]
+
+
+def candidates_from_search(data: dict, address: str) -> list[PhotoCandidate]:
+    """Normalize row-level and separately emitted rich-search images."""
+    if not isinstance(data, dict):
+        return []
+    candidates = []
+    for key in ('rows', 'images'):
+        values = data.get(key)
+        if not isinstance(values, list):
+            continue
+        for raw in values:
+            candidate = match_photo_candidate(raw, address)
+            if candidate:
+                candidates.append(replace(candidate, candidate_id=uuid4().hex))
+    return rank_photo_candidates(candidates)

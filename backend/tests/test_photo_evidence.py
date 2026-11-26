@@ -1,7 +1,22 @@
 from datetime import datetime, timedelta, timezone
+import json
+from types import SimpleNamespace
+
+import httpx
+import pytest
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
 
 from app import models
-from app.photo_evidence import PhotoCandidate, match_photo_candidate, rank_photo_candidates
+from app.db import Base
+from app.photo_evidence import (
+    PhotoCandidate,
+    candidates_from_search,
+    match_photo_candidate,
+    rank_photo_candidates,
+)
+from app.routers import photo_evidence as router
 
 
 ADDRESS = '2256 Fallen Tree Drive E, Jacksonville, FL 32246'
@@ -82,3 +97,78 @@ def test_candidate_database_record_contains_metadata_but_no_image_blob_column():
             'photo_kind_hint', 'width', 'height', 'match_confidence', 'match_evidence',
             'created_at', 'expires_at'} <= columns
     assert not ({'image', 'image_bytes', 'blob', 'data'} & columns)
+
+
+def test_candidates_from_search_reads_row_and_top_level_images_and_rejects_neighbor():
+    data = {
+        'rows': [raw_candidate(imageUrl='https://photos.zillowstatic.com/fp/row.jpg')],
+        'images': [
+            raw_candidate(imageUrl='https://photos.zillowstatic.com/fp/top.jpg'),
+            raw_candidate(title='2258 Fallen Tree Dr E, Jacksonville, FL 32246',
+                          url=ZILLOW.replace('2256-', '2258-'),
+                          imageUrl='https://photos.zillowstatic.com/fp/neighbor.jpg'),
+        ],
+    }
+    candidates = candidates_from_search(data, ADDRESS)
+    assert {item.remote_image_url for item in candidates} == {
+        'https://photos.zillowstatic.com/fp/row.jpg',
+        'https://photos.zillowstatic.com/fp/top.jpg',
+    }
+    assert all(item.candidate_id and item.expires_at > item.created_at for item in candidates)
+
+
+@pytest.fixture
+def api_engine(monkeypatch):
+    engine = create_engine('sqlite://', connect_args={'check_same_thread': False},
+                           poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    return engine
+
+
+def test_discover_api_stores_metadata_only_and_returns_safe_candidates(api_engine, monkeypatch):
+    engine = api_engine
+    candidate = match_photo_candidate(raw_candidate(), ADDRESS)
+    monkeypatch.setattr(router, 'get_settings', lambda: SimpleNamespace(crawl4ai_api_key='key'))
+    def found(address, settings):
+        assert address == ADDRESS
+        return [candidate]
+    monkeypatch.setattr(router, 'discover_photo_candidates', found)
+    with Session(engine) as db:
+        response = router.discover(router.DiscoverRequest(address=ADDRESS), db)
+    assert response.status_code == 200
+    assert response.headers['cache-control'] == 'private, no-store'
+    payload = json.loads(response.body)
+    assert len(payload['candidates']) == 1
+    assert set(payload['candidates'][0]) == {
+        'id', 'provider', 'sourcePageUrl', 'kind', 'width', 'height', 'previewUrl'}
+    assert 'zillowstatic' not in response.body.decode()
+    with Session(engine) as db:
+        record = db.scalar(select(models.PropertyPhotoCandidateRecord))
+        assert record.remote_image_url.endswith('/front.jpg')
+        assert not hasattr(record, 'image_bytes')
+
+
+def test_discover_api_degrades_to_empty_when_provider_fails(api_engine, monkeypatch):
+    def unavailable(*_):
+        return []
+    monkeypatch.setattr(router, 'discover_photo_candidates', unavailable)
+    with Session(api_engine) as db:
+        response = router.discover(router.DiscoverRequest(address=ADDRESS), db)
+    assert response.status_code == 200
+    assert json.loads(response.body)['candidates'] == []
+
+
+def test_discovery_provider_uses_normalized_listing_query(monkeypatch):
+    class Response:
+        def raise_for_status(self): pass
+        def json(self): return {'images': [raw_candidate()]}
+    def post(_client, url, headers, json):
+        assert url.endswith('/tools/search')
+        assert headers['Authorization'] == 'Bearer key'
+        assert json['q'].startswith('"2256 Fallen Tree Dr E, Jacksonville, FL 32246"')
+        return Response()
+    monkeypatch.setattr(httpx.Client, 'post', post)
+    candidates = router.discover_photo_candidates(
+        ADDRESS, SimpleNamespace(crawl4ai_api_key='key'))
+    assert len(candidates) == 1
+    assert candidates[0].provider == 'Zillow'

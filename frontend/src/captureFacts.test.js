@@ -143,15 +143,19 @@ test('reviewing a photo HVAC suggestion preserves documented related heating evi
   assert.equal(result.provenance.hydronicSource.source,'Completed boiler permit');
 });
 
-test('reviewing a heat-pump photo cannot strip a boiler from permit-backed combined HVAC',()=>{
+test('reviewing a primary HVAC system preserves a permit-backed boiler as a secondary system',()=>{
   const current={
     hvac:'Heat Pump (Electric) + Boiler',hydronicSource:'Unknown',
     provenance:{hvac:{origin:'imported',source:'Permit records: FINAL HVAC2018-00100'},hydronicSource:{origin:'unknown'}},
   };
-  for(const selection of ['Heat Pump (Electric)','Gas Furnace','Geothermal']) {
+  for(const [selection,expected,origin] of [
+    ['Heat Pump (Electric)','Heat Pump (Electric) + Boiler','imported'],
+    ['Gas Furnace','Gas Furnace + Boiler','user-confirmed'],
+    ['Geothermal','Geothermal + Boiler','user-confirmed'],
+  ]) {
     const result=applyReviewedPhotoValue(current,'hvac',selection);
-    assert.equal(result.hvac,'Heat Pump (Electric) + Boiler');
-    assert.equal(result.provenance.hvac.source,'Permit records: FINAL HVAC2018-00100');
+    assert.equal(result.hvac,expected);
+    assert.equal(result.provenance.hvac.origin,origin);
   }
   const boiler=applyReviewedPhotoValue(current,'hvac','Boiler');
   assert.equal(boiler.hvac,'Boiler');

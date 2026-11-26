@@ -32,10 +32,11 @@ export function photoFindingConflictText(row, currentValue) {
 
 export function applyReviewedPhotoValue(home,key,value) {
   const hvacEvidenceSource = home.provenance?.hvac?.source || '';
-  if (key === 'hvac' && /boiler/i.test(home.hvac || '') && !/boiler/i.test(value || '') && /permit|admin-verified property correction/i.test(hvacEvidenceSource)) {
-    return {...home,provenance:{...home.provenance}};
-  }
   let reviewedValue = value;
+  if (key === 'hvac' && /boiler/i.test(home.hvac || '') && !/boiler/i.test(value || '') && /permit|admin-verified property correction/i.test(hvacEvidenceSource)) {
+    reviewedValue = `${value} + Boiler`;
+    if (reviewedValue === home.hvac) return {...home,provenance:{...home.provenance}};
+  }
   if (key === 'hvac' && value === 'Heat Pump (Electric)' && hasKnownValue(home.hydronicSource) && protectedEvidence(home,'hydronicSource')) {
     reviewedValue = 'Heat Pump (Electric) + Boiler';
   }

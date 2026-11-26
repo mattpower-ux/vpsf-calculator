@@ -22,6 +22,7 @@
 .analysisLevelResult h3 { margin: 0 0 6px; font-size: 18px; }
 .analysisLevelResult p { margin: 0; color: var(--body-copy,var(--muted,#526d78)); line-height: 1.5; }
 .analysisLevelResult ul { margin: 12px 0 16px; padding-left: 20px; color: var(--body-copy,var(--muted,#526d78)); font-size: 14px; line-height: 1.5; }
+.analysisTradeoffs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .analysisTradeoffs h4 { margin: 8px 0 2px; }
 .analysisTradeoffs ul { margin: 6px 0 10px; }
 .analysisLevelResult .primaryButton { margin: 0; width: 100%; }
@@ -90,7 +91,7 @@
 @media (max-width: 640px) {
   .analysisChoiceGrid { gap: 8px; }
   .analysisChoice strong { font-size: 14px; }
-  .analysisChoiceImage { aspect-ratio: 1.45; }
+  .analysisChoiceImage { aspect-ratio: 1.8; }
   .analysisChoiceNumber { width: 20px; height: 20px; font-size: 11px; top: 4px; left: 4px; }
 }
 @media (max-width: 480px) {

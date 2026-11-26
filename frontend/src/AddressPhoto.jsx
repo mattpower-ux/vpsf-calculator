@@ -80,8 +80,8 @@ export default function AddressPhoto({ address, searchRequest, flow, onFlowActio
       {selected && <section className="analysisLevelResult" id={`analysis-${selected[0]}-details`} aria-live="polite">
         <p>{analysisLevelDetails[selected[0]].summary}</p>
         <div className="analysisTradeoffs">
-          <h4>Pros</h4><ul>{analysisLevelDetails[selected[0]].pros.map(result => <li key={result}>{result}</li>)}</ul>
-          <h4>Cons</h4><ul>{analysisLevelDetails[selected[0]].cons.map(result => <li key={result}>{result}</li>)}</ul>
+          <div><h4>Pros</h4><ul>{analysisLevelDetails[selected[0]].pros.map(result => <li key={result}>{result}</li>)}</ul></div>
+          <div><h4>Cons</h4><ul>{analysisLevelDetails[selected[0]].cons.map(result => <li key={result}>{result}</li>)}</ul></div>
         </div>
         <button type="button" className="primaryButton" disabled={busy} onClick={() => confirmLevel(selected[0])}>{busy ? 'Loading…' : 'DO IT!'} <ArrowRight size={18}/></button>
       </section>}

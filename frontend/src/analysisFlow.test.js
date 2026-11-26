@@ -11,8 +11,13 @@ test('the photo-analysis action uses the homeowner-facing label', () => {
 
 test('the scoring-depth header stays compact so the action remains in the phone viewport', () => {
   const styles = readFileSync(new URL('./analysisFlow.css', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('./AddressPhoto.jsx', import.meta.url), 'utf8');
   assert.match(styles, /\.analysisDepthHeader\s*\{[^}]*padding-top:\s*8px/);
   assert.match(styles, /\.analysisDepthHeader\s*>\s*p\s*\{[^}]*margin:\s*-4px auto 10px/);
   assert.match(styles, /\.analysisLevelResult\s*\{[^}]*padding:\s*12px/);
   assert.match(styles, /\.analysisTradeoffs\s+ul\s*\{[^}]*margin:\s*6px 0 10px/);
+  assert.match(styles, /\.analysisTradeoffs\s*\{[^}]*grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(styles, /@media\s*\(max-width:\s*640px\)[\s\S]*\.analysisChoiceImage\s*\{[^}]*aspect-ratio:\s*1\.8/);
+  assert.match(source, /<div><h4>Pros<\/h4><ul>/);
+  assert.match(source, /<div><h4>Cons<\/h4><ul>/);
 });

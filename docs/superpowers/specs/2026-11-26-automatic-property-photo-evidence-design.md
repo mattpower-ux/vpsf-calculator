@@ -1,7 +1,7 @@
 # Automatic Property Photo Evidence
 
 **Date:** November 26, 2026  
-**Status:** Approved architecture; implementation specification pending user review
+**Status:** Approved architecture and Render-disk storage design
 
 ## Purpose
 
@@ -131,15 +131,17 @@ It must not store the public remote image URL as a durable substitute for an own
 
 ### 5. Persistent treatment of homeowner photos
 
-Homeowner uploads are validated, normalized, and stored in private object storage. The property archive stores an asset identifier, category, upload time, MIME type, dimensions, checksum, and analysis provenance. Direct storage URLs are never public; the backend issues short-lived authenticated display URLs.
+Homeowner uploads are validated, stripped of unnecessary metadata, normalized, and stored beneath the VPSF API service's Render persistent-disk mount. The database stores an opaque asset identifier, hashed capability token, normalized property identity, relative disk path, category, upload time, MIME type, dimensions, checksum, byte count, last-access time, and analysis provenance. The browser-local property archive stores only the asset identifier, unguessable access token, and safe display metadata.
 
-Images remain attached to the archived property until the user deletes the image or property archive. Deletion removes the database reference and storage object. Replacing an image preserves an audit event but not an unnecessary duplicate file.
+The configured mount path is `/var/data/vpsf-photos`, exposed to the application as `PHOTO_STORAGE_PATH`. No code may write durable photos outside that directory. Files use generated names and sharded subdirectories; user filenames never become filesystem paths.
+
+Images remain attached to the archived property until the user deletes the image or removes the linked property archive. Deletion removes the database record and disk file. Replacing an image retains the earlier asset only while another archived evaluation still references it. Because clearing browser data cannot notify the server, unreferenced or inactive assets expire after the configurable retention period; the first-version default is 365 days after last authorized access.
 
 Initial limits remain 12 selected images per analysis, JPEG/PNG input, and the existing safe file-size limits. HEIC support can be added later as a separately tested conversion feature.
 
 ### 6. Analysis orchestration
 
-The backend builds a single analysis manifest from selected public candidate IDs and stored homeowner asset IDs. It resolves and validates every item server-side, downloads public images transiently, retrieves homeowner images from private storage, batches them through the existing image-analysis service, and releases temporary buffers after each batch.
+The browser builds a single analysis request from selected public candidate IDs and disk-backed homeowner asset capabilities. The backend resolves both types, reads homeowner images only from the configured mount, batches the evidence through the image-analysis service, and releases temporary buffers after each batch.
 
 Each finding carries:
 
@@ -157,7 +159,7 @@ The existing field allowlist, conflict handling, and homeowner review remain aut
 
 ### 7. Archive integration
 
-Archived properties persist homeowner asset references and confirmed findings. Public candidates themselves are not archived. An archived report may retain the public source citation and the observation derived from it.
+Archived properties persist homeowner asset capabilities and confirmed findings in the browser-local archive. Public candidates themselves are not archived. An archived report may retain the public source citation and the observation derived from it.
 
 Opening an archive shows the saved homeowner thumbnails and can run a fresh automatic discovery to check for newer public evidence. A new discovery never silently changes a previously scored report.
 
@@ -167,11 +169,12 @@ Exact route names may follow existing router conventions, but responsibilities r
 
 - **Discover photos:** accepts normalized property identity and returns safe candidate metadata plus short-lived candidate IDs.
 - **Preview candidate:** validates the candidate session, fetches a bounded public image, and returns a no-store thumbnail response.
-- **Upload homeowner photo:** validates and stores an owned image against an authorized property archive.
-- **Analyze photo evidence:** accepts candidate IDs and homeowner asset IDs, then returns reviewable findings.
-- **Delete homeowner photo:** removes the asset and its archive reference.
+- **Upload homeowner photo:** validates the multipart image, writes it atomically beneath `PHOTO_STORAGE_PATH`, creates database metadata, and returns an asset capability.
+- **Read homeowner photo:** validates the capability and returns a private, no-store image response.
+- **Analyze photo evidence:** accepts public candidate IDs plus homeowner asset capabilities, then returns reviewable findings.
+- **Delete homeowner photo:** validates the capability, removes the database record, and unlinks the disk file.
 
-All state-changing endpoints require the same authorization and ownership checks as the property archive. Responses containing thumbnails or private photos use `Cache-Control: private, no-store` unless a future private cache policy is explicitly approved.
+Every homeowner-asset and public-thumbnail response uses `Cache-Control: private, no-store`. Capability tokens are never logged and are stored only in the browser-local archive.
 
 ## Security, Privacy, and Provider Controls
 
@@ -181,8 +184,8 @@ All state-changing endpoints require the same authorization and ownership checks
 - Enforce download, redirect, dimension, byte, time, and concurrency limits.
 - Do not send provider cookies, user sessions, or login credentials.
 - Do not bypass CAPTCHAs, paywalls, or robots restrictions.
-- Never log image bytes, signed asset URLs, API keys, or complete private storage paths.
-- Strip image metadata from homeowner uploads before durable storage unless a future feature explicitly needs it.
+- Never log image bytes, capability tokens, API keys, or absolute disk paths.
+- Strip image metadata from homeowner uploads before disk storage unless a future feature explicitly needs it.
 - Present clear copy that homeowner uploads are saved with the property archive and can be deleted.
 
 ## Failure Handling
@@ -193,7 +196,7 @@ All state-changing endpoints require the same authorization and ownership checks
 - **Candidate expires before processing:** offer a refresh while retaining homeowner images.
 - **One image fails:** continue with the remaining selected images and identify the skipped item.
 - **Analysis times out:** preserve homeowner uploads and the current selection so the user can retry.
-- **Object storage unavailable:** do not imply that a homeowner image was saved; retain it only in the current browser session and show a clear retry message.
+- **Disk unavailable or full:** do not imply that a homeowner image was saved; retain it only in the current browser session and show a clear retry message.
 
 ## Data and Scoring Rules
 
@@ -209,7 +212,7 @@ Certification, permit, document, public-photo, and homeowner-photo evidence cont
 - Rejection of neighboring addresses, unit mismatches, house-number prefixes, and untrusted domains.
 - Candidate ranking, deduplication, bounded attempts, and provider fallback.
 - Public image bytes never reach persistent storage.
-- Homeowner images are stored, authorized, retrieved, replaced, and deleted correctly.
+- Homeowner images are written atomically beneath the configured mount, capability-protected, retrieved, replaced, reference-counted, expired, and deleted correctly.
 - SSRF, redirects, MIME, dimensions, byte limits, timeouts, and partial-provider failures.
 - Evidence precedence and provenance in mixed public/homeowner batches.
 
@@ -240,6 +243,12 @@ Ship behind a backend feature flag. Start with trusted sources that already have
 
 Do not record the photographs themselves in diagnostics. After live verification on a varied address set, enable the flow for all users and retain the manual-photo fallback.
 
+## Render Disk Operations
+
+The disk is attached only to the paid VPSF API web service at `/var/data/vpsf-photos`. Render disks are single-service, single-instance storage and disable horizontal scaling and zero-downtime deploys. A deployment will briefly stop the API before the replacement instance starts. Builds, pre-deploy commands, one-off jobs, and the frontend service cannot access the disk.
+
+Start with the smallest practical capacity and monitor usage; Render permits increasing disk size but not decreasing it. Render currently creates encrypted daily snapshots retained for seven days, but snapshots restore the entire disk rather than individual files. Database metadata and disk files therefore require a reconciliation command that runs inside the API process, not during build or pre-deploy.
+
 ## Implementation Preconditions
 
-Before production implementation, confirm a private object-storage provider and retention/deletion configuration for homeowner uploads. Automatic public-photo discovery and analysis can be developed independently, but persistent homeowner uploads must not ship until durable private storage and deletion are verified.
+Before enabling durable uploads, attach the disk to the VPSF API service, set its mount path to `/var/data/vpsf-photos`, and configure `PHOTO_STORAGE_PATH` to the same value. Verify runtime write/read/delete behavior after the deployment becomes live. The interface must disclose that photos are stored privately with the property archive and retained according to the configured policy.

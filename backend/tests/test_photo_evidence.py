@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
@@ -172,3 +173,52 @@ def test_discovery_provider_uses_normalized_listing_query(monkeypatch):
         ADDRESS, SimpleNamespace(crawl4ai_api_key='key'))
     assert len(candidates) == 1
     assert candidates[0].provider == 'Zillow'
+
+
+def test_fetch_candidate_image_is_transient_and_rejects_expired(api_engine, monkeypatch):
+    candidate = match_photo_candidate(raw_candidate(), ADDRESS)
+    with Session(api_engine) as db:
+        db.add(router._record(candidate))
+        db.commit()
+        monkeypatch.setattr(router, '_download_public_image',
+                            lambda url, referer='': ('image/jpeg', _jpeg(900, 600)))
+        mime, data, record = router.fetch_candidate_image(candidate.candidate_id, db)
+        assert mime == 'image/jpeg' and data.startswith(b'\xff\xd8')
+        assert record.provider == 'Zillow'
+        assert not hasattr(record, 'image_bytes')
+        record.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+        db.commit()
+        with pytest.raises(HTTPException) as error:
+            router.fetch_candidate_image(candidate.candidate_id, db)
+        assert error.value.status_code == 410
+
+
+def test_preview_has_no_store_headers(api_engine, monkeypatch):
+    candidate = match_photo_candidate(raw_candidate(), ADDRESS)
+    with Session(api_engine) as db:
+        db.add(router._record(candidate)); db.commit()
+        monkeypatch.setattr(router, 'fetch_candidate_image',
+                            lambda *_: ('image/jpeg', _jpeg(900, 600), router._record(candidate)))
+        response = router.preview_candidate(candidate.candidate_id, db)
+        assert response.headers['cache-control'] == 'private, no-store'
+        assert response.media_type == 'image/jpeg'
+
+
+def test_fetch_candidate_rejects_portrait_logo_and_unknown(api_engine, monkeypatch):
+    with Session(api_engine) as db:
+        with pytest.raises(HTTPException) as unknown:
+            router.fetch_candidate_image('missing', db)
+        assert unknown.value.status_code == 404
+        candidate = match_photo_candidate(raw_candidate(), ADDRESS)
+        db.add(router._record(candidate)); db.commit()
+        monkeypatch.setattr(router, '_download_public_image',
+                            lambda *_: ('image/jpeg', _jpeg(120, 400)))
+        with pytest.raises(HTTPException) as invalid:
+            router.fetch_candidate_image(candidate.candidate_id, db)
+        assert invalid.value.status_code == 422
+
+
+def _jpeg(width, height):
+    # Minimal SOF0 dimensions accepted by the existing bounded image parser.
+    return (b'\xff\xd8\xff\xc0\x00\x11\x08' + height.to_bytes(2, 'big')
+            + width.to_bytes(2, 'big') + b'\x03\x01\x11\x00\x02\x11\x00\x03\x11\x00\xff\xd9')

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.routers.property_photo import (
@@ -50,7 +50,7 @@ def match_photo_candidate(raw: dict, address: str) -> PhotoCandidate | None:
     images = search_result_image_urls(matched)
     if not images:
         return None
-    now = datetime.now().astimezone()
+    now = datetime.now(timezone.utc)
     from datetime import timedelta
     return PhotoCandidate(
         candidate_id='',

@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 import json
 
 import httpx
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
@@ -14,7 +14,8 @@ from app.models import PropertyPhotoCandidateRecord
 from app.photo_evidence import PhotoCandidate, candidates_from_search
 from app.routers.property_photo import (
     CRAWL4AI_SEARCH_URL,
-    _crawl4ai_json,
+    _download_public_image,
+    image_dimensions,
     listing_search_address,
 )
 
@@ -61,6 +62,28 @@ def _record(candidate: PhotoCandidate) -> PropertyPhotoCandidateRecord:
     )
 
 
+def fetch_candidate_image(candidate_id: str, db: Session):
+    record = db.get(PropertyPhotoCandidateRecord, candidate_id)
+    if not record:
+        raise HTTPException(404, 'Photo candidate not found.')
+    expires = record.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires <= datetime.now(timezone.utc):
+        raise HTTPException(410, 'Photo candidate expired. Search again.')
+    downloaded = _download_public_image(record.remote_image_url, record.source_page_url)
+    if not downloaded:
+        raise HTTPException(422, 'This photo is no longer available.')
+    mime, data = downloaded
+    dimensions = image_dimensions(mime, data)
+    if not dimensions:
+        raise HTTPException(422, 'This photo could not be validated.')
+    width, height = dimensions
+    if width < 320 or height < 180 or height > width * 1.25:
+        raise HTTPException(422, 'This image is not a usable exterior photo.')
+    return mime, data, record
+
+
 @router.post('/discover')
 def discover(request: DiscoverRequest, db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
@@ -84,3 +107,13 @@ def discover(request: DiscoverRequest, db: Session = Depends(get_db)):
         'expiresAt': expires.isoformat() if expires else None,
     }
     return JSONResponse(payload, headers={'Cache-Control': 'private, no-store'})
+
+
+@router.get('/candidates/{candidate_id}/preview')
+def preview_candidate(candidate_id: str, db: Session = Depends(get_db)):
+    mime, data, _ = fetch_candidate_image(candidate_id, db)
+    return Response(data, media_type=mime, headers={
+        'Cache-Control': 'private, no-store',
+        'Pragma': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+    })

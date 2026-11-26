@@ -322,6 +322,33 @@ def test_listing_image_urls_collect_metadata_media_and_html_candidates():
     ]
 
 
+def test_zillow_property_photo_urls_accepts_tool_envelopes_and_bounds_results():
+    photos = [f'https://photos.zillowstatic.com/fp/{index}.jpg' for index in range(5)]
+    assert photo.zillow_property_photo_urls({'rows': [{'photos': photos}]}) == photos[:3]
+    assert photo.zillow_property_photo_urls({'data': {'rows': [{'photos': photos}]}}) == photos[:3]
+    assert photo.zillow_property_photo_urls({'rows': []}) == []
+
+
+def test_crawl4ai_photo_prefers_verified_zillow_property_photos(monkeypatch):
+    calls=[]
+    async def fake_json(_client, url, _headers, body):
+        calls.append((url,body))
+        if url == photo.CRAWL4AI_SEARCH_URL:
+            return {'rows':[{
+                'title':'18 Merrill Road, Freeport, ME 04032',
+                'url':'https://www.zillow.com/homedetails/18-Merrill-Rd-Freeport-ME-04032/84920300_zpid/',
+            }]}
+        if url == photo.CRAWL4AI_ZILLOW_URL:
+            return {'rows':[{'photos':['https://photos.zillowstatic.com/fp/exterior.jpg']}]}
+        raise AssertionError('generic scrape should not run after an accepted Zillow photo')
+    monkeypatch.setattr(photo,'_crawl4ai_json',fake_json)
+    monkeypatch.setattr(photo,'_download_public_image',lambda url,*_:('image/jpeg',JPEG))
+    monkeypatch.setattr(photo,'image_dimensions',lambda mime,data:(1200,800))
+    data=asyncio.run(photo.crawl4ai_listing_photo('18 Merrill Road, Freeport, ME 04032','c4-test'))
+    assert data['attribution']=='Exterior photo · Zillow'
+    assert calls[1] == (photo.CRAWL4AI_ZILLOW_URL, {'home':calls[0][1] and 'https://www.zillow.com/homedetails/18-Merrill-Rd-Freeport-ME-04032/84920300_zpid/'})
+
+
 def test_crawl4ai_photo_tries_multiple_images_from_one_exact_listing(monkeypatch):
     attempted = []
 

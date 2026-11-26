@@ -43,6 +43,7 @@ MAX_SEARCH_IMAGE_ATTEMPTS = 2
 MAX_LISTING_PHOTO_SECONDS = 20
 CRAWL4AI_SEARCH_URL = 'https://api.crawl4ai.com/tools/search'
 CRAWL4AI_SCRAPE_URL = 'https://api.crawl4ai.com/tools/scrape'
+CRAWL4AI_ZILLOW_URL = 'https://api.crawl4ai.com/tools/zillow-property'
 TRUSTED_LISTING_DOMAINS = {
     'zillow.com': 'Zillow',
     'redfin.com': 'Redfin',
@@ -294,6 +295,21 @@ def search_result_image_urls(candidate):
     return urls
 
 
+def zillow_property_photo_urls(data):
+    """Return bounded full-size photos from Crawl4AI's verified Zillow tool."""
+    if not isinstance(data, dict):
+        return []
+    rows = data.get('rows')
+    if not isinstance(rows, list) and isinstance(data.get('data'), dict):
+        rows = data['data'].get('rows')
+    if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+        return []
+    urls, seen = [], set()
+    for value in rows[0].get('photos', []) if isinstance(rows[0].get('photos'), list) else []:
+        _append_image_url(urls, seen, value)
+    return urls[:3]
+
+
 def image_dimensions(mime, data):
     """Return dimensions for common listing image formats without decoding pixels."""
     if mime == 'image/png' and len(data) >= 24 and data.startswith(b'\x89PNG\r\n\x1a\n'):
@@ -474,6 +490,18 @@ async def crawl4ai_listing_photo(address, key=''):
                     len(search.get('rows', [])) if isinstance(search, dict) and isinstance(search.get('rows'), list) else 0,
                     len(listing_pages))
         search_fallbacks = []
+        zillow_candidate = next((candidate for candidate in listing_pages if candidate['provider'] == 'Zillow'), None)
+        if zillow_candidate and loop.time() < deadline:
+            try:
+                zillow = await crawl_with_deadline(CRAWL4AI_ZILLOW_URL, {'home': zillow_candidate['url']})
+            except (asyncio.TimeoutError, httpx.HTTPError, ValueError, json.JSONDecodeError):
+                zillow = None
+            zillow_photos = zillow_property_photo_urls(zillow)
+            logger.warning('property_photo.crawl4ai zillow_photos=%s', len(zillow_photos))
+            for image_url in zillow_photos:
+                accepted = await accepted_photo(image_url, zillow_candidate)
+                if accepted:
+                    return accepted
         for candidate in listing_pages:
             if loop.time() >= deadline:
                 break

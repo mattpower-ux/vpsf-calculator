@@ -198,15 +198,15 @@ def resilience_explanation(home: PropertyInput) -> str:
 
 def explain_score(home: PropertyInput, scores: dict[str, int]) -> dict[str, str]:
     return {
-        "energy": f"Energy reflects HERS '{home.hers}', HVAC '{home.hvac}', distribution '{home.heatingDistribution}', controls '{home.heatingControls}', solar '{home.solar}', and EV readiness '{home.evReady}'. Radiant distribution and combination water heating alone do not earn an efficiency bonus.",
-        "water": f"Water reflects toilets '{home.toilets}', bathroom faucets '{home.bathroomFaucets}', showerheads '{home.showerheads}', leak protection '{home.leak}', reuse '{home.reuse}', and landscape '{home.landscape}'.",
-        "health": f"Health reflects ventilation '{home.ventilation}', materials '{home.materials}', and IAQ '{home.iaq}'.",
+        "energy": f"Energy reflects HERS {home.hers}, HVAC {home.hvac}, distribution {home.heatingDistribution}, controls {home.heatingControls}, solar {home.solar}, and EV readiness {home.evReady}. Radiant distribution and combination water heating alone do not earn an efficiency bonus.",
+        "water": f"Water reflects toilets {home.toilets}, bathroom faucets {home.bathroomFaucets}, showerheads {home.showerheads}, leak protection {home.leak}, reuse {home.reuse}, and landscape {home.landscape}.",
+        "health": f"Health reflects ventilation {home.ventilation}, materials {home.materials}, and IAQ {home.iaq}.",
         "resilience": resilience_explanation(home),
-        "carbon": f"Carbon reflects strategy '{home.carbonStrategy}', concrete '{home.carbonConcrete}', structure '{home.structure}', electrification, and hydronic heat source '{home.hydronicSource}'. Fuel rankings are model weights, not measured emissions reductions.",
-        "financial": f"Financial risk reflects PIETIM '{home.pietim}', insurance '{home.insurance}', warranty '{home.warranty}', and maintenance documentation.",
-        "community": (f"Community reflects EPA National Walkability Index {home.epaWalkability.value}/20 for block group {home.epaWalkability.blockGroup}, transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access."
+        "carbon": f"Carbon reflects strategy {home.carbonStrategy}, concrete {home.carbonConcrete}, structure {home.structure}, electrification, and hydronic heat source {home.hydronicSource}. Fuel rankings are model weights, not measured emissions reductions.",
+        "financial": f"Financial risk reflects PIETIM {home.pietim}, insurance {home.insurance}, warranty {home.warranty}, and maintenance documentation.",
+        "community": (f"Community reflects EPA National Walkability Index {home.epaWalkability.value}/20 for block group {home.epaWalkability.blockGroup}, transit {home.transit}, greenspace {home.greenspace}, amenities, and bike access."
                       if home.epaWalkability and home.epaWalkability.status == "available"
-                      else f"Community reflects recorded transit '{home.transit}', greenspace '{home.greenspace}', amenities, and bike access; EPA walkability is unverified."),
+                      else f"Community reflects recorded transit {home.transit}, greenspace {home.greenspace}, amenities, and bike access; EPA walkability is unverified."),
         "summary": f"Current backend model scored this property at {sum(scores.values())} out of 1000, including available USFS area wildfire context.",
     }
 

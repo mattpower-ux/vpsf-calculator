@@ -15,6 +15,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 import http.client
 import json
+import logging
 import math
 import re
 from threading import Lock
@@ -31,6 +32,7 @@ from app.address_normalization import contains_exact_street, normalize_street_ad
 from app.ocr.document_urls import PinnedHTTPSConnection, public_destination
 
 router = APIRouter(tags=['property-photo'])
+logger = logging.getLogger(__name__)
 METADATA_URL = 'https://maps.googleapis.com/maps/api/streetview/metadata'
 IMAGE_URL = 'https://maps.googleapis.com/maps/api/streetview'
 MAX_METADATA_BYTES = 64 * 1024
@@ -442,8 +444,12 @@ async def crawl4ai_listing_photo(address, key=''):
             })
         except (asyncio.TimeoutError, httpx.HTTPError, ValueError, json.JSONDecodeError):
             return None
+        listing_pages = crawl4ai_listing_pages(search, address)
+        logger.info('property_photo.crawl4ai search_rows=%s listing_pages=%s',
+                    len(search.get('rows', [])) if isinstance(search, dict) and isinstance(search.get('rows'), list) else 0,
+                    len(listing_pages))
         search_fallbacks = []
-        for candidate in crawl4ai_listing_pages(search, address):
+        for candidate in listing_pages:
             if loop.time() >= deadline:
                 break
             search_fallbacks.extend((image_url, candidate) for image_url in search_result_image_urls(candidate))
@@ -454,7 +460,9 @@ async def crawl4ai_listing_photo(address, key=''):
             except (asyncio.TimeoutError, httpx.HTTPError, ValueError, json.JSONDecodeError):
                 continue
             page_budget = MAX_LISTING_IMAGE_ATTEMPTS - MAX_SEARCH_IMAGE_ATTEMPTS
-            for image_url in listing_image_urls(page, candidate['url'])[:3]:
+            page_images = listing_image_urls(page, candidate['url'])[:3]
+            logger.info('property_photo.crawl4ai provider=%s page_images=%s', candidate['provider'], len(page_images))
+            for image_url in page_images:
                 if attempts >= page_budget:
                     break
                 accepted = await accepted_photo(image_url, candidate)
@@ -466,6 +474,7 @@ async def crawl4ai_listing_photo(address, key=''):
             accepted = await accepted_photo(image_url, candidate)
             if accepted:
                 return accepted
+        logger.info('property_photo.crawl4ai unavailable attempts=%s search_images=%s', attempts, len(search_fallbacks))
     return None
 
 
@@ -510,6 +519,7 @@ async def property_photo(request: Request, address: str = ''):
                 return result('available', image=fallback['image'], attribution=fallback['attribution'],
                               date=fallback.get('date'), source_url=fallback.get('sourceUrl'))
             return result('unavailable' if provider_configured else 'not_configured')
-    except (httpx.HTTPError, http.client.HTTPException, TimeoutError, ValueError, json.JSONDecodeError):
+    except (httpx.HTTPError, http.client.HTTPException, TimeoutError, ValueError, json.JSONDecodeError) as exc:
         # Provider URLs/errors may contain the key; neither log nor return them.
+        logger.info('property_photo.provider_failure type=%s', type(exc).__name__)
         return result('unavailable' if provider_configured else 'not_configured')

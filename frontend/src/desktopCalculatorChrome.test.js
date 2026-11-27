@@ -12,7 +12,9 @@ test("desktop chrome provides the approved workflow and return control", () => {
   }
   assert.match(source, /Return to mobile view/);
   assert.match(source, /YOUR AUDIT/);
-  assert.match(source, /Why we.re asking/);
+  assert.doesNotMatch(source, /Why we.re asking/);
+  assert.doesNotMatch(source, /Best next action/);
+  assert.match(source, /documentTools/);
 });
 
 test("desktop entry removes the redundant screen title and exposes the split-view regions", () => {

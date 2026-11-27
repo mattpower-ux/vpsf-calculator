@@ -1,0 +1,39 @@
+.desktopCalculator[data-stage="2"] .desktopWorkspace.hasProperty.hasGuidance{grid-template-columns:300px minmax(680px,1fr) 340px}
+.desktopPillars button{width:100%;min-height:38px;padding:8px 10px;display:flex;align-items:center;gap:9px;border:0;border-radius:8px;background:transparent;color:#526874;font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.desktopPillars button>span{width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#e7eff1;color:#637b83;flex:0 0 auto}
+.desktopPillars button>span.complete{background:#dff5e6;color:#23864b}
+.desktopPillars button.active{background:#fff;color:var(--ink);font-weight:850;box-shadow:0 5px 16px rgba(18,70,82,.07)}
+.desktopPillars button:focus-visible{outline:3px solid rgba(24,115,134,.24);outline-offset:2px}
+.desktopDocumentTools{display:grid;gap:14px}
+.desktopGuidance .desktopDocumentTools>.analysisEvidence,.desktopGuidance .desktopDocumentTools>.completenessSummary{padding:17px;border:1px solid #d8e7e8;border-radius:14px;background:#fff}
+.desktopGuidance .analysisEvidence h3,.desktopGuidance .completenessSummary h3{margin:0 0 7px;font-size:15px;letter-spacing:0;text-transform:none}
+.desktopGuidance .analysisEvidence>p,.desktopGuidance .completenessSummary>p{font-size:12px}
+.desktopGuidance .analysisEvidence>div{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px}
+.desktopGuidance .analysisEvidence button,.desktopGuidance .analysisEvidence summary{width:100%;min-height:40px;padding:8px 10px;display:flex;align-items:center;justify-content:flex-start;gap:7px;border:1px solid #c9dfe2;border-radius:9px;background:#f7fbfb;color:var(--blue);font-weight:800;font-size:12px;text-align:left}
+.desktopGuidance .analysisEvidence details{margin-top:7px}
+.desktopGuidance .analysisEvidence details>div{grid-template-columns:1fr;margin-top:7px}
+.desktopGuidance .completenessCounts{grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.desktopGuidance .completenessCounts div{padding:8px;border-radius:8px;background:#f3f8f8;display:grid;gap:2px}
+.desktopGuidance .completenessCounts dt{font-size:10px;color:#526874}
+.desktopGuidance .completenessCounts dd{font-size:17px;color:var(--ink)}
+.desktopGuidance .completenessNote{margin-top:10px;font-size:11px}
+.desktopPillarWizard{max-width:980px;margin:0 auto;padding:8px 0 28px}
+.desktopPillarHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:32px;padding:0 0 24px;border-bottom:1px solid #d8e7e8}
+.desktopPillarHeader h2{margin:0 0 8px;font-size:30px;line-height:1.1;color:var(--ink)}
+.desktopPillarHeader p{max-width:70ch;margin:0;color:#526874;line-height:1.55}
+.desktopPillarStatus{min-width:170px;display:grid;justify-items:end;gap:6px;color:#526874}
+.desktopPillarStatus span{display:flex;align-items:center;gap:6px;color:#23864b;font-weight:850}
+.desktopPillarStatus small{font-size:12px;white-space:nowrap}
+.desktopPillarFields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:28px 0}
+.desktopPillarFields label,.desktopRegionalField{min-width:0;padding:16px;border:1px solid #e6a69a;border-radius:12px;background:#fff4f1}
+.desktopPillarFields label span{font-weight:800;color:var(--ink)}
+.desktopPillarFields select,.desktopPillarFields input{width:100%;min-height:44px;margin-top:9px;border:1px solid #c6dadd;border-radius:8px;background:#fff;padding:9px 11px;font:inherit;color:var(--ink)}
+.desktopPillarFields label.fieldAnswered{border-color:#8bc9a0;background:#eff9f2}
+.desktopPillarFields label.fieldAnswered::after{content:"Saved";margin-top:8px;display:block;color:#23864b;font-size:11px;font-weight:850}
+.desktopRegionalField{display:grid;gap:7px;border-color:#c9dfe2;background:#f5fafb}
+.desktopRegionalField span{font-size:16px;color:var(--ink)}
+.desktopRegionalField small{color:#657c84}
+.desktopPillarActions{padding-top:22px;border-top:1px solid #d8e7e8;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.desktopPillarActions p{max-width:62ch;margin:0;color:#526874;font-size:13px;line-height:1.45}
+.desktopPillarActions .primaryButton{width:auto;min-width:230px;margin:0;padding:13px 18px}
+@media(max-width:1180px){.desktopCalculator[data-stage="2"] .desktopWorkspace.hasProperty.hasGuidance{grid-template-columns:250px minmax(600px,1fr)}.desktopPillarFields{grid-template-columns:1fr}.desktopPillarHeader,.desktopPillarActions{align-items:stretch;flex-direction:column}.desktopPillarStatus{justify-items:start}.desktopPillarActions .primaryButton{width:100%}}

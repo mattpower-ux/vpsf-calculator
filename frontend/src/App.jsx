@@ -12,6 +12,8 @@ import { InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { saveAnalysisDraft } from './analysisDraft.js';
 import DesktopCalculatorChrome from './DesktopCalculatorChrome.jsx';
+import DesktopPillarWizard from './DesktopPillarWizard.jsx';
+import { createDesktopPillarProgress, advanceDesktopPillar, selectDesktopPillar } from './desktopPillarFlow.js';
 import { readCalculatorViewMode, writeCalculatorViewMode } from './calculatorViewMode.js';
 import { productsForRecommendation } from './desktopImprovementPath.js';
 import './desktopImprovementPath.css';
@@ -62,6 +64,7 @@ import { heatingResilienceDefaults, heatingResilienceOptions, assessmentImprovem
 import vpsfBanner from "./assets/vpsf-banner.jpg";
 import brandPreviewLogo from "./assets/brand-preview/VPSF_Logo_Primary_Color.svg";
 import demoOrlandoHome from "./assets/demo-orlando-home.jpg";
+import demoCaliforniaExterior from "./assets/demo-california-exterior.png";
 import cognitionIcon from "./assets/cognition-icon.png";
 import atasRoofingThumb from "./assets/Atas-roofing.jpg";
 import certainteedSolarisThumb from "./assets/Certainteed-Solaris.jpg";
@@ -516,7 +519,7 @@ function Field({ label, value, onChange, options, wide = false, emptyLabel = "Se
   // Legacy certificate claims remain in the raw archive, not carbon choices.
   if (options === selectOptions.carbonStrategy && value === 'Zero Carbon Certified') value = '';
   return (
-    <label className={wide ? "field fieldWide" : "field"}>
+    <label className={`${wide ? "field fieldWide" : "field"} ${String(value ?? "").trim() ? "fieldAnswered" : "fieldUnanswered"}`}>
       <span>{label}</span>
       {options ? (
         <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
@@ -3389,6 +3392,7 @@ export default function App() {
   const [screen, setScreenState] = useState(0);
   const [viewMode, setViewModeState] = useState(() => readCalculatorViewMode(window.localStorage));
   const [desktopSaveStatus, setDesktopSaveStatus] = useState("");
+  const [desktopPillarProgress, setDesktopPillarProgress] = useState(createDesktopPillarProgress);
   const [menuVisit, setMenuVisit] = useState(-1);
   const menuReturnScreenRef = useRef(4);
   const menuDestinationScreenRef = useRef(null);
@@ -3412,6 +3416,9 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHomeState] = useState(defaultHome);
+  useEffect(() => {
+    setDesktopPillarProgress(createDesktopPillarProgress());
+  }, [home.address, home.city, home.state, home.zip]);
   const setViewMode = useCallback((mode) => {
     writeCalculatorViewMode(window.localStorage, mode);
     setViewModeState(mode === "desktop" ? "desktop" : "mobile");
@@ -3862,6 +3869,16 @@ export default function App() {
     }
   };
 
+  const handleDesktopPillarNext = () => {
+    const next = advanceDesktopPillar(desktopPillarProgress);
+    setDesktopPillarProgress(next);
+    if (next.finished) setScreen(1);
+  };
+  const auditAddress = [home.address, home.city, home.state, home.zip].filter(Boolean).join(", ");
+  const desktopPropertyImage = resultMode === "demo"
+    ? (selectedProperty?.image || demoOrlandoHome)
+    : home.exteriorPhoto || home.photo || (isPresentationAddress(auditAddress) ? demoCaliforniaExterior : null);
+
   return (
     <main className="app" data-theme={themeFromSearch(window.location.search)} data-view-mode={viewMode}>
       <CalculatorChrome
@@ -3871,17 +3888,26 @@ export default function App() {
         onBack={handleBack}
         onViewMode={setViewMode}
         home={home}
-        propertyImage={resultMode === "demo" ? (selectedProperty?.image || demoOrlandoHome) : home.exteriorPhoto || home.photo || null}
+        propertyImage={desktopPropertyImage}
         result={result}
         onSaveDraft={handleDesktopSaveDraft}
         saveStatus={desktopSaveStatus}
+        activeDesktopPillar={desktopPillarProgress.active}
+        completedDesktopPillars={desktopPillarProgress.completed}
+        onDesktopPillarSelect={pillar => setDesktopPillarProgress(current => selectDesktopPillar(current, pillar))}
+        documentTools={viewMode === "desktop" && screen === 29 ? <div className="desktopDocumentTools">
+          <AnalysisEvidence home={home} onApply={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}}/>
+          <CompletenessSummary home={home}/>
+        </div> : null}
       >
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
-        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <><div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div><AnalysisContextLine home={home}/></>}
+        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && !(viewMode === "desktop" && screen === 29) && <><div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div><AnalysisContextLine home={home}/></>}
         {screen === 0 && <StartScreen lookupGeneration={lookupGeneration} onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={presentationAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onConfirmPermit={permitNumber=>setHome(current=>confirmPermitWork(current,permitNumber))} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
-        {screen === 29 && <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>}
+        {screen === 29 && (viewMode === "desktop"
+          ? <DesktopPillarWizard home={home} update={update} Field={Field} options={depthOptions} activePillar={desktopPillarProgress.active} completed={desktopPillarProgress.completed} onNext={handleDesktopPillarNext}/>
+          : <InclusiveEvidence home={home} update={update} Field={Field} options={depthOptions} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}} onContinue={()=>setScreen(1)}/>)}
         {screen === 3 && home.analysisLevel === "broad" && <BroadReview home={home} onSubmit={handleGenerateScore} onBack={()=>setScreen(0)} busy={isScoring} error={scoreError}/>}
         {screen === 3 && home.analysisLevel !== "broad" && (
           <ReviewScreen

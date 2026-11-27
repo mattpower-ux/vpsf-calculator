@@ -4,8 +4,12 @@ import { DESKTOP_STAGES, desktopContextForScreen } from "./desktopWorkflow.js";
 import brandLogo from "./assets/brand-preview/VPSF_Logo_Primary_Color.svg";
 import "./desktopCalculatorChrome.css";
 import "./desktopEntry.css";
+import "./desktopPillarWizard.css";
 
-const PILLAR_LABELS = ["Energy", "Water", "Health", "Resilience", "Materials & Carbon", "Financial Risk", "Community & Mobility"];
+const PILLARS = [
+  ["energy", "Energy"], ["water", "Water"], ["health", "Health"], ["resilience", "Resilience"],
+  ["carbon", "Materials & Carbon"], ["financial", "Financial Risk"], ["community", "Community & Mobility"]
+];
 
 function propertyAddress(home) {
   return [home?.address, home?.city, home?.state, home?.zip].filter(Boolean).join(", ") || "Property address not yet entered";
@@ -21,7 +25,11 @@ export default function DesktopCalculatorChrome({
   propertyImage,
   result,
   onSaveDraft,
-  saveStatus
+  saveStatus,
+  documentTools,
+  activeDesktopPillar,
+  completedDesktopPillars = [],
+  onDesktopPillarSelect
 }) {
   const context = desktopContextForScreen(screen);
   const headingRef = useRef(null);
@@ -60,7 +68,9 @@ export default function DesktopCalculatorChrome({
               <span>{context.stage > stage.id ? <Check size={14}/> : stage.id}</span>{stage.label}
             </li>)}
           </ol>
-          {context.stage === 2 && <div className="desktopPillars"><p className="desktopEyebrow">SEVEN PILLARS</p>{PILLAR_LABELS.map(label => <span key={label}>{label}</span>)}</div>}
+          {context.stage === 2 && <div className="desktopPillars"><p className="desktopEyebrow">SEVEN PILLARS</p>{PILLARS.map(([id,label]) => <button type="button" key={id} className={activeDesktopPillar === id ? "active" : ""} onClick={() => onDesktopPillarSelect?.(id)}>
+            <span className={completedDesktopPillars.includes(id) ? "complete" : ""}>{completedDesktopPillars.includes(id) && <Check size={14}/>}</span>{label}
+          </button>)}</div>}
         </aside>}
 
         <main className="desktopMain" aria-labelledby={screen !== 0 ? "desktop-screen-heading" : undefined} aria-label={screen === 0 ? "Analyze an existing home" : undefined}>
@@ -74,8 +84,7 @@ export default function DesktopCalculatorChrome({
             <button type="button" onClick={onSaveDraft}><Save size={17}/>Save draft</button>
             {saveStatus && <p role="status">{saveStatus}</p>}
           </div>}
-          <section><h2>Why we’re asking</h2><p>These details improve the accuracy of your score and make each recommendation more specific to this home.</p></section>
-          <section className="desktopGuidanceHighlight"><h2>Best next action</h2><p>{context.stage === 2 ? "Answer what you know. Unanswered items never prevent you from continuing." : context.stage === 3 ? "Review low-scoring pillars, then open the improvement path." : "Compare relevant solutions for the home’s highest-priority needs."}</p></section>
+          {context.stage === 2 && documentTools}
           <section><h2>Assessment status</h2><dl><div><dt>Current stage</dt><dd>{context.stage} of 4</dd></div><div><dt>Score</dt><dd>{result?.total ?? "Not generated"}</dd></div></dl></section>
           <section><h2>Evidence sources</h2><div className="desktopEvidenceTags"><span>Property record</span><span>Permit history</span><span>Regional risk</span></div></section>
         </aside>}

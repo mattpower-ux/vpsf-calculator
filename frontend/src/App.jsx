@@ -576,6 +576,11 @@ function MobileCalculatorChrome({ children, screen, setScreen, onBack, onViewMod
   useEffect(() => {
     shellRef.current?.scrollTo(0, 0);
     shellRef.current?.querySelector(".screen")?.scrollTo(0, 0);
+    const heading = shellRef.current?.querySelector(".screen h1, .screen h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+    }
   }, [screen]);
   return (
     <div className={`phoneShell${hasEntryNavigation(screen) ? " entryNavShell" : ""}`} ref={shellRef}>

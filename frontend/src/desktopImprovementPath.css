@@ -90,6 +90,17 @@
 .app[data-view-mode="desktop"] .desktopRecProducts .moreLikeThis:hover { color: #075f6c; }
 .app[data-view-mode="desktop"] .improveScoreButton { width: 100%; min-height: 54px; margin-top: 12px; font-size: 17px; }
 
+.app[data-view-mode="desktop"] .products .productCardWithPhoto .productImage {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #f4f7fa;
+}
+
+.app[data-view-mode="desktop"] .products .productCardWithPhoto .productImage img {
+  object-fit: contain;
+  object-position: center;
+}
+
 @media (max-width: 1080px) {
   .app[data-view-mode="desktop"] .recommendations .recommendationCard { grid-template-columns: 1fr; }
   .app[data-view-mode="desktop"] .desktopRecProducts { border-left: 0; border-top: 1px solid #d8e7e8; }

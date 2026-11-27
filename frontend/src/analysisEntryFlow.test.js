@@ -47,4 +47,6 @@ test('Basic explains that it needs only limited additional entry', () => {
 test('Superior asks for more information from the homeowner', () => {
   assert.ok(analysisLevelDetails.inclusive.results.includes('More info from you'));
   assert.equal(analysisLevelDetails.broad.results.includes('More info from you'), false);
+  assert.equal(analysisLevelDetails.inclusive.summary, 'The most complete score, using documented features, photos, and home details.');
+  assert.deepEqual(analysisLevelDetails.inclusive.pros, ['Highest-confidence VPSF score', 'Detailed findings and upgrades', 'Documents and photos fill gaps']);
 });

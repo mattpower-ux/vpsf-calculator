@@ -10,10 +10,10 @@ export const analysisLevelDetails = Object.freeze({
     results: ['Seven-pillar VPSF score', 'Initial strengths and priority upgrades', 'Limited additional entry from you'],
   },
   inclusive: {
-    summary: 'The most complete review, using documented features, photos, and detailed home information.',
-    pros: ['Highest-confidence VPSF score', 'Detailed findings and improvement opportunities', 'Documents and photos can fill information gaps'],
+    summary: 'The most complete score, using documented features, photos, and home details.',
+    pros: ['Highest-confidence VPSF score', 'Detailed findings and upgrades', 'Documents and photos fill gaps'],
     cons: ['More info from you', 'Takes longer to complete than Basic'],
-    results: ['Highest-confidence VPSF score', 'Detailed findings and improvement opportunities', 'More info from you'],
+    results: ['Highest-confidence VPSF score', 'Detailed findings and upgrades', 'More info from you'],
   },
 });
 

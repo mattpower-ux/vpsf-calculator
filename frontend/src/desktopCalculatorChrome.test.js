@@ -52,3 +52,23 @@ test("application chooses one shell around one shared active screen tree", () =>
   assert.doesNotMatch(source, /desktopChildren|mobileChildren/);
 });
 
+test("desktop review and score overview move assessment completeness into the guidance rail", () => {
+  const source = appSource();
+  assert.match(source, /sidebarTools=\{viewMode === "desktop" && \[3, 4\]\.includes\(screen\)/);
+  assert.match(source, /<ReviewScreen[\s\S]*showCompleteness=\{viewMode !== "desktop"\}/);
+  assert.match(source, /<Dashboard[\s\S]*showCompleteness=\{viewMode !== "desktop"\}/);
+});
+
+test("score generation and desktop score overview omit the redundant analysis context", () => {
+  const source = appSource();
+  assert.match(source, /const showAnalysisBadge = screen !== 4 \|\| viewMode !== "desktop"/);
+  assert.match(source, /const showAnalysisAddress = !\[12\]\.includes\(screen\) && \(screen !== 4 \|\| viewMode !== "desktop"\)/);
+});
+
+test("all pillar percentage arcs use the shared VPSF green", () => {
+  const source = appSource();
+  const miniScore = source.slice(source.indexOf("function MiniScore"), source.indexOf("const listingSources"));
+  assert.match(miniScore, /conic-gradient\(#16834f/);
+  assert.doesNotMatch(miniScore, /conic-gradient\(var\(--ring\)/);
+});
+

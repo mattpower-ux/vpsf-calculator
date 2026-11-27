@@ -642,7 +642,7 @@ function MiniScore({ pillar, value }) {
   const pct = Math.round((value / pillar.max) * 100);
   return (
     <div className={`miniScore ${pillar.accent}`}>
-      <div className="miniRing" style={{ background: `conic-gradient(var(--ring) ${pct * 3.6}deg, #e6edf3 0)` }}>
+      <div className="miniRing" style={{ background: `conic-gradient(#16834f ${pct * 3.6}deg, #e6edf3 0)` }}>
         <div className="miniRingInner">
           <Icon size={17} />
           <strong>{value}</strong>
@@ -1488,7 +1488,7 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
   );
 }
 
-function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError, certificationPreview, certificationCatalog }) {
+function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError, certificationPreview, certificationCatalog, showCompleteness = true }) {
   const propertyRows = [
     [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
     [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
@@ -1538,7 +1538,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError,
         <button className="textLink" onClick={() => setScreen(2)}>View all specs</button>
       </section>
 
-      <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>
+      {showCompleteness && <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>}
       <CertificationFindings data={certificationPreview?.data} catalog={certificationCatalog?.data}/>
       {certificationPreview?.error && <p role="status">{certificationPreview.error} You can return to property details to retry.</p>}
       {home.analysisLevel === "inclusive" && <AnalysisDraft home={home}/>}
@@ -1565,7 +1565,7 @@ function ResultStreetAddress({ streetAddress }) {
   return streetAddress ? <p className="resultStreetAddress">{streetAddress}</p> : null;
 }
 
-function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home, certificationCatalog }) {
+function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home, certificationCatalog, showCompleteness = true }) {
   const scoreInfo = classification(result.total);
   const pct = Math.min(100, Math.round((result.total / 1000) * 100));
   return (
@@ -1592,7 +1592,7 @@ function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home, 
         </div>
       </section>
 
-      {home?.analysisLevel && home.analysisLevel !== "broad" && <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>}
+      {showCompleteness && home?.analysisLevel && home.analysisLevel !== "broad" && <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>}
       <CertificationFindings data={result.certificationEvidence} catalog={certificationCatalog?.data}/>
       <button className="primaryButton diveButton" onClick={() => setScreen(5)}>
         Next — Learn More <ArrowRight size={18} />
@@ -3899,9 +3899,15 @@ export default function App() {
           <AnalysisEvidence home={home} onApply={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}}/>
           <CompletenessSummary home={home}/>
         </div> : null}
+        sidebarTools={viewMode === "desktop" && [3, 4].includes(screen) && home.analysisLevel !== "broad" ? <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/> : null}
       >
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
-        {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && !(viewMode === "desktop" && screen === 29) && <><div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div><AnalysisContextLine home={home}/></>}
+        {(() => {
+          const showAnalysisContext = home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && !(viewMode === "desktop" && screen === 29);
+          const showAnalysisBadge = screen !== 4 || viewMode !== "desktop";
+          const showAnalysisAddress = ![12].includes(screen) && (screen !== 4 || viewMode !== "desktop");
+          return showAnalysisContext ? <>{showAnalysisBadge && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}{showAnalysisAddress && <AnalysisContextLine home={home}/>}</> : null;
+        })()}
         {screen === 0 && <StartScreen lookupGeneration={lookupGeneration} onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={presentationAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 1 && <PropertyDetails certificationCatalog={certificationCatalog} home={home} certificationPreview={certificationPreview} update={update} setScreen={navigateFromUI} onEvidence={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onConfirmPermit={permitNumber=>setHome(current=>confirmPermitWork(current,permitNumber))} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
         {screen === 2 && <HomeSpecs home={home} update={update} setScreen={navigateFromUI} customFields={customFields} updateExtra={updateExtra} />}
@@ -3918,10 +3924,11 @@ export default function App() {
             onGenerateScore={resultMode === "demo" ? () => setScreen(12) : handleGenerateScore}
             isScoring={isScoring}
             scoreError={scoreError}
+            showCompleteness={viewMode !== "desktop"}
           />
         )}
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
-        {screen === 4 && result && <Dashboard certificationCatalog={certificationCatalog} home={effectiveHome} result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
+        {screen === 4 && result && <Dashboard certificationCatalog={certificationCatalog} home={effectiveHome} result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} showCompleteness={viewMode !== "desktop"} />}
         {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
         {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); navigateFromUI(7); setActiveCategory(recommendationCategory(rec));}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} recommendedProducts={recommendedProducts} setSelectedProduct={setSelectedProduct} onProductClick={handleProductClick} />}
         {screen === 7 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}

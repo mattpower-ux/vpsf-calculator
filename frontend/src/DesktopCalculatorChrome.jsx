@@ -27,6 +27,7 @@ export default function DesktopCalculatorChrome({
   onSaveDraft,
   saveStatus,
   documentTools,
+  sidebarTools,
   activeDesktopPillar,
   completedDesktopPillars = [],
   onDesktopPillarSelect
@@ -84,6 +85,7 @@ export default function DesktopCalculatorChrome({
             <button type="button" onClick={onSaveDraft}><Save size={17}/>Save draft</button>
             {saveStatus && <p role="status">{saveStatus}</p>}
           </div>}
+          {sidebarTools}
           {context.stage === 2 && documentTools}
           <section><h2>Assessment status</h2><dl><div><dt>Current stage</dt><dd>{context.stage} of 4</dd></div><div><dt>Score</dt><dd>{result?.total ?? "Not generated"}</dd></div></dl></section>
           <section><h2>Evidence sources</h2><div className="desktopEvidenceTags"><span>Property record</span><span>Permit history</span><span>Regional risk</span></div></section>

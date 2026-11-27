@@ -10,6 +10,9 @@ import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permi
 import { lookupPermitHistory } from './api/client.js';
 import { InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
+import { saveAnalysisDraft } from './analysisDraft.js';
+import DesktopCalculatorChrome from './DesktopCalculatorChrome.jsx';
+import { readCalculatorViewMode, writeCalculatorViewMode } from './calculatorViewMode.js';
 import { AnalysisEvidence, BroadReview } from './AnalysisFlow.jsx';
 import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLevels.js';
 import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
@@ -565,7 +568,7 @@ function ProgressDots({ step }) {
   );
 }
 
-function AppChrome({ children, screen, setScreen, onBack }) {
+function MobileCalculatorChrome({ children, screen, setScreen, onBack, onViewMode }) {
   const isBrandTheme = themeFromSearch(window.location.search) === "brand";
   const shellRef = useRef(null);
   useEffect(() => {
@@ -588,6 +591,7 @@ function AppChrome({ children, screen, setScreen, onBack }) {
         </button>
       )}
       {children}
+      {screen === 0 && <button type="button" className="openDesktopVersion" onClick={() => onViewMode("desktop")}>Open Desktop Version</button>}
       {screen === 0 && <div className="measurementFooter" aria-label="Measuring performance, durability, efficiency, and resilience">
         <strong>MEASURING</strong>
         <div className="measurementValues">
@@ -600,6 +604,12 @@ function AppChrome({ children, screen, setScreen, onBack }) {
       {screen !== 12 && <BottomNav active={[4, 5, 9, 10, 17, 18, 19, 24, 31].includes(screen) ? "My Scores" : [25, 27].includes(screen) ? "Help?" : "Menu"} setScreen={setScreen} />}
     </div>
   );
+}
+
+function CalculatorChrome({ viewMode, ...props }) {
+  return viewMode === "desktop"
+    ? <DesktopCalculatorChrome {...props} />
+    : <MobileCalculatorChrome {...props} />;
 }
 
 function BottomNav({ active, setScreen }) {
@@ -3339,6 +3349,8 @@ export default function App() {
   }
 
   const [screen, setScreenState] = useState(0);
+  const [viewMode, setViewModeState] = useState(() => readCalculatorViewMode(window.localStorage));
+  const [desktopSaveStatus, setDesktopSaveStatus] = useState("");
   const [menuVisit, setMenuVisit] = useState(-1);
   const menuReturnScreenRef = useRef(4);
   const menuDestinationScreenRef = useRef(null);
@@ -3362,6 +3374,10 @@ export default function App() {
   const [selectedProperty, setSelectedProperty] = useState(demoProperties[0]);
   const [resultMode, setResultMode] = useState("manual");
   const [home, setHomeState] = useState(defaultHome);
+  const setViewMode = useCallback((mode) => {
+    writeCalculatorViewMode(window.localStorage, mode);
+    setViewModeState(mode === "desktop" ? "desktop" : "mobile");
+  }, []);
   const permitCancelRef = useRef(null);
   const [permitLookupEpoch, setPermitLookupEpoch] = useState(0);
   const permitIdentity = home.analysisLevel ? JSON.stringify(permitRequest(home)) : 'null';
@@ -3798,9 +3814,30 @@ export default function App() {
     navigateFromUI(target);
   };
 
+  const handleDesktopSaveDraft = () => {
+    try {
+      saveAnalysisDraft(home);
+      setDesktopSaveStatus("Draft saved on this device.");
+      window.dispatchEvent(new Event("vpsf-analysis-draft-changed"));
+    } catch (error) {
+      setDesktopSaveStatus(error?.message || "This draft could not be saved.");
+    }
+  };
+
   return (
-    <main className="app" data-theme={themeFromSearch(window.location.search)}>
-      <AppChrome screen={screen} setScreen={navigateFromUI} onBack={handleBack}>
+    <main className="app" data-theme={themeFromSearch(window.location.search)} data-view-mode={viewMode}>
+      <CalculatorChrome
+        viewMode={viewMode}
+        screen={screen}
+        setScreen={navigateFromUI}
+        onBack={handleBack}
+        onViewMode={setViewMode}
+        home={home}
+        propertyImage={resultMode === "demo" ? (selectedProperty?.image || demoOrlandoHome) : home.exteriorPhoto || home.photo || null}
+        result={result}
+        onSaveDraft={handleDesktopSaveDraft}
+        saveStatus={desktopSaveStatus}
+      >
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
         {home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && <><div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div><AnalysisContextLine home={home}/></>}
         {screen === 0 && <StartScreen lookupGeneration={lookupGeneration} onPermitLookup={startPermitLookup} onResume={draft=>{startPermitLookup(draft);setHome(draft);setApiResult(null);setQueryId(null);queryIdRef.current=null;setHasAssessedHome(false);setResultMode("manual");setScreen(draft.analysisLevel === "inclusive" ? 29 : 1);}} initialAddress={presentationAddress} setScreen={navigateFromUI} setSelectedProperty={setSelectedProperty} setResultMode={setResultMode} setHome={setHome} onQueryStarted={handleQueryStarted} onCaptureApply={handleCaptureApply} onListingSelect={source=>{listingReturnRef.current=1;setListingSource(source); navigateFromUI(11);}} />}
@@ -3846,7 +3883,7 @@ export default function App() {
         {screen === 26 && <PillarDefinitionScreen selectedPillar={selectedPillar} setScreen={navigateFromUI} onOpenArchive={openPillarArchive} />}
         {screen === 27 && <FullGuideScreen guide={manualGuide} chapterIndex={manualChapterIndex} setChapterIndex={setManualChapterIndex} onExit={exitFullGuide} onNavigate={handleGuideNavigate} setScreen={navigateFromUI} />}
         {screen === 28 && <ProductCategories products={products} setScreen={navigateFromUI} onChoose={category => { setBrowseAll(true); setActiveCategory(category); setActivePillar(null); navigateFromUI(7); }} />}
-      </AppChrome>
+      </CalculatorChrome>
 
       <style>{`
         :root {
@@ -3972,6 +4009,18 @@ export default function App() {
           background: transparent;
           color: var(--ink);
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        }
+        .openDesktopVersion {
+          flex: 0 0 auto;
+          align-self: center;
+          margin: 7px 0 3px;
+          border: 0;
+          border-bottom: 1px solid currentColor;
+          background: transparent;
+          color: var(--blue);
+          padding: 3px 1px;
+          font-size: 12px;
+          font-weight: 850;
         }
 
         .phoneShell {

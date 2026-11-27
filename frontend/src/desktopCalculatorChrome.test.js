@@ -61,8 +61,14 @@ test("desktop review and score overview move assessment completeness into the gu
 
 test("score generation and desktop score overview omit the redundant analysis context", () => {
   const source = appSource();
-  assert.match(source, /const showAnalysisBadge = screen !== 4 \|\| viewMode !== "desktop"/);
+  assert.match(source, /const showAnalysisBadge = screen !== 12 && \(screen !== 4 \|\| viewMode !== "desktop"\)/);
   assert.match(source, /const showAnalysisAddress = !\[12\]\.includes\(screen\) && \(screen !== 4 \|\| viewMode !== "desktop"\)/);
+});
+
+test("desktop review relies on the sidebar save button instead of rendering a duplicate draft control", () => {
+  const source = appSource();
+  assert.match(source, /<ReviewScreen[\s\S]*showDraft=\{viewMode !== "desktop"\}/);
+  assert.match(source, /showDraft && home\.analysisLevel === "inclusive" && <AnalysisDraft/);
 });
 
 test("all pillar percentage arcs use the shared VPSF green", () => {

@@ -1488,7 +1488,7 @@ function HomeSpecsMore({ home, update, setScreen, customFields, updateExtra }) {
   );
 }
 
-function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError, certificationPreview, certificationCatalog, showCompleteness = true }) {
+function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError, certificationPreview, certificationCatalog, showCompleteness = true, showDraft = true }) {
   const propertyRows = [
     [MapPin, `${home.address}`, `${home.city}, ${home.state} ${home.zip}`],
     [Home, home.homeType, `${home.squareFeet} sq ft • ${home.stories} stories`],
@@ -1541,7 +1541,7 @@ function ReviewScreen({ home, setScreen, onGenerateScore, isScoring, scoreError,
       {showCompleteness && <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/>}
       <CertificationFindings data={certificationPreview?.data} catalog={certificationCatalog?.data}/>
       {certificationPreview?.error && <p role="status">{certificationPreview.error} You can return to property details to retry.</p>}
-      {home.analysisLevel === "inclusive" && <AnalysisDraft home={home}/>}
+      {showDraft && home.analysisLevel === "inclusive" && <AnalysisDraft home={home}/>}
       <button className="primaryButton stickyButton" onClick={onGenerateScore} disabled={isScoring}>
         {isScoring ? "Generating VPSF Score..." : "Generate VPSF Score"} <ArrowRight size={18} />
       </button>
@@ -3904,7 +3904,7 @@ export default function App() {
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
         {(() => {
           const showAnalysisContext = home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && !(viewMode === "desktop" && screen === 29);
-          const showAnalysisBadge = screen !== 4 || viewMode !== "desktop";
+          const showAnalysisBadge = screen !== 12 && (screen !== 4 || viewMode !== "desktop");
           const showAnalysisAddress = ![12].includes(screen) && (screen !== 4 || viewMode !== "desktop");
           return showAnalysisContext ? <>{showAnalysisBadge && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}{showAnalysisAddress && <AnalysisContextLine home={home}/>}</> : null;
         })()}
@@ -3925,6 +3925,7 @@ export default function App() {
             isScoring={isScoring}
             scoreError={scoreError}
             showCompleteness={viewMode !== "desktop"}
+            showDraft={viewMode !== "desktop"}
           />
         )}
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}

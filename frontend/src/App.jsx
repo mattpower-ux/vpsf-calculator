@@ -13,6 +13,8 @@ import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { saveAnalysisDraft } from './analysisDraft.js';
 import DesktopCalculatorChrome from './DesktopCalculatorChrome.jsx';
 import { readCalculatorViewMode, writeCalculatorViewMode } from './calculatorViewMode.js';
+import { productsForRecommendation } from './desktopImprovementPath.js';
+import './desktopImprovementPath.css';
 import { AnalysisEvidence, BroadReview } from './AnalysisFlow.jsx';
 import { prepareAnalysisHome, analysisLabel, analysisRoute } from './analysisLevels.js';
 import { mergeProviderFields, savedMatchForAddress } from './propertyScan.js';
@@ -1574,6 +1576,9 @@ function Dashboard({ result, setScreen, setSelectedPillar, streetAddress, home, 
       <button className="primaryButton diveButton" onClick={() => setScreen(5)}>
         Next — Learn More <ArrowRight size={18} />
       </button>
+      <button className="secondaryButton improveScoreButton" onClick={() => setScreen(6)}>
+        How Can I Improve this Score? <ArrowRight size={18} />
+      </button>
       <BottomNav active="Pillars" setScreen={setScreen} />
     </div>
   );
@@ -2365,7 +2370,7 @@ function IapmoWaterResources() {
   </section>;
 }
 
-function Recommendations({ onProductOptions, advice, result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress }) {
+function Recommendations({ onProductOptions, advice, result, setScreen, setSelectedRecommendation, setSelectedEducation, setEducationReturnScreen, activePillar, setActivePillar, streetAddress, recommendedProducts, setSelectedProduct, onProductClick }) {
   const filteredRecommendations = [...(advice?.data?.advisoryRecommendations || []), ...assessmentImprovements(result)].map(rec => ({ ...rec, gain: rec.gainPoints == null ? "Recommended" : `+${rec.gainPoints} pts`, icon: rec.pillar === "energy" ? Zap : rec.pillar === "water" ? Droplets : rec.pillar === "health" ? HeartPulse : Shield, eyebrow: pillarLabelMap[rec.pillar], bullets: [rec.copy] })).filter((rec) =>
     recommendationMatchesPillar(rec, activePillar)
   );
@@ -2393,18 +2398,33 @@ function Recommendations({ onProductOptions, advice, result, setScreen, setSelec
 
       {filteredRecommendations.map((rec) => {
         const Icon = rec.icon;
+        const matchedProducts = productsForRecommendation(rec, recommendedProducts);
         return (
           <article className="recommendationCard" key={rec.id}>
-            <div className="recHead"><Icon size={22} /><span>{rec.eyebrow}</span><strong>{rec.gain}</strong></div>
-            <h3>{rec.title}</h3>
-            <p>{rec.copy}</p>
-            {rec.pillarGains && <p className="sourceNote">{Object.entries(rec.pillarGains).map(([key, gain]) => `${pillarLabelMap[key] || key} ${gain > 0 ? "+" : ""}${gain}`).join(" · ")}</p>}
-            <div className="recommendationCardActions">
-              <button onClick={() => {
-                setSelectedRecommendation(rec);
-                openEducationForRecommendation(rec, setScreen, setSelectedEducation, setEducationReturnScreen, 6);
-              }}>Learn More <ArrowRight size={15} /></button>
-              <button onClick={() => onProductOptions(rec)}>Recommended Products <ArrowRight size={15} /></button>
+            <div className="recommendationCopy">
+              <div className="recHead"><Icon size={22} /><span>{rec.eyebrow}</span><strong>{rec.gain}</strong></div>
+              <h3>{rec.title}</h3>
+              <p>{rec.copy}</p>
+              {rec.pillarGains && <p className="sourceNote">{Object.entries(rec.pillarGains).map(([key, gain]) => `${pillarLabelMap[key] || key} ${gain > 0 ? "+" : ""}${gain}`).join(" · ")}</p>}
+              <div className="recommendationCardActions">
+                <button onClick={() => {
+                  setSelectedRecommendation(rec);
+                  openEducationForRecommendation(rec, setScreen, setSelectedEducation, setEducationReturnScreen, 6);
+                }}>Learn More <ArrowRight size={15} /></button>
+                <button onClick={() => onProductOptions(rec)}>Recommended Products <ArrowRight size={15} /></button>
+              </div>
+            </div>
+            <div className="desktopRecProducts" aria-label={`Products for ${rec.title}`}>
+              {matchedProducts.map(product => <button type="button" key={product.id} onClick={() => {
+                onProductClick(product, "desktop_improvement_path");
+                setSelectedProduct(product);
+                setScreen(13);
+              }}>
+                <span>{product.image ? <img src={product.image} alt="" loading="lazy" /> : <Package size={28}/>}</span>
+                <div><SponsoredLabel product={product}/><strong>{product.brand || product.name}</strong><small>{product.productType || product.category || product.name}</small></div>
+                <ArrowRight size={16}/>
+              </button>)}
+              {!matchedProducts.length && <p>Confirm this feature before selecting a product solution.</p>}
             </div>
           </article>
         );
@@ -3859,7 +3879,7 @@ export default function App() {
         {requiresAssessmentScore(screen) && !result && <ScoreUnavailable setScreen={navigateFromUI} />}
         {screen === 4 && result && <Dashboard certificationCatalog={certificationCatalog} home={effectiveHome} result={result} setScreen={navigateFromUI} setSelectedPillar={setSelectedPillar} streetAddress={streetAddress} />}
         {screen === 5 && result && <PillarBreakdown result={result} advice={advice} setActivePillar={setActivePillar} setScreen={navigateFromUI} setSelectedKnowHowPillar={setSelectedKnowHowPillar} setKnowHowReturnScreen={setKnowHowReturnScreen} streetAddress={streetAddress} />}
-        {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); navigateFromUI(7); setActiveCategory(recommendationCategory(rec));}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} />}
+        {screen === 6 && result && <Recommendations result={result} onProductOptions={rec => {setSelectedRecommendation(rec); setBrowseAll(false); setActivePillar(rec.pillar); navigateFromUI(7); setActiveCategory(recommendationCategory(rec));}} advice={advice} setScreen={navigateFromUI} setSelectedRecommendation={setSelectedRecommendation} setSelectedEducation={setSelectedEducation} setEducationReturnScreen={setEducationReturnScreen} activePillar={activePillar} setActivePillar={setActivePillar} streetAddress={streetAddress} recommendedProducts={recommendedProducts} setSelectedProduct={setSelectedProduct} onProductClick={handleProductClick} />}
         {screen === 7 && <Products isDemo={!!home.demoScenario} browseAll={browseAll || !propertyAddress} setBrowseAll={setBrowseAll} products={products} recommendedProducts={recommendedProducts} advice={advice} setScreen={navigateFromUI} setSelectedProduct={setSelectedProduct} activePillar={activePillar} setActivePillar={setActivePillar} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onProductClick={handleProductClick} propertyAddress={propertyAddress} />}
         {screen === 8 && <MarketingStudio selectedProperty={resultMode === "demo" ? selectedProperty : { ...home, name: home.address, address: propertyAddress || home.address, assessed: true }} setScreen={navigateFromUI} />}
         {screen === 9 && result && <LabelScreen certificationCatalog={certificationCatalog} result={result} property={resultMode === "demo" ? result.property : effectiveHome} products={recommendedProducts} setScreen={navigateFromUI} streetAddress={streetAddress} />}

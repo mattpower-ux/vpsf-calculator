@@ -54,7 +54,7 @@ test("application chooses one shell around one shared active screen tree", () =>
 
 test("desktop review and score overview move assessment completeness into the guidance rail", () => {
   const source = appSource();
-  assert.match(source, /sidebarTools=\{viewMode === "desktop" && \[3, 4\]\.includes\(screen\)/);
+  assert.match(source, /sidebarTools=\{viewMode === "desktop" && \(screen === 3 \|\| \(screen === 4 && home\.analysisLevel !== "broad"\)\)/);
   assert.match(source, /<ReviewScreen[\s\S]*showCompleteness=\{viewMode !== "desktop"\}/);
   assert.match(source, /<Dashboard[\s\S]*showCompleteness=\{viewMode !== "desktop"\}/);
 });

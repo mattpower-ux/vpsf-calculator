@@ -3899,7 +3899,7 @@ export default function App() {
           <AnalysisEvidence home={home} onApply={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}}/>
           <CompletenessSummary home={home}/>
         </div> : null}
-        sidebarTools={viewMode === "desktop" && [3, 4].includes(screen) && home.analysisLevel !== "broad" ? <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/> : null}
+        sidebarTools={viewMode === "desktop" && (screen === 3 || (screen === 4 && home.analysisLevel !== "broad")) ? <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/> : null}
       >
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
         {(() => {

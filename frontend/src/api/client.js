@@ -1,15 +1,8 @@
 import { permitRequest } from '../permitEvidence.js';
 
-function resolveApiBaseUrl() {
-  if (import.meta.env?.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-
-  if (typeof window !== "undefined" && window.location.hostname.endsWith(".onrender.com")) {
-    return "https://vpsf-api.onrender.com";
-  }
-
-  return "http://localhost:8000";
+export function resolveApiBaseUrl(configuredUrl = import.meta.env?.VITE_API_BASE_URL || "", isDevelopment = Boolean(import.meta.env?.DEV)) {
+  if (configuredUrl) return configuredUrl;
+  return isDevelopment ? "http://localhost:8000" : "https://vpsf-api.onrender.com";
 }
 
 const API_BASE_URL = resolveApiBaseUrl();

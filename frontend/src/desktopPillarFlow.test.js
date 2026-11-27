@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createDesktopPillarProgress, advanceDesktopPillar, selectDesktopPillar } from "./desktopPillarFlow.js";
+import { createDesktopPillarProgress, advanceDesktopPillar, selectDesktopPillar, desktopPillarDestination } from "./desktopPillarFlow.js";
 
 test("advancing marks the current pillar complete and opens the next pillar", () => {
   const start = createDesktopPillarProgress();
@@ -32,4 +32,11 @@ test("completed pillars remain selectable for review without losing completion",
 test("unknown pillar selections are ignored", () => {
   const progress = advanceDesktopPillar(createDesktopPillarProgress());
   assert.deepEqual(selectDesktopPillar(progress, "not-a-pillar"), progress);
+});
+
+test("finishing the final pillar routes forward to consolidated full review", () => {
+  let progress = createDesktopPillarProgress();
+  for (let index = 0; index < 7; index += 1) progress = advanceDesktopPillar(progress);
+
+  assert.equal(desktopPillarDestination(progress), 3);
 });

@@ -13,7 +13,7 @@ import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { saveAnalysisDraft } from './analysisDraft.js';
 import DesktopCalculatorChrome from './DesktopCalculatorChrome.jsx';
 import DesktopPillarWizard from './DesktopPillarWizard.jsx';
-import { createDesktopPillarProgress, advanceDesktopPillar, selectDesktopPillar } from './desktopPillarFlow.js';
+import { createDesktopPillarProgress, advanceDesktopPillar, selectDesktopPillar, desktopPillarDestination } from './desktopPillarFlow.js';
 import { readCalculatorViewMode, writeCalculatorViewMode } from './calculatorViewMode.js';
 import { productsForRecommendation } from './desktopImprovementPath.js';
 import './desktopImprovementPath.css';
@@ -3872,7 +3872,7 @@ export default function App() {
   const handleDesktopPillarNext = () => {
     const next = advanceDesktopPillar(desktopPillarProgress);
     setDesktopPillarProgress(next);
-    if (next.finished) setScreen(1);
+    if (next.finished) setScreen(desktopPillarDestination(next));
   };
   const auditAddress = [home.address, home.city, home.state, home.zip].filter(Boolean).join(", ");
   const desktopPropertyImage = resultMode === "demo"

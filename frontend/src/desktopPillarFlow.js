@@ -30,3 +30,7 @@ export function advanceDesktopPillar(progress) {
     finished
   };
 }
+
+export function desktopPillarDestination(progress) {
+  return progress.finished ? 3 : 29;
+}

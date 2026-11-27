@@ -39,3 +39,9 @@ test("exterior-photo discovery runs only from an explicit search request without
   assert.match(source, /found\?\.sourceUrl/);
   assert.match(source, /rel="noopener noreferrer"/);
 });
+
+test("the entry photo exposes a desktop property caption without replacing mobile content", () => {
+  const source = readFileSync(new URL("./AddressPhoto.jsx", import.meta.url), "utf8");
+  assert.match(source, /desktopPropertyCaption/);
+  assert.match(source, /Property found/);
+});

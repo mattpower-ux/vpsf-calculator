@@ -52,7 +52,7 @@ export default function AddressPhoto({ address, searchRequest, flow, onFlowActio
       </filter>
     </defs></svg>
     {flow.page === 'address' ? <>
-      {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/></figure>}
+      {image && <figure className="mainExteriorPhoto"><img referrerPolicy="no-referrer" src={image} alt={`Exterior of ${address}`} onError={imageFailed}/><figcaption className="desktopPropertyCaption"><small>Property found</small><strong>{address}</strong></figcaption></figure>}
       {image && !demo && !imported && <p className="photoAttribution">
         {found?.sourceUrl
           ? <a href={found.sourceUrl} target="_blank" rel="noopener noreferrer">{found?.attribution || 'Property photo source'}</a>
@@ -70,21 +70,40 @@ export default function AddressPhoto({ address, searchRequest, flow, onFlowActio
         <h2>Depth of Scoring Desired</h2>
         <p>Choose a level to see what your calculation will include.</p>
       </header>
-      <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className={`analysisChoice ${flow.expanded === level ? 'selected' : ''}`} type="button" disabled={busy} onClick={() => onFlowAction({type:'toggle-level', level})} aria-expanded={flow.expanded === level} aria-controls={`analysis-${level}-details`} aria-label={`${label}: ${caption}`}>
-        <span className="analysisChoiceImage">
-          <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
-          {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
-        </span>
-        <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
-      </button>)}</div>
-      {selected && <section className="analysisLevelResult" id={`analysis-${selected[0]}-details`} aria-live="polite">
-        <p>{analysisLevelDetails[selected[0]].summary}</p>
-        <div className="analysisTradeoffs">
-          <div><h4>Pros</h4><ul>{analysisLevelDetails[selected[0]].pros.map(result => <li key={result}>{result}</li>)}</ul></div>
-          <div><h4>Cons</h4><ul>{analysisLevelDetails[selected[0]].cons.map(result => <li key={result}>{result}</li>)}</ul></div>
-        </div>
-        <button type="button" className="primaryButton" disabled={busy} onClick={() => confirmLevel(selected[0])}>{busy ? 'Loading…' : 'DO IT!'} <ArrowRight size={18}/></button>
-      </section>}
+      <div className="mobileAnalysisOptions">
+        <div className="analysisChoiceGrid">{options.map(([level,label,caption],index) => <button key={level} className={`analysisChoice ${flow.expanded === level ? 'selected' : ''}`} type="button" disabled={busy} onClick={() => onFlowAction({type:'toggle-level', level})} aria-expanded={flow.expanded === level} aria-controls={`analysis-${level}-details`} aria-label={`${label}: ${caption}`}>
+          <span className="analysisChoiceImage">
+            <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
+            {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
+          </span>
+          <strong>{label.replace(/^\d+\.\s*/, "")}</strong><small>{caption}</small>
+        </button>)}</div>
+        {selected && <section className="analysisLevelResult" id={`analysis-${selected[0]}-details`} aria-live="polite">
+          <p>{analysisLevelDetails[selected[0]].summary}</p>
+          <div className="analysisTradeoffs">
+            <div><h4>Pros</h4><ul>{analysisLevelDetails[selected[0]].pros.map(result => <li key={result}>{result}</li>)}</ul></div>
+            <div><h4>Cons</h4><ul>{analysisLevelDetails[selected[0]].cons.map(result => <li key={result}>{result}</li>)}</ul></div>
+          </div>
+          <button type="button" className="primaryButton" disabled={busy} onClick={() => confirmLevel(selected[0])}>{busy ? 'Loading…' : 'DO IT!'} <ArrowRight size={18}/></button>
+        </section>}
+      </div>
+      <div className="desktopAnalysisOptions">
+        {options.map(([level,label,caption],index) => <article className={`desktopAnalysisCard ${level}`} key={level}>
+          <figure className="desktopAnalysisImage">
+            <span className="analysisChoiceNumber" aria-hidden="true">{index + 1}</span>
+            {image && (canSketch || level === 'inclusive') ? <img referrerPolicy="no-referrer" src={image} alt={`${level === 'broad' ? 'Line drawing' : 'Exterior photo'} of ${address}`} style={{filter:level === 'broad' ? `url(#${filterId}-line)` : undefined}} onError={imageFailed}/> : <span className="analysisPhotoMissing">{found?.status === 'loading' ? 'Finding photo…' : image ? 'Upload photo for sketch' : 'Exterior photo unavailable'}</span>}
+          </figure>
+          <div className="desktopAnalysisCopy">
+            <header><div><h3>{label.replace(/^\d+\.\s*/, "")}</h3><p className="desktopAnalysisCaption">{caption}</p></div></header>
+            <p>{analysisLevelDetails[level].summary}</p>
+            <div className="desktopAnalysisTradeoffs">
+              <section><h4>Pros</h4><ul>{analysisLevelDetails[level].pros.map(result => <li key={result}>{result}</li>)}</ul></section>
+              <section><h4>Cons</h4><ul>{analysisLevelDetails[level].cons.map(result => <li key={result}>{result}</li>)}</ul></section>
+            </div>
+            <button type="button" className="primaryButton" disabled={busy} onClick={() => onChooseLevel(level)}>{busy ? 'Loading…' : `Start ${label.replace(/^\d+\.\s*/, "")} Analysis`} <ArrowRight size={18}/></button>
+          </div>
+        </article>)}
+      </div>
       {busy && <p role="status">Loading the available property information…</p>}
     </>}
     {editing && <ExteriorPhotoDialog onClose={()=>setEditing(false)} onUse={image=>{setError('');setLocal({address,image});setEditing(false);}}/>}

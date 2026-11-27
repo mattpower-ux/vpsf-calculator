@@ -15,6 +15,25 @@ test("desktop chrome provides the approved workflow and return control", () => {
   assert.match(source, /Why we.re asking/);
 });
 
+test("desktop entry removes the redundant screen title and exposes the split-view regions", () => {
+  const desktop = desktopSource();
+  const app = appSource();
+  assert.match(desktop, /screen !== 0 && <h1[^>]+desktopScreenTitle/);
+  assert.match(app, /className="desktopEntryIntro"/);
+  assert.match(app, /className="desktopInitialEvidence"/);
+  assert.match(app, /Initial evidence ready/);
+});
+
+test("desktop scoring depth presents both complete analysis choices without changing mobile disclosure", () => {
+  const app = readFileSync(new URL("./AddressPhoto.jsx", import.meta.url), "utf8");
+  assert.match(app, /className="desktopAnalysisOptions"/);
+  assert.match(app, /`Start \$\{label\.replace/);
+  assert.match(app, /\} Analysis`/);
+  assert.match(app, /className="mobileAnalysisOptions"/);
+  assert.match(app, /analysisLevelDetails\[level\]\.pros/);
+  assert.match(app, /analysisLevelDetails\[level\]\.cons/);
+});
+
 test("mobile chrome exposes the desktop switch above the measuring footer", () => {
   const source = appSource();
   const switchIndex = source.indexOf("Open Desktop Version");

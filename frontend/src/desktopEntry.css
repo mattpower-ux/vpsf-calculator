@@ -1,0 +1,336 @@
+.desktopEntryIntro,
+.desktopInitialEvidence { display: none; }
+
+.desktopCalculator[data-stage="1"] .desktopMain {
+  padding: 42px 48px 64px;
+  background: #f2f8f9;
+}
+
+.desktopCalculator[data-stage="1"] .desktopScreenSlot > .startScreen {
+  width: 100%;
+  padding: 0;
+}
+
+.desktopCalculator[data-stage="1"] .startScreen > h1 {
+  margin: 0 0 8px;
+  text-align: left;
+  font-size: clamp(34px, 3vw, 48px);
+  line-height: 1.04;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+
+.desktopCalculator[data-stage="1"] .startScreen > .centerCopy {
+  max-width: 72ch;
+  margin: 0 0 24px;
+  text-align: left;
+  font-size: 17px;
+  color: #506975;
+}
+
+.desktopCalculator[data-stage="1"] .startScreen .existingHomeCard {
+  display: grid;
+  grid-template-columns: minmax(410px, 42%) minmax(520px, 58%);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  width: 100%;
+  min-height: 560px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #c7dde1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 67, 79, .11);
+}
+
+.desktopCalculator[data-stage="1"] .desktopEntryIntro {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  padding: 38px 42px 18px;
+}
+
+.desktopCalculator[data-stage="1"] .desktopEntryIntro h2 { margin: 0 0 8px; font-size: 23px; }
+.desktopCalculator[data-stage="1"] .desktopEntryIntro p { max-width: 48ch; margin: 0; color: #526b78; line-height: 1.5; }
+
+.desktopCalculator[data-stage="1"] .addressLookup {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0 42px;
+  min-height: 64px;
+  padding: 7px 8px 7px 12px;
+  border-color: #a9ccd2;
+  border-radius: 12px;
+}
+
+.desktopCalculator[data-stage="1"] .addressLookup input { font-size: 15px; }
+.desktopCalculator[data-stage="1"] .addressLookup button { min-width: 108px; min-height: 48px; border-radius: 9px; }
+.desktopCalculator[data-stage="1"] .addressPhoto.analysisChoices { display: contents; }
+.desktopCalculator[data-stage="1"] .addressPhoto .sketchFilters { display: none; }
+
+.desktopCalculator[data-stage="1"] .mainExteriorPhoto {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1 / 7;
+  min-height: 560px;
+  margin: 0;
+  overflow: hidden;
+  background: #dcebed;
+}
+
+.desktopCalculator[data-stage="1"] .analysisChoices .mainExteriorPhoto img {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.desktopCalculator[data-stage="1"] .mainExteriorPhoto::after {
+  content: "";
+  position: absolute;
+  inset: 48% 0 0;
+  background: linear-gradient(180deg, transparent, rgba(8, 31, 46, .76));
+  pointer-events: none;
+}
+
+.desktopCalculator[data-stage="1"] .desktopPropertyCaption {
+  position: absolute;
+  z-index: 2;
+  left: 30px;
+  right: 30px;
+  bottom: 27px;
+  display: grid;
+  gap: 5px;
+  color: #fff;
+}
+
+.desktopCalculator[data-stage="1"] .desktopPropertyCaption small {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #d7f1f2;
+}
+
+.desktopCalculator[data-stage="1"] .desktopPropertyCaption strong { max-width: 38ch; font-size: 25px; line-height: 1.15; }
+
+.desktopCalculator[data-stage="1"] .addressPhotoUpload {
+  z-index: 3;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  min-height: 40px;
+  margin: 20px;
+  padding: 9px 13px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 9px;
+  background: rgba(255,255,255,.95);
+  box-shadow: 0 8px 20px rgba(7,28,44,.13);
+  text-decoration: none;
+}
+
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence {
+  display: block;
+  grid-column: 1;
+  grid-row: 3;
+  margin: 24px 42px 0;
+  padding-top: 22px;
+  border-top: 1px solid #dce8ea;
+}
+
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence h3 { margin: 0 0 13px; font-size: 14px; }
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence span {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  min-height: 58px;
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: #f2f8f8;
+}
+
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence svg { grid-row: 1 / 3; color: #238b5a; }
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence b { font-size: 12px; }
+.desktopCalculator[data-stage="1"] .desktopInitialEvidence small { color: #637985; font-size: 10px; }
+
+.desktopCalculator[data-stage="1"] .addressPhotoStart {
+  grid-column: 1;
+  grid-row: 5;
+  align-self: end;
+  width: auto;
+  min-height: 54px;
+  margin: 30px 42px 38px;
+  border-radius: 11px;
+  box-shadow: 0 10px 24px rgba(8, 124, 142, .18);
+}
+
+.desktopCalculator[data-stage="1"] .addressPhoto .photoSearchStatus,
+.desktopCalculator[data-stage="1"] .addressPhoto .photoAvailability,
+.desktopCalculator[data-stage="1"] .addressScanNote,
+.desktopCalculator[data-stage="1"] .savedAddressAutofill { grid-column: 1; margin-inline: 42px; }
+
+.desktopCalculator[data-stage="1"] .addressPhoto .photoSearchStatus,
+.desktopCalculator[data-stage="1"] .addressPhoto .photoAvailability,
+.desktopCalculator[data-stage="1"] .addressScanNote { grid-row: 4; }
+.desktopCalculator[data-stage="1"] .savedAddressAutofill { grid-row: 6; margin-bottom: 22px; }
+
+.desktopCalculator[data-stage="1"] .photoAttribution {
+  z-index: 3;
+  grid-column: 2;
+  grid-row: 6;
+  align-self: end;
+  justify-self: end;
+  margin: 0 20px 14px;
+  color: #e5f0f2;
+}
+
+.desktopCalculator[data-stage="1"] .photoAttribution a { color: inherit; }
+
+.desktopStageNav { gap: 0; }
+.desktopStageNav button { position: relative; min-height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.desktopStageNav button:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -10px; width: 20px; height: 1px; background: #cbdcdf; }
+.desktopStageNav button.active { border: 0; background: transparent; box-shadow: none; }
+.desktopReturnMobile { border-color: transparent; background: transparent; padding-inline: 6px; }
+
+/* Desktop scoring depth: both choices are complete, visible decisions. */
+.desktopCalculator[data-stage="1"] .depthSelectionScreen .existingHomeCard.depthSelectionCard {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.desktopCalculator[data-stage="1"] .depthSelectionCard .addressPhoto.analysisChoices { display: block; }
+.desktopCalculator[data-stage="1"] .depthSelectionCard .mobileAnalysisOptions { display: none; }
+.desktopCalculator[data-stage="1"] .depthSelectionCard .desktopAnalysisOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+.desktopCalculator[data-stage="1"] .depthSelectionCard .analysisDepthHeader {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-top: 0;
+}
+
+.desktopCalculator[data-stage="1"] .depthSelectionCard .analysisDepthHeader h2 {
+  margin-bottom: 12px;
+  font-size: 34px;
+  letter-spacing: -.02em;
+}
+
+.desktopCalculator[data-stage="1"] .depthSelectionCard .analysisDepthHeader > p {
+  max-width: 52ch;
+  margin-inline: auto;
+  font-size: 16px;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCard {
+  display: grid;
+  grid-template-columns: minmax(240px, 38%) minmax(0, 1fr);
+  min-height: 450px;
+  overflow: hidden;
+  border: 1px solid #c7dde1;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(15, 67, 79, .09);
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCard.inclusive { border-color: #91c7cf; }
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisImage {
+  position: relative;
+  min-height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #e9f2f3;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisImage img {
+  width: 100%;
+  height: 100%;
+  min-height: 450px;
+  object-fit: cover;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCard.broad .desktopAnalysisImage img {
+  object-fit: contain;
+  padding: 18px;
+  background: #f8fbfb;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisImage .analysisChoiceNumber {
+  top: 18px;
+  left: 18px;
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCopy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 30px;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCopy h3 {
+  margin: 0;
+  font-size: 27px;
+  letter-spacing: -.02em;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCaption {
+  margin: 4px 0 0;
+  color: #187386;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisCopy > p:not(.desktopAnalysisCaption) {
+  margin: 20px 0 22px;
+  color: #506975;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 26px;
+}
+
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs section { min-width: 0; }
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs h4 { margin: 0 0 9px; font-size: 13px; text-transform: uppercase; letter-spacing: .07em; }
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs section:first-child h4 { color: #167d52; }
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs section:last-child h4 { color: #a14d3e; }
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs ul { margin: 0; padding-left: 18px; color: #526b78; font-size: 13px; line-height: 1.45; }
+.desktopCalculator[data-stage="1"] .desktopAnalysisTradeoffs li + li { margin-top: 6px; }
+.desktopCalculator[data-stage="1"] .desktopAnalysisCopy .primaryButton { width: 100%; margin: auto 0 0; min-height: 50px; }
+
+@media (max-width: 1380px) {
+  .desktopCalculator[data-stage="1"] .desktopAnalysisCard { grid-template-columns: 1fr; }
+  .desktopCalculator[data-stage="1"] .desktopAnalysisImage { min-height: 210px; }
+  .desktopCalculator[data-stage="1"] .desktopAnalysisImage img { min-height: 210px; max-height: 250px; }
+}
+
+@media (max-width: 1180px) {
+  .desktopCalculator[data-stage="1"] .desktopMain { padding-inline: 28px; }
+  .desktopCalculator[data-stage="1"] .startScreen .existingHomeCard { grid-template-columns: minmax(380px, 45%) minmax(460px, 55%); }
+  .desktopCalculator[data-stage="1"] .desktopEntryIntro { padding-inline: 30px; }
+  .desktopCalculator[data-stage="1"] .addressLookup,
+  .desktopCalculator[data-stage="1"] .desktopInitialEvidence,
+  .desktopCalculator[data-stage="1"] .addressPhotoStart { margin-inline: 30px; }
+}

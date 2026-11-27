@@ -6,6 +6,8 @@
 .addressPhotoUpload input { display: block; max-width: 100%; font: inherit; font-size: 12px; margin-top: 5px; }
 .addressPhoto p { font-size: 14px; }
 .addressPhoto .photoSearchStatus { margin: 9px 0 0; color: var(--body-copy,#3e5661); font-size: 12px; line-height: 1.4; }
+.desktopPropertyCaption { display: none; }
+.desktopAnalysisOptions { display: none; }
 
 .exteriorPhotoForm { display: grid; gap: 12px; }
 .exteriorPhotoForm .photoHelp { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted,#526d78); }

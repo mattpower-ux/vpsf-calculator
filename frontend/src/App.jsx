@@ -1168,6 +1168,10 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
         <ResumeAnalysisDraft onResume={onResume}/>
       </>}
       <section className={`existingHomeCard ${entryFlow.page === "depth" ? "depthSelectionCard" : ""}`}>
+        {entryFlow.page === "address" && <div className="desktopEntryIntro">
+          <h2>Start with the property</h2>
+          <p>Search an address to collect available records and establish the home’s starting point.</p>
+        </div>}
         {entryFlow.page === "address" && <form className="addressLookup" onSubmit={searchAddress}>
           <MapPin size={18} />
           <input
@@ -1183,6 +1187,15 @@ function StartScreen({ setScreen, setSelectedProperty, setResultMode, setHome, o
           </button>
         </form>}
         <AddressPhoto address={address} searchRequest={photoSearchRequest} flow={entryFlow} onFlowAction={dispatchEntryFlow} onChooseLevel={startExistingHomeScan} busy={isScanningAddress} />
+        {entryFlow.page === "address" && <section className="desktopInitialEvidence" aria-label="Initial evidence ready">
+          <h3>Initial evidence ready</h3>
+          <div>
+            <span><CheckCircle2 size={17}/><b>Property record</b><small>Address matched</small></span>
+            <span><CheckCircle2 size={17}/><b>Permit history</b><small>Records checked</small></span>
+            <span><CheckCircle2 size={17}/><b>Regional risk</b><small>Location connected</small></span>
+            <span><CheckCircle2 size={17}/><b>Exterior evidence</b><small>Photo available</small></span>
+          </div>
+        </section>}
         {scanNote && <p className="addressScanNote">{scanNote}</p>}
         {entryFlow.page === "address" && savedMatch && (
           <button className="savedAddressAutofill" type="button" onClick={applySavedAutofill}>

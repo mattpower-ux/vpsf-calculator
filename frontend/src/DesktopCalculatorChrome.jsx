@@ -3,6 +3,7 @@ import { Check, ChevronLeft, ClipboardList, Home, Save, Sparkles } from "lucide-
 import { DESKTOP_STAGES, desktopContextForScreen } from "./desktopWorkflow.js";
 import brandLogo from "./assets/brand-preview/VPSF_Logo_Primary_Color.svg";
 import "./desktopCalculatorChrome.css";
+import "./desktopEntry.css";
 
 const PILLAR_LABELS = ["Energy", "Water", "Health", "Resilience", "Materials & Carbon", "Financial Risk", "Community & Mobility"];
 
@@ -62,9 +63,9 @@ export default function DesktopCalculatorChrome({
           {context.stage === 2 && <div className="desktopPillars"><p className="desktopEyebrow">SEVEN PILLARS</p>{PILLAR_LABELS.map(label => <span key={label}>{label}</span>)}</div>}
         </aside>}
 
-        <main className="desktopMain" aria-labelledby="desktop-screen-heading">
+        <main className="desktopMain" aria-labelledby={screen !== 0 ? "desktop-screen-heading" : undefined} aria-label={screen === 0 ? "Analyze an existing home" : undefined}>
           {screen > 0 && <button type="button" className="desktopBack" onClick={onBack} aria-label="Go back"><ChevronLeft size={20}/></button>}
-          <h1 id="desktop-screen-heading" ref={headingRef} tabIndex="-1" className="desktopScreenTitle">{context.title}</h1>
+          {screen !== 0 && <h1 id="desktop-screen-heading" ref={headingRef} tabIndex="-1" className="desktopScreenTitle">{context.title}</h1>}
           <div className="desktopScreenSlot">{children}</div>
         </main>
 

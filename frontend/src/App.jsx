@@ -2436,16 +2436,22 @@ function Recommendations({ onProductOptions, advice, result, setScreen, setSelec
               </div>
             </div>
             <div className="desktopRecProducts" aria-label={`Products for ${rec.title}`}>
-              {matchedProducts.map(product => <button type="button" key={product.id} onClick={() => {
+              {matchedProducts.map(product => <button className="desktopRecProduct" type="button" key={product.id} onClick={() => {
                 onProductClick(product, "desktop_improvement_path");
                 setSelectedProduct(product);
                 setScreen(13);
               }}>
                 <span>{product.image ? <img src={product.image} alt="" loading="lazy" /> : <Package size={28}/>}</span>
-                <div><SponsoredLabel product={product}/><strong>{product.brand || product.name}</strong><small>{product.productType || product.category || product.name}</small></div>
+                <div><SponsoredLabel product={product}/><strong>{product.brand || product.name || product.product}</strong><small>{product.productType || product.category || product.product || product.name}</small></div>
                 <ArrowRight size={16}/>
               </button>)}
-              {!matchedProducts.length && <p>Confirm this feature before selecting a product solution.</p>}
+              {!matchedProducts.length && <div className="desktopRecProductPlaceholder" aria-label={`Product to be confirmed for ${rec.title}`}>
+                <span>TK</span>
+                <div><strong>Product to come</strong><small>No matching catalog product yet</small></div>
+              </div>}
+              <button className="moreLikeThis" type="button" onClick={() => onProductOptions(rec)}>
+                More like this <ArrowRight size={15} />
+              </button>
             </div>
           </article>
         );

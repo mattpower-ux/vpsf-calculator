@@ -20,7 +20,7 @@
   border-left: 1px solid #d8e7e8;
 }
 
-.app[data-view-mode="desktop"] .desktopRecProducts > button {
+.app[data-view-mode="desktop"] .desktopRecProduct {
   min-width: 0;
   border: 1px solid #d4e3e5;
   border-radius: 12px;
@@ -34,7 +34,8 @@
   color: var(--ink);
 }
 
-.app[data-view-mode="desktop"] .desktopRecProducts > button > span {
+.app[data-view-mode="desktop"] .desktopRecProduct > span,
+.app[data-view-mode="desktop"] .desktopRecProductPlaceholder > span {
   width: 72px;
   height: 72px;
   border-radius: 9px;
@@ -50,7 +51,43 @@
 .app[data-view-mode="desktop"] .desktopRecProducts strong { font-size: 14px; line-height: 1.2; }
 .app[data-view-mode="desktop"] .desktopRecProducts small { margin-top: 4px; color: #5b7079; font-size: 12px; }
 .app[data-view-mode="desktop"] .desktopRecProducts .sponsoredLabel { display: inline-block; margin-bottom: 5px; }
-.app[data-view-mode="desktop"] .desktopRecProducts > p { grid-column: 1 / -1; align-self: center; margin: auto; color: #5b7079; }
+.app[data-view-mode="desktop"] .desktopRecProductPlaceholder {
+  grid-column: 1 / -1;
+  min-height: 96px;
+  border: 1px dashed #aec6c9;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+}
+.app[data-view-mode="desktop"] .desktopRecProductPlaceholder > span {
+  color: #54717a;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.app[data-view-mode="desktop"] .desktopRecProductPlaceholder strong,
+.app[data-view-mode="desktop"] .desktopRecProductPlaceholder small { display: block; }
+.app[data-view-mode="desktop"] .desktopRecProductPlaceholder small { margin-top: 4px; color: #5b7079; }
+.app[data-view-mode="desktop"] .desktopRecProducts .moreLikeThis {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  padding: 4px 0 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--teal);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.app[data-view-mode="desktop"] .desktopRecProducts .moreLikeThis:hover { color: #075f6c; }
 .app[data-view-mode="desktop"] .improveScoreButton { width: 100%; min-height: 54px; margin-top: 12px; font-size: 17px; }
 
 @media (max-width: 1080px) {

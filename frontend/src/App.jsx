@@ -587,8 +587,8 @@ function MobileCalculatorChrome({ children, screen, setScreen, onBack, onViewMod
       <div className="bannerWrap">
         <img src={isBrandTheme ? brandPreviewLogo : VPSF_BANNER} alt="VPSF Value Per Square Foot" />
         <span className="brandCredit">POWERED BY GREEN BUILDER MEDIA</span>
-        {screen === 0 && <span className="freeSeal" aria-label="Free calculator">
-          FREE
+        {screen === 0 && <span className="freeSeal" aria-label="A free report card for your home">
+          A FREE REPORT CARD FOR YOUR HOME
           <Sparkles className="freeSealSparkle" size={13} strokeWidth={2.2} aria-hidden="true" />
         </span>}
       </div>
@@ -4274,19 +4274,25 @@ export default function App() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 48px;
-          min-height: 25px;
-          padding: 3px 8px;
+          width: 108px;
+          min-height: 36px;
+          padding: 5px 9px;
           border: 1px solid #d6a52e;
           border-radius: 7px;
           background: #fffaf0;
           color: var(--ink);
           box-shadow: 0 4px 10px rgba(9, 33, 59, .1);
-          font-size: 11px;
+          font-size: 8px;
           font-weight: 900;
-          letter-spacing: .1em;
-          line-height: 1;
+          letter-spacing: .065em;
+          line-height: 1.15;
+          text-align: center;
+          text-wrap: balance;
           overflow: visible;
+        }
+        .bannerWrap:has(.freeSeal) img {
+          width: calc(100% - 104px);
+          padding-left: 12px;
         }
         .freeSealSparkle {
           position: absolute;

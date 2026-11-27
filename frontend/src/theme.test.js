@@ -26,9 +26,11 @@ test("the branded calculator uses the approved logo and a self-hosted UI font", 
   assert.match(entry, /@fontsource-variable\/source-sans-3\/wght\.css/);
 });
 
-test("the FREE seal is integrated into the logo header with accessible restrained motion", () => {
+test("the free report-card message is integrated into the logo header with accessible restrained motion", () => {
   const app = readFileSync(new URL("./App.jsx", import.meta.url), "utf8");
   assert.match(app, /<div className="bannerWrap">[\s\S]*className="freeSeal"/);
+  assert.match(app, />\s*A FREE REPORT CARD FOR YOUR HOME\s*</);
+  assert.match(app, /aria-label="A free report card for your home"/);
   assert.match(app, /freeSealSparkle/);
   assert.match(app, /freeSealSparkleMotion/);
   assert.match(app, /prefers-reduced-motion:\s*reduce/);

@@ -19,6 +19,7 @@ test('the scoring-depth header stays compact so the action remains in the phone 
   assert.match(styles, /\.analysisTradeoffs\s*\{[^}]*grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(styles, /@media\s*\(max-width:\s*640px\)[\s\S]*\.analysisChoiceImage\s*\{[^}]*aspect-ratio:\s*2\.6/);
   assert.match(styles, /@media\s*\(max-width:\s*640px\)[\s\S]*\.analysisTradeoffs\s+ul\s*\{[^}]*font-size:\s*13px/);
+  assert.match(styles, /@media\s*\(max-width:\s*640px\)[\s\S]*\.analysisLevelResult\s+\.primaryButton\s*\{[^}]*position:\s*sticky;[^}]*bottom:\s*8px/);
   assert.match(source, /<div><h4>Pros<\/h4><ul>/);
   assert.match(source, /<div><h4>Cons<\/h4><ul>/);
 });

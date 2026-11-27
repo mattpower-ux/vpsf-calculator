@@ -18,7 +18,7 @@
 .analysisDepthHeader > p { margin: -4px auto 10px; max-width: 34ch; color: var(--muted,#526d78); line-height: 1.4; }
 .analysisDepthBack { position: absolute; top: 0; left: 0; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--blue,#14778b); color: #fff; cursor: pointer; box-shadow: 0 5px 14px rgba(20,119,139,.2); }
 .analysisDepthBack:hover:not(:disabled){background:#0f6575}.analysisDepthBack:focus-visible{outline:3px solid rgba(20,119,139,.28);outline-offset:3px}
-.analysisLevelResult { margin-top: 10px; padding: 12px; border: 1px solid var(--accent-line,var(--line,#d7e6e8)); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(9,33,59,.07); }
+.analysisLevelResult { margin-top: 10px; padding: 10px; border: 1px solid var(--accent-line,var(--line,#d7e6e8)); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(9,33,59,.07); }
 .analysisLevelResult h3 { margin: 0 0 6px; font-size: 18px; }
 .analysisLevelResult p { margin: 0; color: var(--body-copy,var(--muted,#526d78)); line-height: 1.5; }
 .analysisLevelResult ul { margin: 12px 0 16px; padding-left: 20px; color: var(--body-copy,var(--muted,#526d78)); font-size: 14px; line-height: 1.5; }
@@ -93,7 +93,7 @@
   .analysisChoices h2 { margin-bottom: 6px; }
   .analysisDepthHeader > p { margin-bottom: 8px; font-size: 13px; }
   .analysisChoice strong { font-size: 14px; }
-  .analysisChoiceImage { aspect-ratio: 2.1; }
+  .analysisChoiceImage { aspect-ratio: 2.6; }
   .analysisChoiceNumber { width: 20px; height: 20px; font-size: 11px; top: 4px; left: 4px; }
   .analysisLevelResult p { font-size: 13px; line-height: 1.35; }
   .analysisTradeoffs { gap: 8px; }

@@ -8,7 +8,7 @@ import PermitHistory from './PermitHistory.jsx';
 import EvidenceSummary from './EvidenceSummary.jsx';
 import { permitRequest, schedulePermitLookup, mergeArchivedPermitEvidence, permitEvidenceForHome, confirmPermitWork } from './permitEvidence.js';
 import { lookupPermitHistory } from './api/client.js';
-import { InclusiveEvidence, CompletenessSummary } from './AnalysisDepth.jsx';
+import { InclusiveEvidence, CompletenessSummary, RegionalWildfireEvidence } from './AnalysisDepth.jsx';
 import { AnalysisDraft, ResumeAnalysisDraft } from './AnalysisDraft.jsx';
 import { saveAnalysisDraft } from './analysisDraft.js';
 import DesktopCalculatorChrome from './DesktopCalculatorChrome.jsx';
@@ -383,14 +383,27 @@ const selectOptions = {
   materials: ["Low / No-VOC", "Standard Materials", "Unknown"],
   iaq: ["IAQ Monitoring", "CO2 Monitoring Only", "None"],
   daylighting: ["Daylighting + Acoustic Comfort", "Daylighting Only", "Standard"],
-  carbonStrategy: ["Documented EPDs + CLF Benchmark", "Partial Material Disclosure", "No Accounting"],
-  carbonConcrete: ["Low-Carbon Concrete", "Standard Concrete", "Unknown"],
-  structure: ["Wood-Heavy Structure", "Mixed Structure", "Steel / Concrete Heavy", "Unknown"],
+  carbonStrategy: [
+    {value:"Documented EPDs + CLF Benchmark",label:"Yes, for several major materials"},
+    {value:"Partial Material Disclosure",label:"Yes, for one or two materials"},
+    {value:"No Accounting",label:"No documentation"},
+    {value:"Unknown",label:"Not sure"}
+  ],
+  carbonConcrete: [
+    {value:"Low-Carbon Concrete",label:"Yes"}, {value:"Standard Concrete",label:"No"},
+    {value:"Unknown",label:"Not sure"}, {value:"Not Applicable",label:"Not applicable"}
+  ],
+  structure: [
+    {value:"Wood-Heavy Structure",label:"Mostly wood"},
+    {value:"Mixed Structure",label:"A mix of wood, steel, or concrete"},
+    {value:"Steel / Concrete Heavy",label:"Mostly steel or concrete"},
+    {value:"Unknown",label:"Not sure"}
+  ],
   waterStandard: ["WaterSense Home v2", "HERS H2O", "WERS Rated", "Code-Minimum"],
   leak: ["Leak Detection + Auto Shutoff", "Leak Detection Only", "None"],
   reuse: ["Rainwater Harvesting", "Greywater", "None"],
   landscape: ["Drought-Tolerant Landscaping", "Standard Landscaping", "High-Water Landscaping"],
-  pietim: ["< 25%", "25–30%", "30–35%", "35–40%", "> 40%"],
+  pietim: ["< 25%", "25–30%", "30–35%", "35–40%", "> 40%", {value:"Unknown",label:"Not sure"}],
   insurance: ["Verified Insurance Discount", "Likely Discount", "None / Unknown"],
   warranty: ["Long-Term Warranties", "Standard Warranties", "Unknown"],
   maintenance: ["Maintenance Cost Model Provided", "Basic Maintenance Guidance", "None"],
@@ -515,7 +528,10 @@ function resultFromDemoProperty(property) {
   };
 }
 
-function Field({ label, value, onChange, options, wide = false, emptyLabel = "Select if known", maxLength }) {
+const optionValue = option => typeof option === "object" ? option.value : option;
+const optionLabel = option => typeof option === "object" ? option.label : option;
+
+function Field({ label, value, onChange, options, wide = false, emptyLabel = "Select if known", maxLength, help }) {
   // Legacy certificate claims remain in the raw archive, not carbon choices.
   if (options === selectOptions.carbonStrategy && value === 'Zero Carbon Certified') value = '';
   return (
@@ -524,14 +540,15 @@ function Field({ label, value, onChange, options, wide = false, emptyLabel = "Se
       {options ? (
         <select value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
           <option value="">{emptyLabel}</option>
-          {value && !options.includes(value) && <option value={value}>{value}</option>}
+          {value && !options.some(option => optionValue(option) === value) && <option value={value}>{value}</option>}
           {options.map((option) => (
-            <option key={option}>{option}</option>
+            <option key={optionValue(option)} value={optionValue(option)}>{optionLabel(option)}</option>
           ))}
         </select>
       ) : (
         <input value={value ?? ""} maxLength={maxLength} placeholder="Not provided" onChange={(e) => onChange(e.target.value)} />
       )}
+      {help && <small className="fieldHelp">{help}</small>}
     </label>
   );
 }
@@ -3900,16 +3917,20 @@ export default function App() {
         saveStatus={desktopSaveStatus}
         activeDesktopPillar={desktopPillarProgress.active}
         completedDesktopPillars={desktopPillarProgress.completed}
-        onDesktopPillarSelect={pillar => setDesktopPillarProgress(current => selectDesktopPillar(current, pillar))}
+        onDesktopPillarSelect={pillar => {
+          setDesktopPillarProgress(current => selectDesktopPillar(current, pillar));
+          navigateFromUI(29);
+        }}
         documentTools={viewMode === "desktop" && screen === 29 ? <div className="desktopDocumentTools">
           <AnalysisEvidence home={home} onApply={(facts,review,source)=>handleCaptureApply(facts,review,true,source)} onListingSelect={source=>{listingReturnRef.current=29;setListingSource(source);navigateFromUI(11);}}/>
+          <RegionalWildfireEvidence home={home}/>
           <CompletenessSummary home={home}/>
         </div> : null}
         sidebarTools={viewMode === "desktop" && (screen === 3 || (screen === 4 && home.analysisLevel !== "broad")) ? <CompletenessSummary home={home} expanded={home.analysisLevel === "inclusive"}/> : null}
       >
         {archiveError && screen === 4 && <p className="sourceNote" role="alert">{archiveError} Your current score is still available.</p>}
         {(() => {
-          const showAnalysisContext = home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && !(viewMode === "desktop" && screen === 29);
+          const showAnalysisContext = home.analysisLevel && [1,2,3,4,5,6,9,10,12,14,17,18,19,29,30].includes(screen) && !(viewMode === "desktop" && [3,29].includes(screen));
           const showAnalysisBadge = screen !== 12 && (screen !== 4 || viewMode !== "desktop");
           const showAnalysisAddress = ![12].includes(screen) && (screen !== 4 || viewMode !== "desktop");
           return showAnalysisContext ? <>{showAnalysisBadge && <div className="analysisLevelBadge">{analysisLabel(home.analysisLevel)}</div>}{showAnalysisAddress && <AnalysisContextLine home={home}/>}</> : null;

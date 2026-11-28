@@ -13,6 +13,8 @@ const products = [
   { id: "roofing", product: "Roofing", pillars: ["resilience"], needTags: ["roofing"] },
   { id: "window", product: "Windows", category: "Windows", pillar: "resilience", needTags: ["windows"] },
   { id: "ember-soffit", product: "Ember-resistant soffit", category: "Soffits", pillar: "resilience", needTags: ["ember-protection"] },
+  { id: "provia-metal-roofing", brand: "ProVia", product: "ProVia Metal Roofing", category: "Roofing", pillar: "resilience", needTags: ["storm-protection"] },
+  { id: "simpson-h10a-hurricane-tie", brand: "Simpson Strong-Tie", product: "H10A Hurricane Tie", category: "Structural Connectors", pillar: "resilience", needTags: ["storm-protection"] },
   { id: "faucet", product: "Efficient faucet", pillar: "water", needTags: ["faucets"] }
 ];
 
@@ -29,7 +31,7 @@ test("heat-pump recommendations prioritize matching products and never recycle e
 
 test("desktop improvement path matches siding, roofing, and water topics before broad pillars", () => {
   assert.deepEqual(productsForRecommendation({ title: "Noncombustible Siding", pillar: "resilience" }, products).map(product => product.id), ["siding-partner"]);
-  assert.deepEqual(productsForRecommendation({ title: "Replace an aging roof", pillar: "resilience" }, products).map(product => product.id), ["roofing"]);
+  assert.deepEqual(productsForRecommendation({ title: "Replace an aging roof", pillar: "resilience" }, products).map(product => product.id), ["roofing", "provia-metal-roofing"]);
   assert.deepEqual(productsForRecommendation({ title: "Use efficient faucets", pillarGains: { water: 12 } }, products).map(product => product.id), ["faucet"]);
   assert.deepEqual(productsForRecommendation({ title: "Ember hardening", pillar: "resilience" }, products).map(product => product.id), ["ember-soffit"]);
 });
@@ -37,6 +39,13 @@ test("desktop improvement path matches siding, roofing, and water topics before 
 test("desktop improvement path uses pillar fallback and returns an empty list without fabricating products", () => {
   assert.deepEqual(productsForRecommendation({ title: "General resilience upgrade", pillar: "resilience" }, products).map(product => product.id), ["siding-partner", "roofing"]);
   assert.deepEqual(productsForRecommendation({ pillar: "community" }, products), []);
+});
+
+test("wind protection shows ProVia Metal Roofing first and Simpson H10A second", () => {
+  assert.deepEqual(
+    productsForRecommendation({ title: "Wind and Tornado Protection", pillar: "resilience" }, products).map(product => product.id),
+    ["provia-metal-roofing", "simpson-h10a-hurricane-tie"]
+  );
 });
 
 test("desktop product sets include a filtered More like this action and a TK empty state", () => {

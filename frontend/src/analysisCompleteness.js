@@ -2,7 +2,7 @@
 // even when a scoring model uses it in more than one pillar.
 const group = (id, name, description, fields) => Object.freeze({
   id, name, description,
-  fields: Object.freeze(fields.map(([key,label]) => Object.freeze({key,label})))
+  fields: Object.freeze(fields.map(([key,label,help='']) => Object.freeze({key,label,help})))
 });
 
 export const evidenceGroups = Object.freeze([
@@ -25,11 +25,14 @@ export const evidenceGroups = Object.freeze([
     ['flood','Flood design'], ['wildfireMitigation','Wildfire mitigation'], ['temperatureProtection','Extreme-temperature protection'],
     ['windProtection','Wind protection'], ['moisture','Moisture protection'], ['backup','Backup power'], ['wildfire','Regional wildfire evidence']
   ]),
-  group('carbon', 'Materials and Carbon', 'Environmental product declarations, material quantities, structural plans, and carbon assessments help document embodied-carbon strategies.', [
-    ['carbonStrategy','Carbon documentation strategy'], ['carbonConcrete','Concrete specification'], ['structure','Structural materials']
+  group('carbon', 'Lower-Carbon Building Materials', 'Building materials create emissions when they are manufactured and transported. Product declarations, specifications, or builder records may identify lower-carbon choices.', [
+    ['carbonStrategy','Were lower-carbon building materials documented for this home?','This is about the materials used to build or renovate the home, not carbon offsets or credits.'],
+    ['carbonConcrete','If concrete was used, was a lower-carbon concrete mix specified?','Check construction specifications, invoices, or builder records if available.'],
+    ['structure','What is the home’s primary structural material?','Choose the material that makes up most of the home’s structural frame.']
   ]),
-  group('financial', 'Financial Risk', 'Ownership-cost calculations, insurance documents, warranties, and maintenance plans help document financial assumptions and protections.', [
-    ['pietim','Ownership-cost ratio'], ['insurance','Insurance'], ['warranty','Warranty'], ['maintenance','Maintenance plan']
+  group('financial', 'Financial Risk', 'Household costs, insurance documents, warranties, and maintenance plans help show how manageable and predictable this home may be to own.', [
+    ['pietim','How much of your household income goes toward owning this home?','Include mortgage payments, energy bills, property taxes, home insurance, and maintenance. Estimate the percentage of your gross monthly household income.'],
+    ['insurance','Insurance'], ['warranty','Warranty'], ['maintenance','Maintenance plan']
   ]),
   group('community', 'Community and Mobility', 'Official accessibility data, transit information, neighborhood records, and documented amenities help describe community access.', [
     ['epaWalkability','EPA walkability evidence'], ['walkscore','Walk Score'], ['transit','Transit and services'],

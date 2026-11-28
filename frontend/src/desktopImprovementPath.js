@@ -33,7 +33,7 @@ const TOPIC_RULES = [
   { recommendation: /irrigation|landscap/i, tags: ["irrigation"], product: /irrigation|sprinkler|drip/i },
   { recommendation: /ventilation|indoor air|iaq/i, tags: ["ventilation"], product: /ventilation|\berv\b|\bhrv\b|indoor air/i },
   { recommendation: /ember/i, tags: ["ember-protection"], product: /ember|soffit|vent/i },
-  { recommendation: /storm|wind|impact/i, tags: ["storm-protection"], product: /storm|wind|impact/i },
+  { recommendation: /storm|wind|impact/i, tags: ["storm-protection"], product: /storm|\bwind\b|impact|hurricane|metal roofing/i },
   { recommendation: /moisture/i, tags: ["moisture-control"], product: /moisture|drainage|flashing/i },
   { recommendation: /ev|electric vehicle|charger/i, tags: ["ev-charging"], product: /ev|electric vehicle|charger/i },
   { recommendation: /appliance/i, tags: ["appliances", "dishwasher"], product: /appliance|dishwasher|washer|dryer|refrigerator/i },

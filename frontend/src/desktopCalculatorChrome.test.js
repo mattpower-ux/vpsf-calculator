@@ -59,8 +59,16 @@ test("desktop review and score overview move assessment completeness into the gu
   assert.match(source, /<Dashboard[\s\S]*showCompleteness=\{viewMode !== "desktop"\}/);
 });
 
-test("score generation and desktop score overview omit the redundant analysis context", () => {
+test("desktop review rail places assessment completeness immediately after save draft", () => {
   const source = appSource();
+  const sidebar = source.slice(source.indexOf('sidebarTools={'), source.indexOf('>\n        {archiveError'));
+  assert.match(sidebar, /screen === 3/);
+  assert.match(sidebar, /<CompletenessSummary home=\{home\}/);
+});
+
+test("desktop review, score generation, and score overview omit the redundant analysis context", () => {
+  const source = appSource();
+  assert.match(source, /!\(viewMode === "desktop" && \[3,29\]\.includes\(screen\)\)/);
   assert.match(source, /const showAnalysisBadge = screen !== 12 && \(screen !== 4 \|\| viewMode !== "desktop"\)/);
   assert.match(source, /const showAnalysisAddress = !\[12\]\.includes\(screen\) && \(screen !== 4 \|\| viewMode !== "desktop"\)/);
 });

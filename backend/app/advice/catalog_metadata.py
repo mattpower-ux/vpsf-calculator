@@ -3,6 +3,24 @@ from app.advice.schemas import ProductMetadata
 
 
 def initial_metadata(product):
+    if product.id == "simpson-h10a-hurricane-tie":
+        return ProductMetadata(
+            needTags=["storm-protection"], requirements=["storm-design"], pillars=["resilience"],
+            sourceUrl="https://www.strongtie.com/resources/product-installers-guide/h10a-installation", reviewedAt="2026-11-27",
+            verificationNotes="A qualified designer should confirm the wind loads, framing, fasteners, corrosion exposure, installation details, and complete continuous load path. This connector is not a substitute for a tornado safe room.",
+        )
+    if product.id == "vulcan-soffit-vent":
+        return ProductMetadata(
+            needTags=["ember-protection"], requirements=["ember-design"], pillars=["resilience"],
+            sourceUrl="https://vulcanvents.com/vents/soffit-vents/", reviewedAt="2026-11-27",
+            verificationNotes="Confirm the exact vent model, net-free ventilation area, opening size, installation details, and local WUI requirements for the complete soffit and roof assembly.",
+        )
+    if product.id == "cultured-stone-veneer":
+        return ProductMetadata(
+            needTags=["fire-resistant-siding"], requirements=["siding-assembly"], pillars=["resilience"],
+            sourceUrl="https://www.westlakeroyalbuildingproducts.com/technical-data-sheet-cultured-stone", reviewedAt="2026-11-27",
+            verificationNotes="Confirm the selected profile, substrate, weather-resistive barrier, mortar, flashing, and complete wall assembly. Veneer alone does not create a fire-rated wall.",
+        )
     if product.id == "james-hardie-plank":
         return ProductMetadata(needTags=["fire-resistant-siding"],requirements=["siding-assembly"],pillars=["resilience"],sourceUrl="https://www.jameshardie.com/why-james-hardie/siding-performance-durability/fire-resistance/",reviewedAt="2026-11-13",isSponsored=True,sponsorName="James Hardie",verificationNotes="Confirm the exact siding product and complete wall design with the manufacturer or installer.")
     siding_sources = {'allura-lap': 'https://allurausa.com/resources/lap-siding-submittal-sheet', 'gaf-weatherside-purity': 'https://www.gaf.com/en-us/building-materials/residential-building-materials/fiber-cement-siding/weatherside-purity-fiber-cement-siding', 'nichiha-vintagewood': 'https://www.nichiha.com/products/vintagewood/', 'fiberon-wildwood': 'https://www.fiberoncladding.com/pages/testing-certification-documents'}

@@ -8,7 +8,7 @@ test('UI contract exposes labels, descriptions and numeric completeness counts',
     assert.equal(typeof name, 'string');
     assert.equal(typeof description, 'string');
     for (const field of fields) {
-      assert.deepEqual(Object.keys(field).sort(), ['key','label']);
+      assert.deepEqual(Object.keys(field).sort(), ['help','key','label']);
       assert.equal(typeof field.key, 'string');
       assert.equal(typeof field.label, 'string');
     }
@@ -19,6 +19,22 @@ test('UI contract exposes labels, descriptions and numeric completeness counts',
       assert.ok(Number.isInteger(stats[key]) && stats[key] >= 0, key);
     }
   }
+});
+
+test('homeowner-facing financial and material questions explain what the answers mean', () => {
+  const carbon=evidenceGroups.find(group=>group.id==='carbon');
+  const financial=evidenceGroups.find(group=>group.id==='financial');
+
+  assert.equal(carbon.name,'Lower-Carbon Building Materials');
+  assert.equal(carbon.fields.find(field=>field.key==='carbonStrategy').label,'Were lower-carbon building materials documented for this home?');
+  assert.match(carbon.fields.find(field=>field.key==='carbonStrategy').help,/not carbon offsets or credits/i);
+  assert.equal(carbon.fields.find(field=>field.key==='carbonConcrete').label,'If concrete was used, was a lower-carbon concrete mix specified?');
+  assert.equal(carbon.fields.find(field=>field.key==='structure').label,"What is the home’s primary structural material?");
+
+  const ownership=financial.fields.find(field=>field.key==='pietim');
+  assert.equal(ownership.label,'How much of your household income goes toward owning this home?');
+  assert.match(ownership.help,/mortgage payments, energy bills, property taxes, home insurance, and maintenance/i);
+  assert.match(ownership.help,/gross monthly household income/i);
 });
 
 test('advanced Health, Carbon and Community fields remain in their checklists', () => {

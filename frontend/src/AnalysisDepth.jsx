@@ -15,6 +15,12 @@ export function CompletenessSummary({home,expanded=false}) {
     {expanded && <details><summary>Supporting findings and next steps</summary>{data.groups.map(group=><section className="evidenceFinding" key={group.name}><h4>{group.name}</h4><ul>{group.fields.filter(f=>f.status !== 'unanswered').map(f=><li key={f.key}><strong>{f.label}:</strong> {factText(home[f.key])} <small>({{reported:'homeowner-reported',documented:'recorded evidence',review:'needs review'}[f.status]})</small></li>)}</ul><p>Useful evidence: {group.description}</p></section>)}</details>}
   </section>;
 }
+export function RegionalWildfireEvidence({home}) {
+  const value=factText(home?.wildfire) || 'Unavailable';
+  return <section className="regionalWildfireSummary" aria-label="Regional wildfire evidence">
+    <h3>Regional wildfire evidence</h3><p>{value}</p><small>Location data</small>
+  </section>;
+}
 export function InclusiveEvidence({home,update,Field,options,onEvidence,onListingSelect,onContinue}) {
   const completeness=assessmentCompleteness(home);
   return <div className="screen formScreen depthReview"><h2>Document Your Home</h2>
@@ -29,7 +35,8 @@ export function InclusiveEvidence({home,update,Field,options,onEvidence,onListin
         <p><strong>Helpful evidence:</strong> {group.description}</p>
         {unanswered.length>0 && <p><strong>Next:</strong> Find or confirm {unanswered.slice(0,3).map(f=>f.label.toLowerCase()).join(', ')}.</p>}
         {review.length>0 && <p>Check {review.map(f=>f.label.toLowerCase()).join(', ')} against labels, records, or your knowledge of the home.</p>}
-        <div className="evidenceFieldGrid">{group.fields.map(f=><React.Fragment key={f.key}>{isRegional(f.key) ? <p><strong>{f.label}:</strong> {factText(home[f.key]) || "Unavailable"} (location data)</p> : <Field label={f.label} value={home[f.key] ?? ''} onChange={value=>update(f.key,value)} options={options[f.key]}/>}</React.Fragment>)}</div>
+        <div className="evidenceFieldGrid">{group.fields.map(f=><React.Fragment key={f.key}>{isRegional(f.key) ? <p><strong>{f.label}:</strong> {factText(home[f.key]) || "Unavailable"} (location data)</p> : <Field label={f.label} help={f.help} value={home[f.key] ?? ''} onChange={value=>update(f.key,value)} options={options[f.key]}/>}</React.Fragment>)}</div>
+        {group.id==='carbon' && <details className="documentationNote"><summary>What documentation counts?</summary><p>Environmental Product Declarations (EPDs), material specifications, invoices, and builder records can document lower-carbon choices. A whole-building carbon comparison may also use a recognized benchmark, such as one from the Carbon Leadership Forum (CLF).</p></details>}
       </details>;
     })}</div>
     <AnalysisDraft home={home}/>

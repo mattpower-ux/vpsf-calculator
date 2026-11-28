@@ -102,6 +102,7 @@ def seed_products(db: Session) -> None:
                 id=product.id, brand=product.brand, product=product.product,
                 manufacturer=product.brand, pillar=product.pillar, category=product.category,
                 weight=product.weight, summary=product.summary, image_url=product.imageUrl,
+                product_url=product.companyUrl,
             ), 'id')
         seed_awards(db, manifest)
         db.commit()

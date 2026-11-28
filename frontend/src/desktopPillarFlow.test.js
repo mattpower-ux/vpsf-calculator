@@ -27,6 +27,7 @@ test("completed pillars remain selectable for review without losing completion",
   assert.equal(revisited.active, "energy");
   assert.deepEqual(revisited.completed, ["energy", "water"]);
   assert.equal(revisited.finished, false);
+  assert.equal(desktopPillarDestination(revisited), 29);
 });
 
 test("unknown pillar selections are ignored", () => {

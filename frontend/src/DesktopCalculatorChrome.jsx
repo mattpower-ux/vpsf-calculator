@@ -8,7 +8,7 @@ import "./desktopPillarWizard.css";
 
 const PILLARS = [
   ["energy", "Energy"], ["water", "Water"], ["health", "Health"], ["resilience", "Resilience"],
-  ["carbon", "Materials & Carbon"], ["financial", "Financial Risk"], ["community", "Community & Mobility"]
+  ["carbon", "Lower-Carbon Materials"], ["financial", "Financial Risk"], ["community", "Community & Mobility"]
 ];
 
 function propertyAddress(home) {

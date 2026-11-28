@@ -5,8 +5,10 @@
 .desktopPillars button.active{background:#fff;color:var(--ink);font-weight:850;box-shadow:0 5px 16px rgba(18,70,82,.07)}
 .desktopPillars button:focus-visible{outline:3px solid rgba(24,115,134,.24);outline-offset:2px}
 .desktopDocumentTools{display:grid;gap:14px}
-.desktopGuidance .desktopDocumentTools>.analysisEvidence,.desktopGuidance .desktopDocumentTools>.completenessSummary{padding:17px;border:1px solid #d8e7e8;border-radius:14px;background:#fff}
-.desktopGuidance .analysisEvidence h3,.desktopGuidance .completenessSummary h3{margin:0 0 7px;font-size:15px;letter-spacing:0;text-transform:none}
+.desktopGuidance .desktopDocumentTools>.analysisEvidence,.desktopGuidance .desktopDocumentTools>.regionalWildfireSummary,.desktopGuidance .desktopDocumentTools>.completenessSummary{padding:17px;border:1px solid #d8e7e8;border-radius:14px;background:#fff}
+.desktopGuidance .analysisEvidence h3,.desktopGuidance .regionalWildfireSummary h3,.desktopGuidance .completenessSummary h3{margin:0 0 7px;font-size:15px;letter-spacing:0;text-transform:none}
+.desktopGuidance .regionalWildfireSummary p{font-size:17px;font-weight:800;color:var(--ink)}
+.desktopGuidance .regionalWildfireSummary small{display:block;margin-top:5px;color:#657c84;font-size:11px}
 .desktopGuidance .analysisEvidence>p,.desktopGuidance .completenessSummary>p{font-size:12px}
 .desktopGuidance .analysisEvidence>div{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px}
 .desktopGuidance .analysisEvidence button,.desktopGuidance .analysisEvidence summary{width:100%;min-height:40px;padding:8px 10px;display:flex;align-items:center;justify-content:flex-start;gap:7px;border:1px solid #c9dfe2;border-radius:9px;background:#f7fbfb;color:var(--blue);font-weight:800;font-size:12px;text-align:left}
@@ -28,11 +30,15 @@
 .desktopPillarFields label,.desktopRegionalField{min-width:0;padding:16px;border:1px solid #e6a69a;border-radius:12px;background:#fff4f1}
 .desktopPillarFields label span{font-weight:800;color:var(--ink)}
 .desktopPillarFields select,.desktopPillarFields input{width:100%;min-height:44px;margin-top:9px;border:1px solid #c6dadd;border-radius:8px;background:#fff;padding:9px 11px;font:inherit;color:var(--ink)}
+.desktopPillarFields .fieldHelp{display:block;margin-top:8px;color:#526874;font-size:12px;line-height:1.4;font-weight:400}
 .desktopPillarFields label.fieldAnswered{border-color:#8bc9a0;background:#eff9f2}
 .desktopPillarFields label.fieldAnswered::after{content:"Saved";margin-top:8px;display:block;color:#23864b;font-size:11px;font-weight:850}
 .desktopRegionalField{display:grid;gap:7px;border-color:#c9dfe2;background:#f5fafb}
 .desktopRegionalField span{font-size:16px;color:var(--ink)}
 .desktopRegionalField small{color:#657c84}
+.desktopDocumentationNote{margin:-8px 0 24px;padding:14px 16px;border:1px solid #c9dfe2;border-radius:12px;background:#f5fafb;color:#526874}
+.desktopDocumentationNote summary{cursor:pointer;color:var(--blue);font-weight:800}
+.desktopDocumentationNote p{margin:10px 0 0;max-width:75ch;line-height:1.5}
 .desktopPillarActions{padding-top:22px;border-top:1px solid #d8e7e8;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .desktopPillarActions p{max-width:62ch;margin:0;color:#526874;font-size:13px;line-height:1.45}
 .desktopPillarActions .primaryButton{width:auto;min-width:230px;margin:0;padding:13px 18px}

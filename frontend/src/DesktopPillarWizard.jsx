@@ -2,7 +2,7 @@ import React from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { assessmentCompleteness, evidenceGroups } from "./analysisCompleteness.js";
 
-const REGIONAL_FIELDS = new Set(["wildfire", "epaWalkability"]);
+const REGIONAL_FIELDS = new Set(["epaWalkability"]);
 
 function regionalValue(value) {
   if (!value || typeof value !== "object" || value.status !== "available") return "Unavailable";
@@ -27,11 +27,16 @@ export default function DesktopPillarWizard({ home, update, Field, options, acti
     </header>
 
     <div className="desktopPillarFields">
-      {group.fields.map(field => REGIONAL_FIELDS.has(field.key)
+      {group.fields.filter(field => field.key !== "wildfire").map(field => REGIONAL_FIELDS.has(field.key)
         ? <div className="desktopRegionalField" key={field.key}><strong>{field.label}</strong><span>{regionalValue(home[field.key])}</span><small>Location data</small></div>
-        : <Field key={field.key} label={field.label} value={home[field.key] ?? ""} onChange={value => update(field.key, value)} options={options[field.key]}/>
+        : <Field key={field.key} label={field.label} help={field.help} value={home[field.key] ?? ""} onChange={value => update(field.key, value)} options={options[field.key]}/>
       )}
     </div>
+
+    {group.id === "carbon" && <details className="desktopDocumentationNote">
+      <summary>What documentation counts?</summary>
+      <p>Environmental Product Declarations (EPDs), material specifications, invoices, and builder records can document lower-carbon choices. A whole-building carbon comparison may also use a recognized benchmark, such as one from the Carbon Leadership Forum (CLF).</p>
+    </details>}
 
     <footer className="desktopPillarActions">
       <p>Answer what you know. Unanswered items will remain visible and never prevent you from continuing.</p>
